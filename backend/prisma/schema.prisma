@@ -1,0 +1,45 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  telegram_id String   @unique
+  name        String?
+  tasks       UserTask[]
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  video_url   String?
+  content     String?
+  tasks       Task[]
+}
+
+model Task {
+  id             Int      @id @default(autoincrement())
+  course_id      Int
+  title          String
+  required_per_day Int
+  available_until DateTime?
+  course         Course   @relation(fields: [course_id], references: [id])
+  userTasks      UserTask[]
+}
+
+model UserTask {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  task_id         Int
+  completed_today Int
+  last_completed_at DateTime?
+  progress        Int
+  user            User     @relation(fields: [user_id], references: [id])
+  task            Task     @relation(fields: [task_id], references: [id])
+}
