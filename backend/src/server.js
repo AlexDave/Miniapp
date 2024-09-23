@@ -30,24 +30,22 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 
-// Заглушка для Telegram ID (в реальном приложении сюда нужно интегрировать реальный Telegram ID)
+// Заглушка для Telegram ID
 app.use(async (req, res, next) => {
   const telegram_id = 'fake_telegram_id'; // В реальном приложении этот ID должен приходить из Telegram
   const name = 'Test User'; // Имя пользователя
 
-  // Проверка, существует ли пользователь с данным Telegram ID
   try {
     const db = await dbPromise;
     let user = await db.collection('users').findOne({ telegram_id });
 
-    // Если пользователь не найден, регистрируем его
     if (!user) {
       user = {
         telegram_id,
         name,
-        viewed_courses: [], // Список просмотренных курсов
-        tracks: [], // Треки пользователя
-        created_at: new Date()
+        viewed_courses: [],
+        tracks: [],
+        created_at: new Date(),
       };
       await db.collection('users').insertOne(user);
       console.log('Пользователь зарегистрирован:', user);
@@ -55,7 +53,6 @@ app.use(async (req, res, next) => {
       console.log('Пользователь найден:', user);
     }
 
-    // Сохраняем информацию о пользователе в запросе
     req.user = user;
     next();
   } catch (err) {
@@ -85,7 +82,7 @@ app.get('/api/courses', async (req, res) => {
 app.get('/api/courses/:id', async (req, res) => {
   try {
     const db = await dbPromise;
-    const courseId = parseInt(req.params.id); // Преобразуем ID в число
+    const courseId = parseInt(req.params.id); 
     const course = await db.collection('courses').findOne({ id: courseId });
 
     if (!course) {
@@ -96,148 +93,6 @@ app.get('/api/courses/:id', async (req, res) => {
   } catch (err) {
     console.error('Ошибка при получении курса по ID:', err.message);
     res.status(500).json({ error: 'Ошибка при получении курса' });
-  }
-});
-
-app.post('/api/user/tracks', async (req, res) => {
-  const { track } = req.body;
-
-  try {
-    const db = await dbPromise;
-    const user = await db.collection('users').findOne({ telegram_id: req.user.telegram_id });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
-    }
-
-    // Добавляем трек в список треков пользователя
-    await db.collection('users').updateOne(
-      { telegram_id: req.user.telegram_id },
-      { $push: { tracks: track } }
-    );
-
-    res.json({ message: 'Трек добавлен' });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка при добавлении трека' });
-  }
-});
-
-// API для получения треков пользователя
-app.get('/api/user/tracks', async (req, res) => {
-  try {
-    const db = await dbPromise;
-    const user = await db.collection('users').findOne({ telegram_id: req.user.telegram_id });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
-    }
-
-    // Возвращаем треки пользователя
-    const tracks = user.tracks || [];
-    res.json(tracks);
-  } catch (err) {
-    console.error('Ошибка при получении треков пользователя:', err);
-    res.status(500).json({ error: 'Ошибка при получении треков пользователя' });
-  }
-});
-
-// API для выполнения задания
-app.put('/api/user/tracks/:trackId', async (req, res) => {
-  const { trackId } = req.params;
-
-  try {
-    const db = await dbPromise;
-    const user = await db.collection('users').findOne({ telegram_id: req.user.telegram_id });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
-    }
-
-    // Находим трек по trackId
-    const track = user.tracks.find(t => t.trackId === parseInt(trackId));
-
-    if (!track) {
-      return res.status(404).json({ error: 'Трек не найден' });
-    }
-
-    const currentTime = new Date();
-    const timeDifference = track.lastCompletedAt ? Math.floor((currentTime - new Date(track.lastCompletedAt)) / 60000) : null;
-
-    // Проверяем, прошло ли достаточно времени для повторного выполнения
-    if (timeDifference !== null && timeDifference < 15) {
-      return res.status(400).json({ error: 'Ещё рано выполнять задание, подождите 15 минут.' });
-    }
-
-    // Проверяем, доступно ли выполнение на сегодня
-    if (track.completedToday >= track.requiredPerDay) {
-      return res.status(400).json({ error: 'Задание уже выполнено максимальное количество раз за сегодня.' });
-    }
-
-    // Обновляем выполнение трека
-    track.completedToday += 1;
-    track.lastCompletedAt = currentTime;
-
-    await db.collection('users').updateOne(
-      { telegram_id: req.user.telegram_id, 'tracks.trackId': track.trackId },
-      { $set: { 'tracks.$': track } }
-    );
-
-    res.json({ message: 'Задание выполнено', track });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка при выполнении задания' });
-  }
-});
-
-
-// API для получения данных о пользователе
-app.get('/api/user/data', async (req, res) => {
-  try {
-    const db = await dbPromise;
-    const user = await db.collection('users').findOne({ telegram_id: req.user.telegram_id });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
-    }
-
-    // Возвращаем данные пользователя, включая просмотренные курсы и треки
-    res.json({
-      user: {
-        telegram_id: user.telegram_id,
-        name: user.name,
-        viewed_courses: user.viewed_courses,
-        tracks: user.tracks
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка при получении данных пользователя' });
-  }
-});
-
-
-// API для добавления просмотренного курса
-app.post('/api/user/courses', async (req, res) => {
-  const { courseId } = req.body;
-
-  try {
-    const db = await dbPromise;
-    const user = await db.collection('users').findOne({ telegram_id: req.user.telegram_id });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
-    }
-
-    // Проверяем, уже ли курс был просмотрен
-    if (!user.viewed_courses.includes(courseId)) {
-      // Добавляем курс в список просмотренных курсов
-      await db.collection('users').updateOne(
-        { telegram_id: req.user.telegram_id },
-        { $push: { viewed_courses: courseId } }
-      );
-    }
-
-    res.json({ message: 'Курс добавлен в список просмотренных' });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка при добавлении просмотренного курса' });
   }
 });
 
@@ -253,7 +108,6 @@ app.post('/api/user/tracks', async (req, res) => {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
 
-    // Добавляем трек в список треков пользователя
     await db.collection('users').updateOne(
       { telegram_id: req.user.telegram_id },
       { $push: { tracks: track } }
@@ -262,6 +116,101 @@ app.post('/api/user/tracks', async (req, res) => {
     res.json({ message: 'Трек добавлен' });
   } catch (err) {
     res.status(500).json({ error: 'Ошибка при добавлении трека' });
+  }
+});
+
+// API для удаления трека
+app.delete('/api/user/tracks/:trackId', async (req, res) => {
+  const { trackId } = req.params;
+
+  try {
+    const db = await dbPromise;
+    const result = await db.collection('users').updateOne(
+      { telegram_id: req.user.telegram_id },
+      { $pull: { tracks: { trackId: parseInt(trackId) } } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ error: 'Трек не найден или уже удалён' });
+    }
+
+    res.json({ message: 'Трек удалён' });
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка при удалении трека' });
+  }
+});
+
+// API для выполнения задания и обновления трека
+app.put('/api/user/tracks/:trackId', async (req, res) => {
+  const { trackId } = req.params;
+
+  try {
+    const db = await dbPromise;
+    const user = await db.collection('users').findOne({ telegram_id: req.user.telegram_id });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    const track = user.tracks.find(t => t.trackId === parseInt(trackId));
+
+    if (!track) {
+      return res.status(404).json({ error: 'Трек не найден' });
+    }
+
+    const currentTime = new Date();
+    const timeDifference = track.lastCompletedAt ? Math.floor((currentTime - new Date(track.lastCompletedAt)) / 60000) : null;
+
+    // Проверяем, прошло ли 15 минут для повторного выполнения
+    if (timeDifference !== null && timeDifference < 15) {
+      return res.status(400).json({ error: 'Ещё рано выполнять задание, подождите 15 минут.' });
+    }
+
+    // Проверка количества выполнений на сегодня
+    if (track.completedToday >= track.requiredPerDay) {
+      return res.status(400).json({ error: 'Задание уже выполнено максимальное количество раз за сегодня.' });
+    }
+
+    // Обновляем выполнение задания
+    track.completedToday += 1;
+    track.lastCompletedAt = currentTime;
+
+    // Проверка завершенности дня
+    if (track.completedToday >= track.requiredPerDay) {
+      track.daysRemaining = Math.max(track.daysRemaining - 1, 0);
+      track.completedToday = 0;
+    }
+
+    // Проверка завершенности трека
+    if (track.daysRemaining === 0) {
+      track.isCompleted = true;
+    }
+
+    await db.collection('users').updateOne(
+      { telegram_id: req.user.telegram_id, 'tracks.trackId': track.trackId },
+      { $set: { 'tracks.$': track } }
+    );
+
+    res.json({ message: 'Задание выполнено', track });
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка при выполнении задания' });
+  }
+});
+
+// API для получения треков пользователя
+app.get('/api/user/tracks', async (req, res) => {
+  try {
+    const db = await dbPromise;
+    const user = await db.collection('users').findOne({ telegram_id: req.user.telegram_id });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    const tracks = user.tracks || [];
+    res.json(tracks);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка при получении треков пользователя' });
   }
 });
 

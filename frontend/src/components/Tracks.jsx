@@ -1,17 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Box, Text, Button, Spinner, VStack } from '@chakra-ui/react';
+import {
+  Box, Text, Button, Spinner, VStack, IconButton, Progress, useToast, HStack, Collapse, AlertDialog,
+  AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay
+} from '@chakra-ui/react';
+import { FaTrash, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 function Tracks() {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [loadingTask, setLoadingTask] = useState(null);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [trackToDelete, setTrackToDelete] = useState(null); 
+  const cancelRef = useRef(); 
+  const toast = useToast();
 
   useEffect(() => {
     async function fetchTracks() {
       try {
         const response = await axios.get('http://localhost:5000/api/user/tracks', { withCredentials: true });
-        setTracks(response.data);
+        const updatedTracks = response.data.map(track => {
+          const remainingTime = getRemainingTime(track.lastCompletedAt);
+          return { ...track, remainingTime };
+        });
+        setTracks(updatedTracks);
       } catch (err) {
         setError('Ошибка при загрузке треков');
       } finally {
@@ -22,31 +35,89 @@ function Tracks() {
     fetchTracks();
   }, []);
 
-  // Функция для проверки, прошло ли 15 минут с последнего выполнения
-  const canPerformTask = (task) => {
-    if (!task.lastCompletedAt) return true; // Если задание не выполнялось, можно выполнить сразу
-    const lastCompletedTime = new Date(task.lastCompletedAt);
+  const getRemainingTime = (lastCompletedAt) => {
+    if (!lastCompletedAt) return 0;
+    const lastCompletedTime = new Date(lastCompletedAt);
     const currentTime = new Date();
-    const timeDifference = Math.floor((currentTime - lastCompletedTime) / 1000 / 60); // Разница в минутах
-    return timeDifference >= 15; // Если прошло больше 15 минут, разрешаем выполнить задание
+    const timeDifference = 15 * 60 * 1000 - (currentTime - lastCompletedTime);
+    return timeDifference > 0 ? Math.floor(timeDifference / 1000) : 0;
   };
 
-  // Проверка, можно ли выполнить задание
-  const canCompleteTaskToday = (task) => {
-    const maxCompletionsPerDay = task.requiredPerDay;
-    const completionsToday = task.completedToday || 0;
-    return completionsToday < maxCompletionsPerDay;
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  // Функция для выполнения задания
   const completeTask = async (trackId) => {
+    setLoadingTask(trackId);
     try {
       const response = await axios.put(`http://localhost:5000/api/user/tracks/${trackId}`);
-      alert('Задание выполнено!');
-      // Обновляем состояние треков
-      setTracks(tracks.map(track => (track.trackId === trackId ? response.data.track : track)));
+      toast({
+        title: "Задание выполнено!",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+
+      const updatedTracks = tracks.map(track => {
+        if (track.trackId === trackId) {
+          let updatedTrack = response.data.track;
+
+          if (updatedTrack.completedToday >= updatedTrack.requiredPerDay) {
+            updatedTrack = { 
+              ...updatedTrack, 
+              daysRemaining: Math.max(updatedTrack.daysRemaining - 1, 0), 
+              completedToday: 0 
+            };
+          }
+
+          if (updatedTrack.daysRemaining === 0 && updatedTrack.completedToday >= updatedTrack.requiredPerDay) {
+            updatedTrack.isCompleted = true;
+            axios.put(`http://localhost:5000/api/user/tracks/${trackId}`, { isCompleted: true });
+          }
+
+          return updatedTrack;
+        }
+        return track;
+      });
+
+      setTracks(updatedTracks);
     } catch (err) {
-      console.error('Ошибка при выполнении задания:', err);
+      toast({
+        title: "Ошибка при выполнении задания.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setLoadingTask(null);
+    }
+  };
+
+  const openDeleteConfirmation = (trackId) => {
+    setTrackToDelete(trackId);
+  };
+
+  const confirmDeleteTask = async () => {
+    try {
+      await axios.delete(`http://localhost:5000/api/user/tracks/${trackToDelete}`);
+      setTracks(tracks.filter(track => track.trackId !== trackToDelete));
+      toast({
+        title: "Трек успешно удалён!",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err) {
+      toast({
+        title: "Ошибка при удалении трека.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setTrackToDelete(null); 
     }
   };
 
@@ -58,34 +129,114 @@ function Tracks() {
     return <Text color="red.500">{error}</Text>;
   }
 
-  if (tracks.length === 0) {
-    return <Text>Треки не найдены.</Text>;
-  }
+  const activeTracks = tracks.filter(track => !track.isCompleted);
+  const completedTracks = tracks.filter(track => track.isCompleted);
 
   return (
     <VStack spacing={4} align="stretch" p={4}>
-      <Text fontSize="2xl" fontWeight="bold" mb={4}>Ваши треки</Text>
-      {tracks.map(track => {
-        const canPerform = canPerformTask(track);
-        const canCompleteToday = canCompleteTaskToday(track);
 
-        return (
-          <Box key={track.trackId} borderWidth="1px" borderRadius="lg" overflow="hidden" p={4}>
-            <Text fontSize="xl">{track.title}</Text>
-            <Text mt={2}>Осталось выполнений сегодня: {track.completedToday}/{track.requiredPerDay}</Text>
-            <Text mt={2}>Осталось дней: {track.daysRemaining}</Text>
-            
-            <Button
-              colorScheme="teal"
-              mt={4}
-              onClick={() => completeTask(track.trackId)}
-              disabled={!canPerform || !canCompleteToday} // Отключаем кнопку, если нельзя выполнить
-            >
-              {canPerform ? 'Выполнить задание' : 'Подождите 15 минут'}
-            </Button>
+      {activeTracks.length === 0 ? (
+        <Text>Нет активных треков.</Text>
+      ) : (
+        activeTracks.map(track => {
+          const remainingTime = track.remainingTime || 0;
+          const canPerform = remainingTime === 0;
+          const completionProgress = (track.completedToday / track.requiredPerDay) * 100;
+          const daysProgress = ((track.totalDays - track.daysRemaining) / track.totalDays) * 100;
+
+          return (
+            <Box key={track.trackId} borderWidth="1px" borderRadius="lg" overflow="hidden" p={3}>
+              <VStack spacing={2} align="stretch">
+                <Text fontSize="lg" fontWeight="semibold">{track.title}</Text>
+
+                <Text fontSize="sm">Прогресс выполнения заданий:</Text>
+                <Progress value={completionProgress} colorScheme="purple" size="sm" bg="purple.200"/>
+                <Text fontSize="xs" mt={1}>
+                  Выполнено {track.completedToday} из {track.requiredPerDay} заданий на сегодня
+                </Text>
+
+                <Text fontSize="sm" mt={2}>Прогресс времени:</Text>
+                <Progress value={daysProgress} colorScheme="orange" size="sm" variant="solid" bg="purple.200" />
+                <Text fontSize="xs" mt={1}>
+                  Осталось {track.daysRemaining} из {track.totalDays} дней
+                </Text>
+
+                <HStack justifyContent="space-between" height="40px">
+                  {!track.isCompleted && (
+                    <Button
+                      colorScheme="green"
+                      size="xs"
+                      width="33%"
+                      height="100%"
+                      onClick={() => completeTask(track.trackId)}
+                      isLoading={loadingTask === track.trackId}
+                      disabled={!canPerform || loadingTask === track.trackId}
+                    >
+                      {canPerform ? 'Выполнить' : `Ждите ${formatTime(remainingTime)}`}
+                    </Button>
+                  )}
+
+                  <IconButton
+                    aria-label="Удалить трек"
+                    icon={<FaTrash />}
+                    colorScheme="red"
+                    size="sm"
+                    height="100%"
+                    onClick={() => openDeleteConfirmation(track.trackId)}
+                  />
+                </HStack>
+              </VStack>
+            </Box>
+          );
+        })
+      )}
+
+      <AlertDialog
+        isOpen={!!trackToDelete}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setTrackToDelete(null)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Подтвердите удаление
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Вы уверены, что хотите удалить этот трек? Это действие невозможно отменить.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={() => setTrackToDelete(null)}>
+                Отмена
+              </Button>
+              <Button colorScheme="red" onClick={confirmDeleteTask} ml={3}>
+                Удалить
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+
+      {completedTracks.length > 0 && (
+        <Button
+          onClick={() => setShowCompleted(!showCompleted)}
+          size="sm"
+          mt={4}
+          leftIcon={showCompleted ? <FaChevronUp /> : <FaChevronDown />}
+        >
+          {showCompleted ? 'Скрыть выполненные' : 'Показать выполненные'}
+        </Button>
+      )}
+
+      <Collapse in={showCompleted}>
+        <Text fontSize="lg" fontWeight="bold" mt={4}>Выполненные</Text>
+        {completedTracks.map(track => (
+          <Box key={track.trackId} borderWidth="1px" borderRadius="lg" overflow="hidden" p={3} bg="gray.100">
+            <Text fontSize="lg" fontWeight="semibold">{track.title}</Text>
           </Box>
-        );
-      })}
+        ))}
+      </Collapse>
     </VStack>
   );
 }
