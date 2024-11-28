@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Heading, Text, Button, Spinner, VStack, IconButton, Flex } from '@chakra-ui/react';
 import { FaArrowLeft } from 'react-icons/fa';
+import config from '../config.jsx'; // Импортируем конфигурацию
 
 function CourseDetail() {
   const { id } = useParams();
@@ -16,7 +17,7 @@ function CourseDetail() {
     // Функция для получения курса
     async function fetchCourse() {
       try {
-        const response = await axios.get(`http://localhost:5000/api/courses/${id}`);
+        const response = await axios.get(`${config.baseUrl}/api/courses/${id}`);
         setCourse(response.data);
       } catch (err) {
         setError('Ошибка при загрузке курса');
@@ -28,7 +29,7 @@ function CourseDetail() {
     // Функция для получения треков пользователя
     async function fetchUserTracks() {
       try {
-        const response = await axios.get('http://localhost:5000/api/user/tracks', { withCredentials: true });
+        const response = await axios.get(`${config.baseUrl}/api/user/tracks`, { withCredentials: true });
         setTracks(response.data);
       } catch (err) {
         console.error('Ошибка при загрузке треков пользователя:', err);
@@ -42,7 +43,7 @@ function CourseDetail() {
   // Функция для добавления задания в треки пользователя
   const addTaskToTracks = async (task) => {
     try {
-      await axios.post('http://localhost:5000/api/user/tracks', { track: task });
+      await axios.post(`${config.baseUrl}/api/user/tracks`, { track: task });
       setTracks((prevTracks) => [...prevTracks, task]); // Добавляем новый трек к списку
     } catch (err) {
       console.error('Ошибка при добавлении трека:', err);

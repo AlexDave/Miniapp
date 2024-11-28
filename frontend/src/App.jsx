@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
-import { ChakraProvider, Box, Flex, IconButton, VStack } from '@chakra-ui/react'; // Добавлен import для Text
+import { ChakraProvider, Box, Flex, IconButton, VStack } from '@chakra-ui/react';
 import { FaBook, FaTasks, FaCommentDots, FaUser } from 'react-icons/fa';
 import Courses from './components/Courses';
 import CourseDetail from './components/CourseDetail';
@@ -12,9 +12,10 @@ function App() {
   return (
     <ChakraProvider>
       <Router>
-        <Flex direction="column" height="100vh">
-          {/* Основной контент */}
-          <Box flex="1" overflow="auto">
+        <ScrollToTop /> {/* Компонент для прокрутки наверх */}
+        <Flex direction="column" minHeight="100vh">
+          {/* Основной контент с отступом снизу для меню */}
+          <Box flex="1" overflow="auto" paddingBottom="10vh">
             <Routes>
               <Route path="/" element={<Courses />} />
               <Route path="/courses" element={<Courses />} />
@@ -33,6 +34,18 @@ function App() {
   );
 }
 
+// Компонент для прокрутки наверх при изменении маршрута
+function ScrollToTop() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Скроллим страницу наверх при каждом изменении маршрута
+    window.scrollTo(0, 0);
+  }, [location]);
+
+  return null;
+}
+
 // Компонент для нижней панели навигации
 function BottomNavigation() {
   const navigate = useNavigate();
@@ -42,101 +55,44 @@ function BottomNavigation() {
     <Flex
       as="footer"
       p={4}
-      bg="gray.100" // Более нейтральный фон
+      bg="gray.100"
       justify="space-between"
-      boxShadow="0px -2px 10px rgba(0, 0, 0, 0.1)" // Мягкая тень для минимализма
-      borderTop="1px solid #E2E8F0" // Граница сверху панели
+      boxShadow="0px -2px 10px rgba(0, 0, 0, 0.1)"
+      borderTop="1px solid #E2E8F0"
+      position="fixed"
+      bottom="0"
+      width="100%"  // Убедитесь, что панель будет занимать всю ширину экрана
+      zIndex="10"   // Обеспечивает, что панель будет поверх контента
+      height="10vh"  // Высота меню
     >
-      {/* Раздел "Courses" */}
-      <Flex
-        flex="1"
-        justify="center"
-        align="center"
-        borderRight="1px solid #E2E8F0" // Граница справа
-        p={2} // Увеличиваем кликабельную область
-        _hover={{ bg: 'gray.200' }} // Эффект наведения на область
-        cursor="pointer" // Указатель при наведении
-        onClick={() => navigate('/courses')}
-      >
-        <VStack>
-          <IconButton
-            aria-label="Courses"
-            icon={<FaBook />}
-            color={location.pathname === '/courses' ? 'purple' : 'black'} // Черные иконки, активная фиолетовая
-            variant="ghost"
-            size="lg"
-            _hover={{ color: 'purple.800' }}
-          />
-        </VStack>
-      </Flex>
-
-      {/* Раздел "Tracks" */}
-      <Flex
-        flex="1"
-        justify="center"
-        align="center"
-        borderRight="1px solid #E2E8F0" // Граница справа
-        p={2} // Увеличиваем кликабельную область
-        _hover={{ bg: 'gray.200' }} // Эффект наведения на область
-        cursor="pointer" // Указатель при наведении
-        onClick={() => navigate('/tracks')}
-      >
-        <VStack>
-          <IconButton
-            aria-label="Tracks"
-            icon={<FaTasks />}
-            color={location.pathname === '/tracks' ? 'purple' : 'black'} // Черные иконки, активная фиолетовая
-            variant="ghost"
-            size="lg"
-            _hover={{ color: 'purple.800' }}
-          />
-        </VStack>
-      </Flex>
-
-      {/* Раздел "Chat" */}
-      <Flex
-        flex="1"
-        justify="center"
-        align="center"
-        borderRight="1px solid #E2E8F0" // Граница справа
-        p={2} // Увеличиваем кликабельную область
-        _hover={{ bg: 'gray.200' }} // Эффект наведения на область
-        cursor="pointer" // Указатель при наведении
-        onClick={() => navigate('/chat')}
-      >
-        <VStack>
-          <IconButton
-            aria-label="Chat"
-            icon={<FaCommentDots />}
-            color={location.pathname === '/chat' ? 'purple' : 'black'} // Черные иконки, активная фиолетовая
-            variant="ghost"
-            size="lg"
-            _hover={{ color: 'purple.800' }}
-          />
-        </VStack>
-      </Flex>
-
-      {/* Раздел "Profile" */}
-      <Flex
-        flex="1"
-        justify="center"
-        align="center"
-        p={2} // Увеличиваем кликабельную область
-        _hover={{ bg: 'gray.200' }} // Эффект наведения на область
-        cursor="pointer" // Указатель при наведении
-        onClick={() => navigate('/profile')}
-      >
-        <VStack>
-          <IconButton
-            aria-label="Profile"
-            icon={<FaUser />}
-            color={location.pathname === '/profile' ? 'purple' : 'black'} // Черные иконки, активная фиолетовая
-            variant="ghost"
-            size="lg"
-            _hover={{ color: 'purple.800' }}
-          />
-        </VStack>
-      </Flex>
+      {/* Разделы навигации */}
+      {[{ path: '/courses', icon: <FaBook />, label: 'Courses' },
+        { path: '/tracks', icon: <FaTasks />, label: 'Tracks' },
+        { path: '/chat', icon: <FaCommentDots />, label: 'Chat' },
+        { path: '/profile', icon: <FaUser />, label: 'Profile' }]
+        .map(({ path, icon, label }) => (
+          <Flex
+            key={label}
+            flex="1"
+            justify="center"
+            align="center"
+            p={2}
+            _hover={{ bg: 'gray.200' }}
+            cursor="pointer"
+            onClick={() => navigate(path)}
+          >
+            <VStack>
+              <IconButton
+                aria-label={label}
+                icon={icon}
+                color={location.pathname === path ? 'purple' : 'black'}
+                variant="ghost"
+                size="lg"
+                _hover={{ color: 'purple.800' }}
+              />
+            </VStack>
+          </Flex>
+        ))}
     </Flex>
   );
 }

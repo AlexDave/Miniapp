@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -25,10 +25,20 @@ async function connectDB() {
 const dbPromise = connectDB(); // Обещание для подключения к базе данных
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (
+      !origin || // Разрешить запросы без origin
+      /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) || // Локальная сеть с любым портом
+      /^http:\/\/localhost(:\d+)?$/.test(origin) // Локальный хост с любым портом
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error('Запрос с этого источника запрещён CORS'));
+    }
+  },
   credentials: true
 }));
-app.use(bodyParser.json());
+
 
 // Заглушка для Telegram ID
 app.use(async (req, res, next) => {
@@ -215,6 +225,6 @@ app.get('/api/user/tracks', async (req, res) => {
 });
 
 // Запуск сервера
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+app.listen(port,'192.168.1.40', () => {
+  console.log(`Server running at ${port}`);
 });

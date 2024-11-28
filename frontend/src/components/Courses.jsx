@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Box, Text, VStack, Spinner, Button } from '@chakra-ui/react';
+import config from '../config.jsx'; // Импортируем конфигурацию
 
 function Courses() {
   const [courses, setCourses] = useState([]);
@@ -11,7 +12,7 @@ function Courses() {
   useEffect(() => {
     async function fetchCourses() {
       try {
-        const response = await axios.get('http://localhost:5000/api/courses', { withCredentials: true });
+        const response = await axios.get(`${config.baseUrl}/api/courses`, { withCredentials: true });
         setCourses(response.data);
       } catch (err) {
         const message = err.response?.data?.error || 'Не удалось подключиться к серверу';
