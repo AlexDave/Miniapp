@@ -89,10 +89,6 @@ function Profile() {
           )}
         </HStack>
 
-        {/* Кнопка для покупки полного пакета курсов */}
-        <Button colorScheme="purple" size="lg" onClick={handleBuyFullPackage}>
-          Купить полный пакет курсов
-        </Button>
       </VStack>
     </Box>
   );

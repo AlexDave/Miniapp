@@ -3,13 +3,18 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { MongoClient } = require('mongodb');
+const TelegramBot = require('node-telegram-bot-api'); // Telegram bot library
 
 const app = express();
 const port = 5000;
 
 // Строка подключения к MongoDB Atlas
 const uri = process.env.MONGO_URI;
+const server_ip = process.env.server_ip;
 const client = new MongoClient(uri);
+
+// Инициализация Telegram-бота
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
 // Функция для подключения к MongoDB
 async function connectDB() {
@@ -223,8 +228,61 @@ app.get('/api/user/tracks', async (req, res) => {
     res.status(500).json({ error: 'Ошибка при получении треков пользователя' });
   }
 });
+// Обработка команды /start
+bot.onText(/\/start/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Приветственное сообщение с кнопкой для открытия мини-приложения
+  const welcomeMessage = 'Привет! Я помогу тебе открыть мини-приложение. Нажми на кнопку ниже, чтобы открыть приложение.';
+
+  const options = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: 'Открыть приложение', // Текст на кнопке
+            url: 'http://test.ru/miniapp', // Ссылка на мини-приложение
+          },
+        ],
+      ],
+    },
+  };
+
+  try {
+    // Отправляем приветственное сообщение с кнопкой
+    await bot.sendMessage(chatId, welcomeMessage, options);
+  } catch (err) {
+    console.error('Ошибка при отправке приветственного сообщения:', err);
+  }
+});
+
+// Обработка команды /openMiniApp
+bot.onText(/\/openMiniApp/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Отправляем сообщение о запуске мини-приложения с кнопкой
+  const openMessage = 'Открываю мини-приложение!';
+  const options = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: 'Открыть приложение', // Текст на кнопке
+            url: 'http://test.ru/miniapp', // Ссылка на мини-приложение
+          },
+        ],
+      ],
+    },
+  };
+
+  try {
+    await bot.sendMessage(chatId, openMessage, options);
+  } catch (err) {
+    console.error('Ошибка при отправке сообщения с кнопкой:', err);
+  }
+});
 
 // Запуск сервера
-app.listen(port,'192.168.1.40', () => {
+app.listen(port,server_ip, () => {
   console.log(`Server running at ${port}`);
 });

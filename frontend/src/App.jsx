@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import { ChakraProvider, Box, Flex, IconButton, VStack } from '@chakra-ui/react';
-import { FaBook, FaTasks, FaCommentDots, FaUser } from 'react-icons/fa';
+import { FaBook, FaTasks } from 'react-icons/fa';
 import Courses from './components/Courses';
 import CourseDetail from './components/CourseDetail';
 import Tracks from './components/Tracks';
@@ -9,12 +9,21 @@ import Chat from './components/Chat';
 import Profile from './components/Profile';
 
 function App() {
+  useEffect(() => {
+    // Инициализация Telegram WebApp
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      // Можно настроить настройки Telegram WebApp, например, закрыть меню или изменить стиль
+      window.Telegram.WebApp.setBackgroundColor('#ffffff');
+      window.Telegram.WebApp.setHeaderColor('#6200EE');
+    }
+  }, []);
+
   return (
     <ChakraProvider>
       <Router>
-        <ScrollToTop /> {/* Компонент для прокрутки наверх */}
+        <ScrollToTop />
         <Flex direction="column" minHeight="100vh">
-          {/* Основной контент с отступом снизу для меню */}
           <Box flex="1" overflow="auto" paddingBottom="10vh">
             <Routes>
               <Route path="/" element={<Courses />} />
@@ -26,7 +35,6 @@ function App() {
             </Routes>
           </Box>
 
-          {/* Нижняя панель навигации */}
           <BottomNavigation />
         </Flex>
       </Router>
@@ -34,22 +42,19 @@ function App() {
   );
 }
 
-// Компонент для прокрутки наверх при изменении маршрута
 function ScrollToTop() {
   const location = useLocation();
 
   useEffect(() => {
-    // Скроллим страницу наверх при каждом изменении маршрута
     window.scrollTo(0, 0);
   }, [location]);
 
   return null;
 }
 
-// Компонент для нижней панели навигации
 function BottomNavigation() {
   const navigate = useNavigate();
-  const location = useLocation(); // Хук для отслеживания текущего пути
+  const location = useLocation();
 
   return (
     <Flex
@@ -61,15 +66,12 @@ function BottomNavigation() {
       borderTop="1px solid #E2E8F0"
       position="fixed"
       bottom="0"
-      width="100%"  // Убедитесь, что панель будет занимать всю ширину экрана
-      zIndex="10"   // Обеспечивает, что панель будет поверх контента
-      height="10vh"  // Высота меню
+      width="100%"
+      zIndex="10"
+      height="10vh"
     >
-      {/* Разделы навигации */}
       {[{ path: '/courses', icon: <FaBook />, label: 'Courses' },
-        { path: '/tracks', icon: <FaTasks />, label: 'Tracks' },
-        { path: '/chat', icon: <FaCommentDots />, label: 'Chat' },
-        { path: '/profile', icon: <FaUser />, label: 'Profile' }]
+        { path: '/tracks', icon: <FaTasks />, label: 'Tracks' }]
         .map(({ path, icon, label }) => (
           <Flex
             key={label}

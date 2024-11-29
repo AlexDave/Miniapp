@@ -10,6 +10,7 @@ CREATE TABLE courses (
     title VARCHAR(255),
     description TEXT,
     video_url VARCHAR(255),
+    duration INTEGER,
     content TEXT
 );
 

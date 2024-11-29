@@ -1,5 +1,16 @@
-import React from 'react';
-import { Box, Text, Button, IconButton, Progress, VStack, HStack, useBreakpointValue } from '@chakra-ui/react';
+import React, { useState, useRef } from 'react';
+import { 
+  Box, 
+  Text, 
+  Button, 
+  IconButton, 
+  Progress, 
+  VStack, 
+  HStack, 
+  useBreakpointValue, 
+  Tooltip, 
+  useOutsideClick 
+} from '@chakra-ui/react';
 import { FaTrash } from 'react-icons/fa';
 
 function TrackCard({ 
@@ -11,12 +22,24 @@ function TrackCard({
 }) {
   const { trackId, title, completedToday, requiredPerDay, remainingTime, daysRemaining, isCompleted } = track;
 
+  const [showTooltip, setShowTooltip] = useState(false); // Управление тултипом
+  const progressBarRef = useRef(); // Ссылка на контейнер прогресс-бара
+
   const canPerform = remainingTime === 0;
   const completionProgress = (completedToday / requiredPerDay) * 100;
 
-  // Adjust font sizes and layouts based on screen size
+  const progressText = completionProgress >= 100 
+    ? "Завершено" 
+    : `Прогресс: ${Math.round(completionProgress)}%`;
+
   const fontSize = useBreakpointValue({ base: 'sm', md: 'md' });
   const buttonSize = useBreakpointValue({ base: 'sm', md: 'md' });
+
+  // Закрытие тултипа при клике за пределами прогресс-бара
+  useOutsideClick({
+    ref: progressBarRef,
+    handler: () => setShowTooltip(false),
+  });
 
   return (
     <Box 
@@ -27,37 +50,48 @@ function TrackCard({
       bg="white"
       position="relative"
     >
-      {/* Progress bar as the top border */}
-      <Progress
-        value={completionProgress}
-        size="xs"
-        colorScheme="purple"
-        position="absolute"
-        top="0"
-        left="0"
-        right="0"
-        borderTopRadius="md"
-      />
+      {/* Прогресс-бар с текстом */}
+      <Box 
+        position="relative" 
+        ref={progressBarRef} 
+        onClick={() => setShowTooltip((prev) => !prev)} // Тултип переключается по клику
+      >
+        <Tooltip 
+          isOpen={showTooltip} 
+          label={`Завершено: ${Math.round(completionProgress)}%. Осталось дней: ${daysRemaining}`} 
+          hasArrow 
+          placement={useBreakpointValue({ base: "bottom", md: "top" })}
+        >
+          <Progress
+            value={completionProgress}
+            size="lg"
+            colorScheme="purple"
+            height="30px"
+            borderTopRadius="md"
+          />
+        </Tooltip>
+        <Text 
+          position="absolute" 
+          top="50%" 
+          left="50%" 
+          transform="translate(-50%, -50%)" 
+          fontSize="xs" 
+          fontWeight="bold" 
+          color={completionProgress >= 50 ? 'white' : 'purple.700'}
+        >
+          {progressText}
+        </Text>
+      </Box>
 
       <VStack spacing={3} align="stretch" p={4} pt={6}>
-        {/* Title */}
-        <Text fontSize="lg" fontWeight="semibold" textAlign="center" noOfLines={2}>
+        {/* Заголовок */}
+        <Text fontSize="lg" fontWeight="semibold" textAlign="left" noOfLines={2}>
           {title}
         </Text>
 
-        {/* Task Progress */}
-        <HStack justifyContent="space-between">
-          <Text fontSize={fontSize}>
-            Задания: {completedToday}/{requiredPerDay}
-          </Text>
-          <Text fontSize={fontSize} color="gray.600">
-            Осталось дней: {daysRemaining}
-          </Text>
-        </HStack>
 
-
-        {/* Action Buttons */}
-        <HStack justifyContent="space-between">
+        {/* Кнопки действий */}
+        <HStack justifyContent="space-between" align="center">
           {!isCompleted && (
             <Button
               colorScheme="green"

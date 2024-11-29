@@ -23,6 +23,7 @@ const seedData = async () => {
         id: 1,
         title: 'Курс 1',
         description: 'Описание курса 1',
+        duratiom: 15,
         videoUrl: 'https://www.youtube.com/embed/example1',
         content: 'Конспект курса 1.',
         tasks: [
@@ -50,6 +51,7 @@ const seedData = async () => {
         id: 2,
         title: 'Курс 2',
         description: 'Описание курса 2',
+        duratiom: 15,
         videoUrl: 'https://www.youtube.com/embed/example2',
         content: 'Конспект курса 2.',
         tasks: [
