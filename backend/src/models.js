@@ -12,6 +12,7 @@ const Course = sequelize.define('Course', {
   title: { type: DataTypes.STRING },
   description: { type: DataTypes.TEXT },
   video_url: { type: DataTypes.STRING },
+  duration: {type: DataTypes.INTEGER},
   content: { type: DataTypes.TEXT }
 });
 

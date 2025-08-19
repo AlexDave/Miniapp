@@ -41,6 +41,16 @@ import useStore from './store';
 const MotionBox = motion(Box);
 
 function App() {
+  useEffect(() => {
+    // Инициализация Telegram WebApp
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      // Можно настроить настройки Telegram WebApp, например, закрыть меню или изменить стиль
+      window.Telegram.WebApp.setBackgroundColor('#ffffff');
+      window.Telegram.WebApp.setHeaderColor('#6200EE');
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <ChakraProvider theme={theme}>
@@ -253,7 +263,6 @@ function BottomNavigation() {
   );
 }
 
-// Компонент для прокрутки наверх при изменении маршрута
 function ScrollToTop() {
   const location = useLocation();
 

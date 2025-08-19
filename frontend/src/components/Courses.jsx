@@ -56,6 +56,28 @@ function Courses() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textColor = useColorModeValue('gray.600', 'gray.300');
 
+  // Тестовые данные
+  const testData = [
+    {
+      id: 1,
+      title: 'Основы программирования',
+      description: 'Изучите базовые концепции программирования на Python.',
+      duration: '8 мин'
+    },
+    {
+      id: 2,
+      title: 'Веб-разработка',
+      description: 'Погрузитесь в разработку сайтов с использованием HTML, CSS и JavaScript.',
+      duration: '12 мин'
+    },
+    {
+      id: 3,
+      title: 'Машинное обучениеоооо ооо о о о ооооооо',
+      description: 'Научитесь строить модели машинного обучения и анализировать данные.',
+      duration: '16 мин'
+    },
+  ];
+
   useEffect(() => {
     async function fetchCourses() {
       try {
