@@ -1,80 +1,406 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Box, Text, VStack, Spinner, Button } from '@chakra-ui/react';
-import config from '../config.jsx'; // Импортируем конфигурацию
+import { 
+  Box, 
+  Text, 
+  VStack, 
+  Spinner, 
+  Button, 
+  SimpleGrid, 
+  Badge,
+  Flex,
+  Icon,
+  useToast,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  HStack,
+  Select,
+  Card,
+  CardBody,
+  Progress,
+  useColorModeValue,
+  Heading,
+  IconButton,
+  Tooltip
+} from '@chakra-ui/react';
+import { motion } from 'framer-motion';
+import { 
+  BookOpen, 
+  Clock, 
+  Star, 
+  Search, 
+  Filter,
+  Play,
+  Award,
+  Users,
+  TrendingUp
+} from 'lucide-react';
+import { useApi } from '../hooks/useApi.js';
+import config from '../config.jsx';
+import useStore from '../store';
+
+const MotionCard = motion(Card);
 
 function Courses() {
   const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [filteredCourses, setFilteredCourses] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
+  const { loading, error, get } = useApi();
+  const { courseProgress, addNotification } = useStore();
+  const toast = useToast();
+
+  const bg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const textColor = useColorModeValue('gray.600', 'gray.300');
 
   useEffect(() => {
     async function fetchCourses() {
       try {
-        const response = await axios.get(`${config.baseUrl}/api/courses`, { withCredentials: true });
-        setCourses(response.data);
+        const data = await get(config.api.endpoints.courses);
+        setCourses(data);
+        setFilteredCourses(data);
       } catch (err) {
-        const message = err.response?.data?.error || 'Не удалось подключиться к серверу';
-        setError(message);
-      } finally {
-        setLoading(false);
+        toast({
+          title: 'Ошибка загрузки',
+          description: err.message || 'Не удалось загрузить курсы',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
       }
     }
 
     fetchCourses();
-  }, []);
+  }, [get, toast]);
+
+  useEffect(() => {
+    let filtered = courses;
+
+    // Поиск по названию и описанию
+    if (searchTerm) {
+      filtered = filtered.filter(course =>
+        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Фильтр по категории
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(course => course.category === selectedCategory);
+    }
+
+    // Фильтр по сложности
+    if (selectedDifficulty !== 'all') {
+      filtered = filtered.filter(course => course.difficulty === selectedDifficulty);
+    }
+
+    setFilteredCourses(filtered);
+  }, [courses, searchTerm, selectedCategory, selectedDifficulty]);
+
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+      case 'beginner': return 'green';
+      case 'intermediate': return 'yellow';
+      case 'advanced': return 'red';
+      default: return 'gray';
+    }
+  };
+
+  const getDifficultyText = (difficulty) => {
+    switch (difficulty) {
+      case 'beginner': return 'Начинающий';
+      case 'intermediate': return 'Средний';
+      case 'advanced': return 'Продвинутый';
+      default: return 'Не указано';
+    }
+  };
+
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'obedience': return <BookOpen size={16} />;
+      case 'tricks': return <Award size={16} />;
+      case 'behavior': return <Users size={16} />;
+      case 'training': return <TrendingUp size={16} />;
+      default: return <BookOpen size={16} />;
+    }
+  };
+
+  const getCategoryText = (category) => {
+    switch (category) {
+      case 'obedience': return 'Послушание';
+      case 'tricks': return 'Трюки';
+      case 'behavior': return 'Поведение';
+      case 'training': return 'Обучение';
+      default: return 'Общее';
+    }
+  };
 
   if (loading) {
     return (
       <VStack spacing={4} align="center" justify="center" height="100vh">
-        <Spinner size="xl" color="purple.500" />
-        <Text>Загрузка курсов...</Text>
+        <Spinner size="xl" color="purple.500" thickness="4px" />
+        <Text fontSize="lg" color={textColor}>Загрузка курсов...</Text>
       </VStack>
     );
   }
 
   if (error) {
     return (
-      <VStack spacing={4} align="center" justify="center" height="100vh">
-        <Text color="red.500">{error}</Text>
-        <Button as={Link} to="/" colorScheme="purple" variant="outline">
-          Вернуться на главную
-        </Button>
-      </VStack>
-    );
-  }
-
-  if (courses.length === 0) {
-    return (
-      <VStack spacing={4} align="center" justify="center" height="100vh">
-        <Text>Курсы не найдены.</Text>
-        <Button as={Link} to="/" colorScheme="purple" variant="outline">
-          Вернуться на главную
+      <VStack spacing={6} align="center" justify="center" height="100vh" p={4}>
+        <Box textAlign="center">
+          <Icon as={BookOpen} w={12} h={12} color="red.500" mb={4} />
+          <Text fontSize="xl" fontWeight="bold" color="red.500" mb={2}>
+            Ошибка загрузки
+          </Text>
+          <Text color={textColor} mb={4}>{error}</Text>
+        </Box>
+        <Button 
+          colorScheme="purple" 
+          variant="outline"
+          onClick={() => window.location.reload()}
+        >
+          Попробовать снова
         </Button>
       </VStack>
     );
   }
 
   return (
-    <VStack spacing={4} align="stretch" p={4}>
-      {courses.map(course => (
-        <Box
-          key={course.id}
-          borderWidth="1px"
-          borderRadius="lg"
-          p={4}
-          as={Link}
-          to={`/course/${course.id}`}
-          _hover={{ bg: 'purple.50' }}
-          transition="background-color 0.2s"
-          borderColor="purple.500"
-        >
-          <Text fontSize="xl" fontWeight="medium" color="purple.700">{course.title}</Text>
-          <Text mt={2} fontSize="sm" color="purple.600">{course.description}</Text>
+    <Box pb={20}>
+      <VStack spacing={6} align="stretch">
+        {/* Header */}
+        <Box>
+          <Heading size="lg" color="purple.600" mb={2}>
+            Курсы обучения
+          </Heading>
+          <Text color={textColor}>
+            Выберите курс для обучения вашего питомца
+          </Text>
         </Box>
-      ))}
-    </VStack>
+
+        {/* Search and Filters */}
+        <Card bg={bg} border="1px solid" borderColor={borderColor}>
+          <CardBody>
+            <VStack spacing={4}>
+              {/* Search */}
+              <InputGroup>
+                <InputLeftElement pointerEvents="none">
+                  <Icon as={Search} color="gray.400" />
+                </InputLeftElement>
+                <Input
+                  placeholder="Поиск курсов..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  bg={useColorModeValue('gray.50', 'gray.700')}
+                />
+              </InputGroup>
+
+              {/* Filters */}
+              <HStack spacing={4} width="100%">
+                <Select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  bg={useColorModeValue('gray.50', 'gray.700')}
+                >
+                  <option value="all">Все категории</option>
+                  <option value="obedience">Послушание</option>
+                  <option value="tricks">Трюки</option>
+                  <option value="behavior">Поведение</option>
+                  <option value="training">Обучение</option>
+                </Select>
+
+                <Select
+                  value={selectedDifficulty}
+                  onChange={(e) => setSelectedDifficulty(e.target.value)}
+                  bg={useColorModeValue('gray.50', 'gray.700')}
+                >
+                  <option value="all">Любая сложность</option>
+                  <option value="beginner">Начинающий</option>
+                  <option value="intermediate">Средний</option>
+                  <option value="advanced">Продвинутый</option>
+                </Select>
+              </HStack>
+            </VStack>
+          </CardBody>
+        </Card>
+
+        {/* Results Count */}
+        <HStack justify="space-between">
+          <Text color={textColor}>
+            Найдено {filteredCourses.length} курсов
+          </Text>
+          {(searchTerm || selectedCategory !== 'all' || selectedDifficulty !== 'all') && (
+            <Button
+              size="sm"
+              variant="ghost"
+              color="purple.500"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCategory('all');
+                setSelectedDifficulty('all');
+              }}
+            >
+              Сбросить фильтры
+            </Button>
+          )}
+        </HStack>
+
+        {/* Courses Grid */}
+        {filteredCourses.length === 0 ? (
+          <VStack spacing={6} align="center" justify="center" p={8}>
+            <Box textAlign="center">
+              <Icon as={BookOpen} w={12} h={12} color="gray.400" mb={4} />
+              <Text fontSize="xl" fontWeight="bold" color="gray.500" mb={2}>
+                Курсы не найдены
+              </Text>
+              <Text color={textColor}>
+                Попробуйте изменить параметры поиска
+              </Text>
+            </Box>
+          </VStack>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+            {filteredCourses.map((course, index) => (
+              <MotionCard
+                key={course.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.02 }}
+                as={Link}
+                to={`/course/${course.id}`}
+                bg={bg}
+                border="1px solid"
+                borderColor={borderColor}
+                cursor="pointer"
+                overflow="hidden"
+                position="relative"
+              >
+                {/* Progress Bar */}
+                {courseProgress[course.id] && (
+                  <Box
+                    position="absolute"
+                    top={0}
+                    left={0}
+                    right={0}
+                    height="4px"
+                    bg="purple.100"
+                    zIndex={1}
+                  >
+                    <Box
+                      height="100%"
+                      width={`${courseProgress[course.id]}%`}
+                      bg="purple.500"
+                      transition="width 0.3s"
+                    />
+                  </Box>
+                )}
+
+                <CardBody p={6}>
+                  <VStack align="start" spacing={4}>
+                    {/* Header */}
+                    <HStack justify="space-between" width="100%" align="start">
+                      <VStack align="start" spacing={2} flex="1">
+                        <HStack spacing={2}>
+                          <Box
+                            p={2}
+                            bg="purple.100"
+                            borderRadius="full"
+                            color="purple.600"
+                          >
+                            {getCategoryIcon(course.category)}
+                          </Box>
+                          <Badge
+                            colorScheme={getDifficultyColor(course.difficulty)}
+                            variant="subtle"
+                            fontSize="xs"
+                          >
+                            {getDifficultyText(course.difficulty)}
+                          </Badge>
+                        </HStack>
+                        
+                        <Text fontSize="lg" fontWeight="semibold" color="purple.700" noOfLines={2}>
+                          {course.title}
+                        </Text>
+                      </VStack>
+                      
+                      {course.isCompleted && (
+                        <Badge colorScheme="green" variant="solid">
+                          Завершен
+                        </Badge>
+                      )}
+                    </HStack>
+                    
+                    {/* Description */}
+                    <Text fontSize="sm" color={textColor} noOfLines={3} lineHeight="1.5">
+                      {course.description}
+                    </Text>
+                    
+                    {/* Stats */}
+                    <VStack align="start" spacing={2} width="100%">
+                      <HStack justify="space-between" width="100%">
+                        <HStack spacing={4}>
+                          <HStack spacing={1} color={textColor}>
+                            <Icon as={Clock} size={14} />
+                            <Text fontSize="xs">
+                              {course.duration || 'Не указано'}
+                            </Text>
+                          </HStack>
+                          
+                          {course.rating && (
+                            <HStack spacing={1} color="yellow.500">
+                              <Icon as={Star} size={14} />
+                              <Text fontSize="xs">{course.rating}</Text>
+                            </HStack>
+                          )}
+                        </HStack>
+                        
+                        <Text fontSize="xs" color="purple.600" fontWeight="semibold">
+                          {getCategoryText(course.category)}
+                        </Text>
+                      </HStack>
+                      
+                      {/* Progress */}
+                      {courseProgress[course.id] && (
+                        <Box width="100%">
+                          <HStack justify="space-between" mb={1}>
+                            <Text fontSize="xs" color={textColor}>Прогресс</Text>
+                            <Text fontSize="xs" color="purple.600" fontWeight="semibold">
+                              {courseProgress[course.id]}%
+                            </Text>
+                          </HStack>
+                          <Progress 
+                            value={courseProgress[course.id]} 
+                            colorScheme="purple" 
+                            size="sm" 
+                            borderRadius="full"
+                          />
+                        </Box>
+                      )}
+                    </VStack>
+                    
+                    {/* Action Button */}
+                    <Button
+                      size="sm"
+                      colorScheme="purple"
+                      variant="outline"
+                      width="100%"
+                      leftIcon={<Play size={16} />}
+                      _hover={{ bg: 'purple.50' }}
+                    >
+                      {course.isCompleted ? 'Повторить курс' : 'Начать обучение'}
+                    </Button>
+                  </VStack>
+                </CardBody>
+              </MotionCard>
+            ))}
+          </SimpleGrid>
+        )}
+      </VStack>
+    </Box>
   );
 }
 
