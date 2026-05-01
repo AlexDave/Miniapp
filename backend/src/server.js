@@ -2,18 +2,17 @@ require('dotenv').config();
 const app = require('./app');
 const config = require('./config');
 const { connect, disconnect } = require('./database/connection');
+const logger = require('./utils/logger');
 
 async function startServer() {
   await connect();
 
   const server = app.listen(config.server.port, config.server.host, () => {
-    console.log(`🚀 Сервер запущен на порту ${config.server.port}`);
-    console.log(`📊 Health check: http://localhost:${config.server.port}/health`);
-    console.log(`🌍 Окружение: ${config.server.nodeEnv}`);
+    logger.info({ port: config.server.port, env: config.server.nodeEnv }, 'Сервер запущен');
   });
 
   async function shutdown(signal) {
-    console.log(`🛑 Получен ${signal}, завершение...`);
+    logger.info({ signal }, 'Получен сигнал завершения');
     server.close(async () => {
       await disconnect();
       process.exit(0);
@@ -25,6 +24,7 @@ async function startServer() {
 }
 
 startServer().catch((err) => {
-  console.error('❌ Ошибка запуска сервера:', err);
+  // logger может быть недоступен до инициализации, используем console.error здесь
+  console.error('Ошибка запуска сервера:', err);
   process.exit(1);
 });

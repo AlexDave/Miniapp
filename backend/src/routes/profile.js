@@ -1,5 +1,6 @@
 const express = require('express');
 const { prisma } = require('../database/connection');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.get('/', async (req, res) => {
       bio: profile.bio,
     });
   } catch (err) {
-    console.error('❌ Ошибка при получении профиля:', err);
+    logger.error({ err }, 'Ошибка при получении профиля');
     res.status(500).json({ error: 'Ошибка при получении профиля' });
   }
 });
@@ -55,7 +56,7 @@ router.put('/', async (req, res) => {
       bio: profile.bio,
     });
   } catch (err) {
-    console.error('❌ Ошибка при обновлении профиля:', err);
+    logger.error({ err }, 'Ошибка при обновлении профиля');
     res.status(500).json({ error: 'Ошибка при обновлении профиля' });
   }
 });

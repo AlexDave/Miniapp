@@ -59,14 +59,25 @@
 
 ---
 
-## Спринт 4: Тесты и логирование
+## Спринт 4: Тесты и логирование ✅
 
 ### Задачи
-- [ ] Настроить Vitest + Testing Library для фронтенда
-- [ ] Настроить Jest + Supertest для бэкенда
-- [ ] Написать тесты на auth middleware (верификация initData)
-- [ ] Написать тесты на tracks API (cooldown, completion)
-- [ ] Заменить `console.log` на `winston` или `pino`
+- [x] Настроить Vitest + Testing Library для фронтенда
+- [x] Настроить Jest + Supertest для бэкенда
+- [x] Написать тесты на auth middleware (верификация initData) — 6 unit-тестов
+- [x] Написать тесты на tracks API (cooldown, completion, streak) — 11 интеграционных тестов
+- [x] Заменить `console.log` на `pino` логгер
+
+### Что изменилось
+- `backend/src/utils/logger.js` — pino логгер (pino-pretty в dev, json в prod)
+- `backend/jest.config.js` — конфиг Jest с in-file test DB
+- `backend/src/__tests__/setup.js` — переменные окружения для тестов
+- `backend/src/__tests__/auth.test.js` — 6 unit-тестов HMAC-SHA256 верификации
+- `backend/src/__tests__/tracks.test.js` — 11 интеграционных тестов tracks API
+- `frontend/vite.config.js` — добавлен блок `test` для Vitest (jsdom)
+- `frontend/src/__tests__/setup.js` — подключение @testing-library/jest-dom
+- `frontend/src/__tests__/Dashboard.test.jsx` — 5 тестов компонента Dashboard
+- `frontend/src/__tests__/Tracks.test.jsx` — 7 тестов компонента Tracks
 
 ---
 

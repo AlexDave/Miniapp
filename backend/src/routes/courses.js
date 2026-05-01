@@ -1,5 +1,6 @@
 const express = require('express');
 const { prisma } = require('../database/connection');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.get('/', async (req, res) => {
     });
     res.json(courses);
   } catch (err) {
-    console.error('❌ Ошибка при получении курсов:', err.message);
+    logger.error({ err }, 'Ошибка при получении курсов');
     res.status(500).json({ error: 'Ошибка при получении курсов' });
   }
 });
@@ -34,7 +35,7 @@ router.get('/:id', async (req, res) => {
 
     res.json(course);
   } catch (err) {
-    console.error('❌ Ошибка при получении курса:', err.message);
+    logger.error({ err }, 'Ошибка при получении курса');
     res.status(500).json({ error: 'Ошибка при получении курса' });
   }
 });

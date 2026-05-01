@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/seed.js",
@@ -28,6 +29,8 @@
     "nodemon": "^3.1.4"
   },
   "devDependencies": {
-    "prisma": "^5.19.1"
+    "jest": "^30.3.0",
+    "prisma": "^5.19.1",
+    "supertest": "^7.2.2"
   }
 }

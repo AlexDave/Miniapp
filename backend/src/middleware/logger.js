@@ -1,17 +1,19 @@
+const appLogger = require('../utils/logger');
+
 const logger = (req, res, next) => {
   const start = Date.now();
-  
-  // Логируем входящий запрос
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  
-  // Перехватываем ответ для логирования
+  appLogger.debug({ method: req.method, url: req.originalUrl }, 'incoming request');
+
   const originalSend = res.send;
-  res.send = function(data) {
+  res.send = function (data) {
     const duration = Date.now() - start;
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${res.statusCode} (${duration}ms)`);
+    appLogger.debug(
+      { method: req.method, url: req.originalUrl, status: res.statusCode, duration },
+      'request completed'
+    );
     originalSend.call(this, data);
   };
-  
+
   next();
 };
 
