@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Avatar,
@@ -19,7 +19,6 @@ import {
   Stat,
   StatLabel,
   StatNumber,
-  StatHelpText,
   useToast,
   Modal,
   ModalOverlay,
@@ -36,8 +35,9 @@ import {
   TabPanel,
   List,
   ListItem,
-  ListIcon,
-  Icon
+  Icon,
+  Spinner,
+  Flex,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import {
@@ -49,28 +49,32 @@ import {
   Calendar,
   Target,
   BookOpen,
-  Settings,
   Bell,
   Shield,
   Heart,
   Zap,
   Crown,
-  Medal,
-  Gift,
   Download,
   Share2,
   HelpCircle,
-  MessageCircle
+  MessageCircle,
+  Gift,
 } from 'lucide-react';
 import useStore from '../store';
+import { useProfile, useUpdateProfile } from '../hooks/useProfile';
+import { useAchievements } from '../hooks/useAchievements';
 
-const MotionBox = motion(Box);
 const MotionCard = motion(Card);
 
+const ICON_COMPONENTS = { Star, Calendar, Target, Heart, Crown, Zap, Trophy, Award };
+
 function Profile() {
-  const { userProfile, updateUserProfile, addNotification } = useStore();
-  const [petName, setPetName] = useState(userProfile.petName);
-  const [avatarPreview, setAvatarPreview] = useState(userProfile.avatar);
+  const { userProfile } = useStore();
+  const { isLoading: profileLoading } = useProfile();
+  const updateProfile = useUpdateProfile();
+  const { data: achievements = [], isLoading: achievementsLoading } = useAchievements();
+
+  const [petName, setPetName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const fileInputRef = useRef();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -80,62 +84,50 @@ function Profile() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textColor = useColorModeValue('gray.600', 'gray.300');
 
-  // Достижения пользователя
-  const achievements = [
-    { id: 1, name: 'Первые шаги', description: 'Завершите первый курс', icon: Star, earned: true, color: 'yellow' },
-    { id: 2, name: 'Неделя обучения', description: 'Занимайтесь 7 дней подряд', icon: Calendar, earned: true, color: 'green' },
-    { id: 3, name: 'Мастер команд', description: 'Изучите 10 команд', icon: Target, earned: false, color: 'blue' },
-    { id: 4, name: 'Друг питомца', description: 'Проведите 30 дней обучения', icon: Heart, earned: false, color: 'red' },
-    { id: 5, name: 'Эксперт', description: 'Завершите все курсы', icon: Crown, earned: false, color: 'purple' },
-    { id: 6, name: 'Скорость света', description: 'Завершите курс за 1 день', icon: Zap, earned: false, color: 'orange' }
-  ];
+  // Синхронизируем локальный стейт с данными из стора (заполненного через useProfile)
+  useEffect(() => {
+    setPetName(userProfile.petName);
+  }, [userProfile.petName]);
 
   const handleAvatarUpload = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setAvatarPreview(reader.result);
-        updateUserProfile({ avatar: reader.result });
-        toast({
-          title: 'Аватар обновлен',
-          status: 'success',
-          duration: 2000,
-          isClosable: true,
-        });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateProfile.mutate({ avatar: reader.result });
+      toast({ title: 'Аватар обновлён', status: 'success', duration: 2000, isClosable: true });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const savePetName = async () => {
+    if (!petName.trim() || petName === userProfile.petName) {
+      setIsEditingName(false);
+      return;
     }
-  };
-
-  const handlePetNameChange = (event) => {
-    setPetName(event.target.value);
-  };
-
-  const savePetName = () => {
-    updateUserProfile({ petName });
+    try {
+      await updateProfile.mutateAsync({ petName: petName.trim() });
+      toast({ title: 'Имя питомца обновлено', status: 'success', duration: 2000, isClosable: true });
+    } catch {
+      toast({ title: 'Ошибка при сохранении', status: 'error', duration: 2000, isClosable: true });
+    }
     setIsEditingName(false);
-    toast({
-      title: 'Имя питомца обновлено',
-      status: 'success',
-      duration: 2000,
-      isClosable: true,
-    });
-  };
-
-  const handleBuyFullPackage = () => {
-    onOpen();
   };
 
   const getLevelProgress = () => {
     const expForNextLevel = userProfile.level * 100;
-    const currentExp = userProfile.experience % expForNextLevel;
-    return (currentExp / expForNextLevel) * 100;
+    return ((userProfile.experience % expForNextLevel) / expForNextLevel) * 100;
   };
 
-  const getEarnedAchievementsCount = () => {
-    return achievements.filter(achievement => achievement.earned).length;
-  };
+  const earnedCount = achievements.filter((a) => a.earned).length;
+
+  if (profileLoading) {
+    return (
+      <Flex justify="center" align="center" height="60vh">
+        <Spinner size="xl" color="purple.500" thickness="4px" />
+      </Flex>
+    );
+  }
 
   return (
     <Box pb={20}>
@@ -150,16 +142,16 @@ function Profile() {
         >
           <CardBody>
             <VStack spacing={6} align="center">
-              {/* Avatar Section */}
+              {/* Avatar */}
               <Box position="relative">
                 <Avatar
                   size="2xl"
-                  src={avatarPreview}
-                  name={petName}
-                  onClick={() => fileInputRef.current?.click()}
+                  src={userProfile.avatar}
+                  name={userProfile.petName}
                   cursor="pointer"
                   border="4px solid"
                   borderColor="purple.200"
+                  onClick={() => fileInputRef.current?.click()}
                   _hover={{ transform: 'scale(1.05)' }}
                   transition="all 0.2s"
                 />
@@ -171,52 +163,51 @@ function Profile() {
                   colorScheme="purple"
                   icon={<Camera size={16} />}
                   onClick={() => fileInputRef.current?.click()}
-                  aria-label="Change avatar"
+                  aria-label="Сменить аватар"
                   borderRadius="full"
+                />
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  ref={fileInputRef}
+                  display="none"
                 />
               </Box>
 
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                ref={fileInputRef}
-                style={{ display: 'none' }}
-              />
-
-              {/* Pet Name Section */}
+              {/* Pet Name */}
               <VStack spacing={2}>
                 {isEditingName ? (
                   <HStack>
                     <Input
                       value={petName}
-                      onChange={handlePetNameChange}
-                      placeholder="Введите кличку питомца"
-                      bg={useColorModeValue('gray.50', 'gray.700')}
+                      onChange={(e) => setPetName(e.target.value)}
+                      placeholder="Кличка питомца"
                       maxW="300px"
                       borderColor="purple.200"
-                      onBlur={savePetName}
-                      onKeyPress={(e) => e.key === 'Enter' && savePetName()}
                       autoFocus
+                      onBlur={savePetName}
+                      onKeyDown={(e) => e.key === 'Enter' && savePetName()}
                     />
                     <IconButton
                       icon={<Edit size={16} />}
                       colorScheme="purple"
                       size="sm"
                       onClick={savePetName}
-                      aria-label="Save name"
+                      isLoading={updateProfile.isLoading}
+                      aria-label="Сохранить"
                     />
                   </HStack>
                 ) : (
                   <HStack>
-                    <Heading size="lg" color="purple.600">{petName}</Heading>
+                    <Heading size="lg" color="purple.600">{userProfile.petName}</Heading>
                     <IconButton
                       icon={<Edit size={16} />}
                       colorScheme="purple"
                       variant="ghost"
                       size="sm"
                       onClick={() => setIsEditingName(true)}
-                      aria-label="Edit name"
+                      aria-label="Редактировать"
                     />
                   </HStack>
                 )}
@@ -226,17 +217,12 @@ function Profile() {
               {/* Level Progress */}
               <Box width="100%" maxW="400px">
                 <HStack justify="space-between" mb={2}>
-                  <Text fontSize="sm" color={textColor}>Прогресс до следующего уровня</Text>
+                  <Text fontSize="sm" color={textColor}>До следующего уровня</Text>
                   <Text fontSize="sm" color="purple.600" fontWeight="semibold">
                     {Math.round(getLevelProgress())}%
                   </Text>
                 </HStack>
-                <Progress
-                  value={getLevelProgress()}
-                  colorScheme="purple"
-                  size="lg"
-                  borderRadius="full"
-                />
+                <Progress value={getLevelProgress()} colorScheme="purple" size="lg" borderRadius="full" />
               </Box>
             </VStack>
           </CardBody>
@@ -244,68 +230,25 @@ function Profile() {
 
         {/* Stats Grid */}
         <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-          <MotionCard
-            whileHover={{ scale: 1.05 }}
-            bg={bg}
-            border="1px solid"
-            borderColor={borderColor}
-          >
-            <CardBody textAlign="center">
-              <Icon as={BookOpen} w={6} h={6} color="purple.500" mb={2} />
-              <Stat>
-                <StatNumber color="purple.600">{userProfile.totalCourses}</StatNumber>
-                <StatLabel fontSize="sm">Всего курсов</StatLabel>
-              </Stat>
-            </CardBody>
-          </MotionCard>
-
-          <MotionCard
-            whileHover={{ scale: 1.05 }}
-            bg={bg}
-            border="1px solid"
-            borderColor={borderColor}
-          >
-            <CardBody textAlign="center">
-              <Icon as={Award} w={6} h={6} color="green.500" mb={2} />
-              <Stat>
-                <StatNumber color="green.600">{userProfile.completedCourses}</StatNumber>
-                <StatLabel fontSize="sm">Завершено</StatLabel>
-              </Stat>
-            </CardBody>
-          </MotionCard>
-
-          <MotionCard
-            whileHover={{ scale: 1.05 }}
-            bg={bg}
-            border="1px solid"
-            borderColor={borderColor}
-          >
-            <CardBody textAlign="center">
-              <Icon as={Calendar} w={6} h={6} color="blue.500" mb={2} />
-              <Stat>
-                <StatNumber color="blue.600">{userProfile.streak}</StatNumber>
-                <StatLabel fontSize="sm">Дней подряд</StatLabel>
-              </Stat>
-            </CardBody>
-          </MotionCard>
-
-          <MotionCard
-            whileHover={{ scale: 1.05 }}
-            bg={bg}
-            border="1px solid"
-            borderColor={borderColor}
-          >
-            <CardBody textAlign="center">
-              <Icon as={Trophy} w={6} h={6} color="yellow.500" mb={2} />
-              <Stat>
-                <StatNumber color="yellow.600">{getEarnedAchievementsCount()}</StatNumber>
-                <StatLabel fontSize="sm">Достижений</StatLabel>
-              </Stat>
-            </CardBody>
-          </MotionCard>
+          {[
+            { icon: BookOpen, color: 'purple', value: userProfile.totalCourses, label: 'Всего курсов' },
+            { icon: Award, color: 'green', value: userProfile.completedCourses, label: 'Завершено' },
+            { icon: Calendar, color: 'blue', value: userProfile.streak, label: 'Дней подряд' },
+            { icon: Trophy, color: 'yellow', value: earnedCount, label: 'Достижений' },
+          ].map(({ icon: IconComp, color, value, label }) => (
+            <MotionCard key={label} whileHover={{ scale: 1.05 }} bg={bg} border="1px solid" borderColor={borderColor}>
+              <CardBody textAlign="center">
+                <Icon as={IconComp} w={6} h={6} color={`${color}.500`} mb={2} />
+                <Stat>
+                  <StatNumber color={`${color}.600`}>{value}</StatNumber>
+                  <StatLabel fontSize="sm">{label}</StatLabel>
+                </Stat>
+              </CardBody>
+            </MotionCard>
+          ))}
         </SimpleGrid>
 
-        {/* Tabs Section */}
+        {/* Tabs */}
         <Tabs variant="enclosed" colorScheme="purple">
           <TabList>
             <Tab>Достижения</Tab>
@@ -314,160 +257,115 @@ function Profile() {
           </TabList>
 
           <TabPanels>
-            {/* Achievements Tab */}
+            {/* Achievements */}
             <TabPanel>
               <VStack spacing={4} align="stretch">
-                <Heading size="md" color="purple.600">Ваши достижения</Heading>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                  {achievements.map((achievement) => (
-                    <MotionCard
-                      key={achievement.id}
-                      whileHover={{ scale: 1.02 }}
-                      bg={bg}
-                      border="1px solid"
-                      borderColor={borderColor}
-                      opacity={achievement.earned ? 1 : 0.6}
-                    >
-                      <CardBody>
-                        <HStack spacing={4}>
-                          <Box
-                            p={3}
-                            bg={`${achievement.color}.100`}
-                            borderRadius="full"
-                            color={`${achievement.color}.600`}
-                          >
-                            <Icon as={achievement.icon} w={6} h={6} />
-                          </Box>
-                          <VStack align="start" spacing={1} flex="1">
-                            <HStack justify="space-between" width="100%">
-                              <Text fontWeight="semibold">{achievement.name}</Text>
-                              {achievement.earned && (
-                                <Badge colorScheme={achievement.color} variant="solid">
-                                  Получено
-                                </Badge>
-                              )}
+                <HStack justify="space-between">
+                  <Heading size="md" color="purple.600">Достижения</Heading>
+                  {!achievementsLoading && (
+                    <Text fontSize="sm" color={textColor}>{earnedCount} / {achievements.length}</Text>
+                  )}
+                </HStack>
+
+                {achievementsLoading ? (
+                  <Flex justify="center" py={6}><Spinner color="purple.500" /></Flex>
+                ) : (
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                    {achievements.map((achievement) => {
+                      const IconComp = ICON_COMPONENTS[achievement.icon] || Trophy;
+                      return (
+                        <MotionCard
+                          key={achievement.id}
+                          whileHover={{ scale: 1.02 }}
+                          bg={bg}
+                          border="1px solid"
+                          borderColor={achievement.earned ? `${achievement.color}.200` : borderColor}
+                          opacity={achievement.earned ? 1 : 0.55}
+                        >
+                          <CardBody>
+                            <HStack spacing={4}>
+                              <Box
+                                p={3}
+                                bg={`${achievement.color}.100`}
+                                borderRadius="full"
+                                color={`${achievement.color}.600`}
+                              >
+                                <Icon as={IconComp} w={6} h={6} />
+                              </Box>
+                              <VStack align="start" spacing={1} flex="1">
+                                <HStack justify="space-between" width="100%">
+                                  <Text fontWeight="semibold">{achievement.name}</Text>
+                                  {achievement.earned && (
+                                    <Badge colorScheme={achievement.color} variant="solid">Получено</Badge>
+                                  )}
+                                </HStack>
+                                <Text fontSize="sm" color={textColor}>{achievement.description}</Text>
+                              </VStack>
                             </HStack>
-                            <Text fontSize="sm" color={textColor}>
-                              {achievement.description}
-                            </Text>
-                          </VStack>
-                        </HStack>
-                      </CardBody>
-                    </MotionCard>
-                  ))}
-                </SimpleGrid>
+                          </CardBody>
+                        </MotionCard>
+                      );
+                    })}
+                  </SimpleGrid>
+                )}
               </VStack>
             </TabPanel>
 
-            {/* Settings Tab */}
+            {/* Settings */}
             <TabPanel>
               <VStack spacing={4} align="stretch">
                 <Heading size="md" color="purple.600">Настройки</Heading>
-
                 <List spacing={3}>
-                  <ListItem>
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={Bell} color="purple.500" />
-                        <Text>Уведомления</Text>
+                  {[
+                    { icon: Bell, label: 'Уведомления' },
+                    { icon: Shield, label: 'Приватность' },
+                    { icon: Download, label: 'Экспорт данных' },
+                    { icon: Share2, label: 'Поделиться прогрессом' },
+                  ].map(({ icon: IconComp, label }) => (
+                    <ListItem key={label}>
+                      <HStack justify="space-between">
+                        <HStack>
+                          <Icon as={IconComp} color="purple.500" />
+                          <Text>{label}</Text>
+                        </HStack>
+                        <Button size="sm" variant="outline" colorScheme="purple">
+                          Настроить
+                        </Button>
                       </HStack>
-                      <Button size="sm" variant="outline" colorScheme="purple">
-                        Настроить
-                      </Button>
-                    </HStack>
-                  </ListItem>
-
-                  <ListItem>
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={Shield} color="purple.500" />
-                        <Text>Приватность</Text>
-                      </HStack>
-                      <Button size="sm" variant="outline" colorScheme="purple">
-                        Настроить
-                      </Button>
-                    </HStack>
-                  </ListItem>
-
-                  <ListItem>
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={Download} color="purple.500" />
-                        <Text>Экспорт данных</Text>
-                      </HStack>
-                      <Button size="sm" variant="outline" colorScheme="purple">
-                        Экспорт
-                      </Button>
-                    </HStack>
-                  </ListItem>
-
-                  <ListItem>
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={Share2} color="purple.500" />
-                        <Text>Поделиться прогрессом</Text>
-                      </HStack>
-                      <Button size="sm" variant="outline" colorScheme="purple">
-                        Поделиться
-                      </Button>
-                    </HStack>
-                  </ListItem>
+                    </ListItem>
+                  ))}
                 </List>
               </VStack>
             </TabPanel>
 
-            {/* Support Tab */}
+            {/* Support */}
             <TabPanel>
               <VStack spacing={4} align="stretch">
                 <Heading size="md" color="purple.600">Поддержка</Heading>
-
                 <List spacing={3}>
-                  <ListItem>
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={HelpCircle} color="purple.500" />
-                        <Text>FAQ</Text>
+                  {[
+                    { icon: HelpCircle, label: 'FAQ' },
+                    { icon: MessageCircle, label: 'Написать в поддержку' },
+                    { icon: Star, label: 'Оценить приложение' },
+                  ].map(({ icon: IconComp, label }) => (
+                    <ListItem key={label}>
+                      <HStack justify="space-between">
+                        <HStack>
+                          <Icon as={IconComp} color="purple.500" />
+                          <Text>{label}</Text>
+                        </HStack>
+                        <Button size="sm" variant="outline" colorScheme="purple">Открыть</Button>
                       </HStack>
-                      <Button size="sm" variant="outline" colorScheme="purple">
-                        Открыть
-                      </Button>
-                    </HStack>
-                  </ListItem>
-
-                  <ListItem>
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={MessageCircle} color="purple.500" />
-                        <Text>Связаться с поддержкой</Text>
-                      </HStack>
-                      <Button size="sm" variant="outline" colorScheme="purple">
-                        Написать
-                      </Button>
-                    </HStack>
-                  </ListItem>
-
-                  <ListItem>
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={Star} color="purple.500" />
-                        <Text>Оценить приложение</Text>
-                      </HStack>
-                      <Button size="sm" variant="outline" colorScheme="purple">
-                        Оценить
-                      </Button>
-                    </HStack>
-                  </ListItem>
+                    </ListItem>
+                  ))}
                 </List>
               </VStack>
             </TabPanel>
           </TabPanels>
         </Tabs>
 
-        {/* Premium Package */}
-        <MotionCard
-          bg="linear-gradient(135deg, purple.500 0%, purple.600 100%)"
-          color="white"
-        >
+        {/* Premium Banner */}
+        <MotionCard bg="purple.500" color="white">
           <CardBody>
             <HStack justify="space-between">
               <VStack align="start" spacing={2}>
@@ -475,19 +373,12 @@ function Profile() {
                   <Icon as={Crown} w={5} h={5} />
                   <Text fontWeight="semibold">Премиум пакет</Text>
                 </HStack>
-                <Text fontSize="lg" fontWeight="bold">
-                  Получите доступ ко всем курсам
-                </Text>
+                <Text fontSize="lg" fontWeight="bold">Доступ ко всем курсам</Text>
                 <Text fontSize="sm" opacity={0.9}>
-                  Неограниченный доступ к эксклюзивным материалам и персональному тренеру
+                  Неограниченный доступ к материалам и персональному тренеру
                 </Text>
               </VStack>
-              <Button
-                colorScheme="whiteAlpha"
-                variant="outline"
-                onClick={handleBuyFullPackage}
-                _hover={{ bg: 'whiteAlpha.200' }}
-              >
+              <Button colorScheme="whiteAlpha" variant="outline" onClick={onOpen} _hover={{ bg: 'whiteAlpha.200' }}>
                 Купить
               </Button>
             </HStack>
@@ -505,50 +396,34 @@ function Profile() {
             <VStack spacing={4} align="stretch">
               <Text>Получите доступ к:</Text>
               <List spacing={2}>
-                <ListItem>
-                  <HStack>
-                    <Icon as={BookOpen} color="purple.500" />
-                    <Text>Все курсы обучения</Text>
-                  </HStack>
-                </ListItem>
-                <ListItem>
-                  <HStack>
-                    <Icon as={Target} color="purple.500" />
-                    <Text>Персональные треки</Text>
-                  </HStack>
-                </ListItem>
-                <ListItem>
-                  <HStack>
-                    <Icon as={MessageCircle} color="purple.500" />
-                    <Text>Персональный тренер</Text>
-                  </HStack>
-                </ListItem>
-                <ListItem>
-                  <HStack>
-                    <Icon as={Gift} color="purple.500" />
-                    <Text>Эксклюзивные материалы</Text>
-                  </HStack>
-                </ListItem>
+                {[
+                  [BookOpen, 'Все курсы обучения'],
+                  [Target, 'Персональные треки'],
+                  [MessageCircle, 'Персональный тренер'],
+                  [Gift, 'Эксклюзивные материалы'],
+                ].map(([IconComp, label]) => (
+                  <ListItem key={label}>
+                    <HStack>
+                      <Icon as={IconComp} color="purple.500" />
+                      <Text>{label}</Text>
+                    </HStack>
+                  </ListItem>
+                ))}
               </List>
               <Text fontSize="lg" fontWeight="bold" textAlign="center" color="purple.600">
-                2999 ₽ / месяц
+                2 999 ₽ / месяц
               </Text>
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Отмена
-            </Button>
-            <Button colorScheme="purple" onClick={() => {
-              toast({
-                title: 'Покупка совершена!',
-                description: 'Премиум пакет активирован',
-                status: 'success',
-                duration: 3000,
-                isClosable: true,
-              });
-              onClose();
-            }}>
+            <Button variant="ghost" mr={3} onClick={onClose}>Отмена</Button>
+            <Button
+              colorScheme="purple"
+              onClick={() => {
+                toast({ title: 'Покупка совершена!', description: 'Премиум пакет активирован', status: 'success', duration: 3000, isClosable: true });
+                onClose();
+              }}
+            >
               Купить
             </Button>
           </ModalFooter>

@@ -17,7 +17,8 @@ const config = {
     endpoints: {
       courses: '/api/courses',
       tracks: '/api/user/tracks',
-      profile: '/api/user/profile'
+      profile: '/api/user/profile',
+      achievements: '/api/user/achievements'
     }
   },
   

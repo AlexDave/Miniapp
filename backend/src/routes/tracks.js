@@ -1,139 +1,189 @@
 const express = require('express');
-const database = require('../database/connection');
-const { isValidId } = require('../utils/validation');
+const { prisma } = require('../database/connection');
 
 const router = express.Router();
 
-// API для получения треков пользователя
+const COOLDOWN_MINUTES = 15;
+
+function isSameDay(d1, d2) {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+}
+
+async function updateStreak(userId, now) {
+  const profile = await prisma.profile.findUnique({ where: { user_id: userId } });
+  if (!profile) return;
+
+  // Ищем последнее выполнение любого трека пользователем (кроме текущего момента)
+  const lastTrack = await prisma.userTrack.findFirst({
+    where: {
+      user_id: userId,
+      last_completed_at: { lt: now },
+    },
+    orderBy: { last_completed_at: 'desc' },
+  });
+
+  let newStreak = profile.streak;
+
+  if (!lastTrack?.last_completed_at) {
+    newStreak = 1;
+  } else {
+    const last = new Date(lastTrack.last_completed_at);
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (isSameDay(last, now)) {
+      // Уже выполнял сегодня — streak не меняется
+      return;
+    } else if (isSameDay(last, yesterday)) {
+      // Выполнял вчера — продолжаем серию
+      newStreak = profile.streak + 1;
+    } else {
+      // Пропустил день — сброс
+      newStreak = 1;
+    }
+  }
+
+  await prisma.profile.update({
+    where: { user_id: userId },
+    data: { streak: newStreak },
+  });
+}
+
 router.get('/', async (req, res) => {
   try {
-    const user = await database.findOne('users', { telegram_id: req.user.telegram_id });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
-    }
-
-    const tracks = user.tracks || [];
-    res.json(tracks);
+    const userTracks = await prisma.userTrack.findMany({
+      where: { user_id: req.user.id },
+      include: { track: true },
+      orderBy: { started_at: 'desc' },
+    });
+    res.json(userTracks);
   } catch (err) {
-    console.error('❌ Ошибка при получении треков пользователя:', err);
-    res.status(500).json({ error: 'Ошибка при получении треков пользователя' });
+    console.error('❌ Ошибка при получении треков:', err);
+    res.status(500).json({ error: 'Ошибка при получении треков' });
   }
 });
 
-// API для добавления трека пользователя
 router.post('/', async (req, res) => {
-  const { track } = req.body;
-
-  if (!track) {
-    return res.status(400).json({ error: 'Трек обязателен' });
+  const { track_id } = req.body;
+  if (!track_id) {
+    return res.status(400).json({ error: 'track_id обязателен' });
   }
 
   try {
-    const user = await database.findOne('users', { telegram_id: req.user.telegram_id });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
+    const track = await prisma.track.findUnique({ where: { id: parseInt(track_id, 10) } });
+    if (!track) {
+      return res.status(404).json({ error: 'Трек не найден' });
     }
 
-    await database.updateOne(
-      'users',
-      { telegram_id: req.user.telegram_id },
-      { $push: { tracks: track } }
-    );
+    const existing = await prisma.userTrack.findUnique({
+      where: { user_id_track_id: { user_id: req.user.id, track_id: track.id } },
+    });
+    if (existing) {
+      return res.status(409).json({ error: 'Трек уже добавлен' });
+    }
 
-    res.json({ message: 'Трек добавлен' });
+    const userTrack = await prisma.userTrack.create({
+      data: {
+        user_id: req.user.id,
+        track_id: track.id,
+        days_remaining: track.duration_days,
+      },
+      include: { track: true },
+    });
+
+    res.status(201).json(userTrack);
   } catch (err) {
     console.error('❌ Ошибка при добавлении трека:', err);
     res.status(500).json({ error: 'Ошибка при добавлении трека' });
   }
 });
 
-// API для удаления трека
-router.delete('/:trackId', async (req, res) => {
-  const { trackId } = req.params;
-
-  if (!isValidId(trackId)) {
+router.put('/:trackId', async (req, res) => {
+  const trackId = parseInt(req.params.trackId, 10);
+  if (isNaN(trackId)) {
     return res.status(400).json({ error: 'Неверный ID трека' });
   }
 
   try {
-    const result = await database.updateOne(
-      'users',
-      { telegram_id: req.user.telegram_id },
-      { $pull: { tracks: { trackId: parseInt(trackId) } } }
-    );
+    const userTrack = await prisma.userTrack.findUnique({
+      where: { user_id_track_id: { user_id: req.user.id, track_id: trackId } },
+      include: { track: true },
+    });
 
-    if (result.modifiedCount === 0) {
-      return res.status(404).json({ error: 'Трек не найден или уже удалён' });
+    if (!userTrack) {
+      return res.status(404).json({ error: 'Трек не найден' });
     }
+
+    if (userTrack.is_completed) {
+      return res.status(400).json({ error: 'Трек уже завершён' });
+    }
+
+    if (userTrack.last_completed_at) {
+      const minutesSince = (Date.now() - new Date(userTrack.last_completed_at)) / 60000;
+      if (minutesSince < COOLDOWN_MINUTES) {
+        const waitMin = Math.ceil(COOLDOWN_MINUTES - minutesSince);
+        return res.status(400).json({ error: `Подождите ещё ${waitMin} мин. перед следующим выполнением` });
+      }
+    }
+
+    const requiredPerDay = userTrack.track.duration_days > 0 ? 1 : 1;
+    const newCompletedToday = userTrack.completed_today + 1;
+    const dayDone = newCompletedToday >= requiredPerDay;
+
+    const newDaysRemaining = dayDone ? Math.max(userTrack.days_remaining - 1, 0) : userTrack.days_remaining;
+    const isCompleted = newDaysRemaining === 0 && dayDone;
+
+    const now = new Date();
+
+    const updated = await prisma.userTrack.update({
+      where: { user_id_track_id: { user_id: req.user.id, track_id: trackId } },
+      data: {
+        completed_today: dayDone ? 0 : newCompletedToday,
+        last_completed_at: now,
+        days_remaining: newDaysRemaining,
+        is_completed: isCompleted,
+        completed_at: isCompleted ? now : null,
+      },
+      include: { track: true },
+    });
+
+    // Обновляем streak в профиле пользователя
+    await updateStreak(req.user.id, now);
+
+    res.json({ message: 'Задание выполнено', userTrack: updated });
+  } catch (err) {
+    console.error('❌ Ошибка при выполнении задания:', err);
+    res.status(500).json({ error: 'Ошибка при выполнении задания' });
+  }
+});
+
+router.delete('/:trackId', async (req, res) => {
+  const trackId = parseInt(req.params.trackId, 10);
+  if (isNaN(trackId)) {
+    return res.status(400).json({ error: 'Неверный ID трека' });
+  }
+
+  try {
+    const existing = await prisma.userTrack.findUnique({
+      where: { user_id_track_id: { user_id: req.user.id, track_id: trackId } },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Трек не найден' });
+    }
+
+    await prisma.userTrack.delete({
+      where: { user_id_track_id: { user_id: req.user.id, track_id: trackId } },
+    });
 
     res.json({ message: 'Трек удалён' });
   } catch (err) {
     console.error('❌ Ошибка при удалении трека:', err);
     res.status(500).json({ error: 'Ошибка при удалении трека' });
-  }
-});
-
-// API для выполнения задания и обновления трека
-router.put('/:trackId', async (req, res) => {
-  const { trackId } = req.params;
-
-  if (!isValidId(trackId)) {
-    return res.status(400).json({ error: 'Неверный ID трека' });
-  }
-
-  try {
-    const user = await database.findOne('users', { telegram_id: req.user.telegram_id });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Пользователь не найден' });
-    }
-
-    const track = user.tracks.find(t => t.trackId === parseInt(trackId));
-
-    if (!track) {
-      return res.status(404).json({ error: 'Трек не найден' });
-    }
-
-    const currentTime = new Date();
-    const timeDifference = track.lastCompletedAt ? Math.floor((currentTime - new Date(track.lastCompletedAt)) / 60000) : null;
-
-    // Проверяем, прошло ли 15 минут для повторного выполнения
-    if (timeDifference !== null && timeDifference < 15) {
-      return res.status(400).json({ error: 'Ещё рано выполнять задание, подождите 15 минут.' });
-    }
-
-    // Проверка количества выполнений на сегодня
-    if (track.completedToday >= track.requiredPerDay) {
-      return res.status(400).json({ error: 'Задание уже выполнено максимальное количество раз за сегодня.' });
-    }
-
-    // Обновляем выполнение задания
-    track.completedToday += 1;
-    track.lastCompletedAt = currentTime;
-
-    // Проверка завершенности дня
-    if (track.completedToday >= track.requiredPerDay) {
-      track.daysRemaining = Math.max(track.daysRemaining - 1, 0);
-      track.completedToday = 0;
-    }
-
-    // Проверка завершенности трека
-    if (track.daysRemaining === 0) {
-      track.isCompleted = true;
-    }
-
-    await database.updateOne(
-      'users',
-      { telegram_id: req.user.telegram_id, 'tracks.trackId': track.trackId },
-      { $set: { 'tracks.$': track } }
-    );
-
-    res.json({ message: 'Задание выполнено', track });
-  } catch (err) {
-    console.error('❌ Ошибка при выполнении задания:', err);
-    res.status(500).json({ error: 'Ошибка при выполнении задания' });
   }
 });
 
