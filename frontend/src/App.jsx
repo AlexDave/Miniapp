@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from 'react-query';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ChakraProvider, 
@@ -40,6 +41,16 @@ import useStore from './store';
 
 const MotionBox = motion(Box);
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 function App() {
   useEffect(() => {
     // Инициализация Telegram WebApp
@@ -53,6 +64,7 @@ function App() {
 
   return (
     <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
       <ChakraProvider theme={theme}>
         <Router>
           <AppContent />
@@ -69,6 +81,7 @@ function App() {
           />
         </Router>
       </ChakraProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

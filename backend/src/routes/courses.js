@@ -1,18 +1,14 @@
 const express = require('express');
-const database = require('../database/connection');
-const { isValidId } = require('../utils/validation');
+const { prisma } = require('../database/connection');
 
 const router = express.Router();
 
-// API для получения списка курсов
 router.get('/', async (req, res) => {
   try {
-    const courses = await database.find('courses');
-
-    if (!courses.length) {
-      return res.status(404).json({ error: 'Курсы не найдены' });
-    }
-
+    const courses = await prisma.course.findMany({
+      where: { is_active: true },
+      orderBy: { created_at: 'desc' },
+    });
     res.json(courses);
   } catch (err) {
     console.error('❌ Ошибка при получении курсов:', err.message);
@@ -20,16 +16,17 @@ router.get('/', async (req, res) => {
   }
 });
 
-// API для получения курса по ID
 router.get('/:id', async (req, res) => {
-  try {
-    const courseId = req.params.id;
-    
-    if (!isValidId(courseId)) {
-      return res.status(400).json({ error: 'Неверный ID курса' });
-    }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    return res.status(400).json({ error: 'Неверный ID курса' });
+  }
 
-    const course = await database.findOne('courses', { id: parseInt(courseId) });
+  try {
+    const course = await prisma.course.findUnique({
+      where: { id },
+      include: { tasks: { where: { is_active: true }, orderBy: { order_index: 'asc' } } },
+    });
 
     if (!course) {
       return res.status(404).json({ error: 'Курс не найден' });
@@ -37,7 +34,7 @@ router.get('/:id', async (req, res) => {
 
     res.json(course);
   } catch (err) {
-    console.error('❌ Ошибка при получении курса по ID:', err.message);
+    console.error('❌ Ошибка при получении курса:', err.message);
     res.status(500).json({ error: 'Ошибка при получении курса' });
   }
 });
