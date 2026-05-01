@@ -1,0 +1,66 @@
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import axios from 'axios';
+import config from '../config';
+
+const api = axios.create({ baseURL: config.baseUrl, withCredentials: true });
+
+export function useTodayLesson() {
+  return useQuery(['lesson', 'today'], async () => {
+    const { data } = await api.get('/api/lessons/today');
+    return data;
+  }, { staleTime: 1000 * 60 * 5 });
+}
+
+export function useLesson(lessonId) {
+  return useQuery(
+    ['lesson', lessonId],
+    async () => {
+      const { data } = await api.get(`/api/lessons/${lessonId}`);
+      return data;
+    },
+    { enabled: !!lessonId }
+  );
+}
+
+export function useCourseModules(courseId) {
+  return useQuery(
+    ['modules', courseId],
+    async () => {
+      const { data } = await api.get(`/api/lessons/course/${courseId}/modules`);
+      return data;
+    },
+    { enabled: !!courseId }
+  );
+}
+
+export function useModuleLessons(moduleId) {
+  return useQuery(
+    ['lessons', 'module', moduleId],
+    async () => {
+      const { data } = await api.get(`/api/lessons/module/${moduleId}`);
+      return data;
+    },
+    { enabled: !!moduleId }
+  );
+}
+
+export function useSubmitReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    async ({ lessonId, steps_data, rating, note }) => {
+      const { data } = await api.post(`/api/lessons/${lessonId}/report`, { steps_data, rating, note });
+      return data;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['lesson', 'today']);
+        queryClient.invalidateQueries(['lesson']);
+        queryClient.invalidateQueries(['profile']);
+        queryClient.invalidateQueries(['stats']);
+        queryClient.invalidateQueries(['activity']);
+        queryClient.invalidateQueries(['skill-map']);
+      },
+    }
+  );
+}

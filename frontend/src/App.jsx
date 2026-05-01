@@ -35,6 +35,7 @@ import Profile from './components/Profile';
 import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './components/Dashboard';
 import Notifications from './components/Notifications';
+import LessonView from './components/lesson/LessonView';
 
 import theme from './theme';
 import useStore from './store';
@@ -104,6 +105,7 @@ function AppContent() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/course/:id" element={<CourseDetail />} />
+            <Route path="/lesson/:lessonId" element={<LessonView />} />
             <Route path="/tracks" element={<Tracks />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />

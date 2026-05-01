@@ -35,6 +35,8 @@ import useStore from '../store';
 import { useCourses } from '../hooks/useCourses';
 import { useTracks } from '../hooks/useTracks';
 import { useProfile } from '../hooks/useProfile';
+import TodayLesson from './lesson/TodayLesson';
+import { useUserStats } from '../hooks/useProgress';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -44,6 +46,7 @@ function Dashboard() {
 
   const { data: courses = [], isLoading: coursesLoading } = useCourses();
   const { data: tracks = [], isLoading: tracksLoading } = useTracks();
+  const { data: userStats } = useUserStats();
   useProfile(); // загружает профиль и синхронизирует Zustand store
 
   const bg = useColorModeValue('white', 'gray.800');
@@ -89,6 +92,9 @@ function Dashboard() {
               Продолжайте обучение и развивайте навыки вашего питомца
             </Text>
           </Box>
+
+          {/* Урок дня */}
+          <TodayLesson />
 
           {/* Level Progress */}
           <Card bg={bg} border="1px solid" borderColor={borderColor}>
