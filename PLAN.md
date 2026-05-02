@@ -59,7 +59,20 @@
 
 ---
 
-## Спринт 4: Тесты и логирование ✅
+## Спринт 4a: Daily Skill Loop — уроки и отчёты ✅
+
+### Задачи
+- [x] Prisma: модули, уроки, шаги теории, задания дня, отчёты (`DailyReport`)
+- [x] Backend: `utils/xp.js` — расчёт XP от отчёта, уровни
+- [x] Backend: `utils/achievements.js` — автовыдача достижений
+- [x] Backend: `routes/lessons.js` — урок дня, модули, отчёт за урок
+- [x] Backend: `routes/progress.js` — карта навыков, активность, статистика
+- [x] Seed: контент из `seed-content.js` (курсы «Щенок», «От 6 месяцев»)
+- [x] Frontend: `hooks/useLessons.js`, `LessonView`, `TodayLesson`, `Dashboard`
+
+---
+
+## Спринт 4b: Тесты и логирование ✅
 
 ### Задачи
 - [x] Настроить Vitest + Testing Library для фронтенда
@@ -74,21 +87,25 @@
 - `backend/src/__tests__/setup.js` — переменные окружения для тестов
 - `backend/src/__tests__/auth.test.js` — 6 unit-тестов HMAC-SHA256 верификации
 - `backend/src/__tests__/tracks.test.js` — 11 интеграционных тестов tracks API
-- `frontend/vite.config.js` — добавлен блок `test` для Vitest (jsdom)
+- `frontend/vite.config.js` — Vitest (jsdom) + proxy для локальной разработки
 - `frontend/src/__tests__/setup.js` — подключение @testing-library/jest-dom
 - `frontend/src/__tests__/Dashboard.test.jsx` — 5 тестов компонента Dashboard
 - `frontend/src/__tests__/Tracks.test.jsx` — 7 тестов компонента Tracks
 
 ---
 
-## Спринт 5: Production-готовность
+## Спринт 5: Production-готовность ✅ (2026-05-02)
 
 ### Задачи
-- [ ] Настроить vite proxy для dev-режима (убрать CORS-хак)
-- [ ] Добавить `VITE_API_URL` в frontend `.env.example`
-- [ ] Настроить ESLint + Prettier на уровне monorepo (сейчас только frontend)
-- [ ] Добавить health check с состоянием БД
-- [ ] Настроить CI/CD (GitHub Actions)
+- [x] Vite proxy для dev-режима (убрать CORS-хак)
+- [x] `frontend/.env.example` с `VITE_API_URL`
+- [x] Исправлен hook violation (`useColorModeValue` в `toastOptions.style`)
+- [x] Все React Query хуки используют единый `apiClient` с auth interceptor
+- [x] GitHub Actions CI (`.github/workflows/ci.yml`) — backend syntax + frontend build
+
+### Остаётся
+- [ ] Настроить ESLint + Prettier на уровне monorepo
+- [ ] Тесты: Vitest (frontend), Jest + Supertest (backend)
 - [ ] Документировать API (OpenAPI/Swagger)
 
 ---

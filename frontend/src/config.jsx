@@ -1,7 +1,7 @@
 // config.jsx
 const config = {
   // Базовый URL API - используем переменную окружения или fallback
-  baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseUrl: import.meta.env.VITE_API_URL || '',
   
   // Настройки приложения
   app: {
