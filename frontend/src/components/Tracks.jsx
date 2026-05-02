@@ -43,8 +43,9 @@ import {
   Plus,
   Calendar,
   Award,
+  BookOpen,
 } from 'lucide-react';
-import { useTracks, useCompleteTrack, useDeleteTrack } from '../hooks/useTracks';
+import { useTracks, useTracksCatalog, useCompleteTrack, useDeleteTrack, useAddTrack } from '../hooks/useTracks';
 import useStore from '../store';
 
 const MotionCard = motion(Card);
@@ -64,8 +65,10 @@ function formatTime(seconds) {
 
 function Tracks() {
   const { data: userTracks = [], isLoading, isError } = useTracks();
+  const { data: catalog = [] } = useTracksCatalog();
   const completeTrack = useCompleteTrack();
   const deleteTrack = useDeleteTrack();
+  const addTrack = useAddTrack();
 
   const [timers, setTimers] = useState({});
   const [showCompleted, setShowCompleted] = useState(false);
@@ -302,6 +305,56 @@ function Tracks() {
             </VStack>
           )}
         </VStack>
+
+        {/* Catalog — available tracks to enroll */}
+        {catalog.filter((t) => !t.enrolled).length > 0 && (
+          <VStack spacing={4} align="stretch">
+            <Heading size="md" color="purple.600">Доступные треки</Heading>
+            <VStack spacing={3} align="stretch">
+              {catalog
+                .filter((t) => !t.enrolled)
+                .map((track) => (
+                  <MotionCard
+                    key={track.id}
+                    whileHover={{ scale: 1.01 }}
+                    bg={bg}
+                    border="1px solid"
+                    borderColor={borderColor}
+                  >
+                    <CardBody>
+                      <HStack justify="space-between">
+                        <VStack align="start" spacing={1} flex={1}>
+                          <HStack spacing={2}>
+                            <Icon as={BookOpen} color="purple.400" />
+                            <Text fontWeight="semibold" color="purple.700">{track.title}</Text>
+                          </HStack>
+                          <Text fontSize="sm" color={textColor} noOfLines={2}>{track.description}</Text>
+                          <HStack spacing={3}>
+                            <Badge colorScheme="purple" variant="subtle">{track.category}</Badge>
+                            <HStack spacing={1} color={textColor}>
+                              <Icon as={Calendar} size={12} />
+                              <Text fontSize="xs">{track.duration_days} дн.</Text>
+                            </HStack>
+                          </HStack>
+                        </VStack>
+                        <Button
+                          size="sm"
+                          colorScheme="purple"
+                          leftIcon={<Plus size={14} />}
+                          onClick={() => addTrack.mutate(track.id)}
+                          isLoading={addTrack.isLoading && addTrack.variables === track.id}
+                          ml={3}
+                          flexShrink={0}
+                        >
+                          Начать
+                        </Button>
+                      </HStack>
+                    </CardBody>
+                  </MotionCard>
+                ))}
+            </VStack>
+          </VStack>
+        )}
 
         {/* Completed Tracks */}
         {completedTracks.length > 0 && (
