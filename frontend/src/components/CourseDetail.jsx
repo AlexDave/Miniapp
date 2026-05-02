@@ -103,30 +103,23 @@ function CourseDetail() {
 
   const addTaskToTracks = async (task) => {
     try {
-      await axios.post(`${config.baseUrl}/api/user/tracks`, { track: task });
-      addTrack(task);
+      await axios.post(`${config.baseUrl}/api/user/tracks`, { track_id: task.id });
       setTracks((prevTracks) => [...prevTracks, task]);
-      
       toast({
         title: 'Задание добавлено!',
-        description: 'Задание успешно добавлено в ваши треки',
+        description: 'Задание добавлено в ваши треки',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
     } catch (err) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось добавить задание в треки',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      const msg = err?.response?.data?.error || 'Не удалось добавить задание';
+      toast({ title: 'Ошибка', description: msg, status: 'error', duration: 3000, isClosable: true });
     }
   };
 
   const isTaskInTracks = (task) => {
-    return tracks.some(track => track.trackId === task.trackId);
+    return tracks.some((track) => track.id === task.id);
   };
 
   const handlePlayPause = () => {
@@ -355,7 +348,7 @@ function CourseDetail() {
                   <VStack align="start" spacing={4}>
                     <Heading size="md" color="purple.600">Описание курса</Heading>
                     <Text color={textColor} lineHeight="1.6">
-                      {course?.content || 'Описание курса отсутствует'}
+                      {course?.description || 'Описание курса отсутствует'}
                     </Text>
                   </VStack>
                 </CardBody>

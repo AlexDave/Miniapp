@@ -11,6 +11,13 @@ export function useTracks() {
   });
 }
 
+export function useTracksCatalog() {
+  return useQuery(['tracks-catalog'], async () => {
+    const { data } = await api.get(config.api.endpoints.tracksCatalog);
+    return data;
+  });
+}
+
 export function useCompleteTrack() {
   const queryClient = useQueryClient();
 
