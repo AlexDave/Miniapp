@@ -1,5 +1,6 @@
 const express = require('express');
 const { prisma } = require('../database/connection');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -62,7 +63,7 @@ router.get('/', async (req, res) => {
     });
     res.json(userTracks);
   } catch (err) {
-    console.error('❌ Ошибка при получении треков:', err);
+    logger.error({ err }, 'Ошибка при получении треков');
     res.status(500).json({ error: 'Ошибка при получении треков' });
   }
 });
@@ -97,7 +98,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(userTrack);
   } catch (err) {
-    console.error('❌ Ошибка при добавлении трека:', err);
+    logger.error({ err }, 'Ошибка при добавлении трека');
     res.status(500).json({ error: 'Ошибка при добавлении трека' });
   }
 });
@@ -156,7 +157,7 @@ router.put('/:trackId', async (req, res) => {
 
     res.json({ message: 'Задание выполнено', userTrack: updated });
   } catch (err) {
-    console.error('❌ Ошибка при выполнении задания:', err);
+    logger.error({ err }, 'Ошибка при выполнении задания');
     res.status(500).json({ error: 'Ошибка при выполнении задания' });
   }
 });
@@ -182,7 +183,7 @@ router.delete('/:trackId', async (req, res) => {
 
     res.json({ message: 'Трек удалён' });
   } catch (err) {
-    console.error('❌ Ошибка при удалении трека:', err);
+    logger.error({ err }, 'Ошибка при удалении трека');
     res.status(500).json({ error: 'Ошибка при удалении трека' });
   }
 });
