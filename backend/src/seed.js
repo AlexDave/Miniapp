@@ -3,152 +3,258 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const courses = [
-  {
-    title: 'Базовые команды',
-    description: 'Обучение ключевым командам: сидеть, лежать, стоять, ко мне. Идеально для щенков и взрослых собак, не имевших базовой подготовки.',
-    difficulty: 'Начинающий',
-    category: 'Базовые навыки',
-    duration: '4 недели',
-    rating: 4.8,
-    is_active: true,
-  },
-  {
-    title: 'Контроль поводка',
-    description: 'Научите собаку ходить рядом без рывков. Разберём технику слабого поводка и команду "рядом" в разных условиях.',
-    difficulty: 'Начинающий',
-    category: 'Поведение на прогулке',
-    duration: '3 недели',
-    rating: 4.6,
-    is_active: true,
-  },
-  {
-    title: 'Социализация',
-    description: 'Правила знакомства с людьми, другими животными и новыми местами. Снижение тревожности и агрессии через постепенное привыкание.',
-    difficulty: 'Средний',
-    category: 'Поведение',
-    duration: '6 недель',
-    rating: 4.9,
-    is_active: true,
-  },
-  {
-    title: 'Спортивная дрессировка',
-    description: 'Элементы аджилити, фрисби и послушания. Для активных собак и владельцев, готовых к соревнованиям.',
-    difficulty: 'Продвинутый',
-    category: 'Спорт',
-    duration: '8 недель',
-    rating: 4.7,
-    is_active: true,
-  },
-  {
-    title: 'Коррекция поведения',
-    description: 'Работа с нежелательным поведением: прыжки на людей, облаивание, попрошайничество, грызня вещей.',
-    difficulty: 'Средний',
-    category: 'Коррекция',
-    duration: '5 недель',
-    rating: 4.5,
-    is_active: true,
-  },
+  { title: 'Базовые команды', description: 'Обучение ключевым командам: сидеть, лежать, стоять, ко мне.', difficulty: 'Начинающий', category: 'Базовые навыки', duration: '4 недели', rating: 4.8, is_active: true },
+  { title: 'Контроль поводка', description: 'Научите собаку ходить рядом без рывков.', difficulty: 'Начинающий', category: 'Поведение на прогулке', duration: '3 недели', rating: 4.6, is_active: true },
+  { title: 'Социализация', description: 'Правила знакомства с людьми, другими животными и новыми местами.', difficulty: 'Средний', category: 'Поведение', duration: '6 недель', rating: 4.9, is_active: true },
+  { title: 'Спортивная дрессировка', description: 'Элементы аджилити, фрисби и послушания.', difficulty: 'Продвинутый', category: 'Спорт', duration: '8 недель', rating: 4.7, is_active: true },
+  { title: 'Коррекция поведения', description: 'Работа с нежелательным поведением.', difficulty: 'Средний', category: 'Коррекция', duration: '5 недель', rating: 4.5, is_active: true },
+];
+
+const lessonsByCourse = [
+  // Курс 1 — Базовые команды
+  [
+    {
+      title: 'Команда «Сидеть»',
+      description: 'Первая и самая важная команда для любой собаки',
+      theory: `## Команда «Сидеть»
+
+Это базовая команда, которую собака должна выучить первой. Она создаёт основу для всего дальнейшего обучения.
+
+### Принцип позитивного подкрепления
+Используйте лакомство как мотиватор. Никогда не давите на зад собаки физически — это создаёт негативную ассоциацию.
+
+### Техника «Кликер»
+Если у вас есть кликер, нажимайте его в момент, когда собака садится, и сразу давайте лакомство. Если нет — используйте слово «Да!» или «Хорошо!».
+
+### Длительность сессии
+Начинайте с 3–5 минут, не больше. Щенки устают быстро, и переутомление снижает мотивацию.`,
+      checklist: JSON.stringify([
+        { id: 1, text: 'Подготовить 10–15 маленьких кусочков лакомства', required: true },
+        { id: 2, text: 'Встать перед собакой, держа лакомство над её носом', required: true },
+        { id: 3, text: 'Медленно поднять руку вверх — собака сядет, следя за лакомством', required: true },
+        { id: 4, text: 'Сразу сказать «Сидеть» и дать лакомство', required: true },
+        { id: 5, text: 'Повторить 5 раз, затем сделать перерыв', required: true },
+      ]),
+      order_index: 0,
+      xp_reward: 15,
+    },
+    {
+      title: 'Команда «Лежать»',
+      description: 'Учим собаку ложиться по команде',
+      theory: `## Команда «Лежать»
+
+После того как собака освоила «Сидеть», можно переходить к «Лежать». Эта команда помогает успокоить собаку в возбуждённом состоянии.
+
+### Из положения «Сидеть»
+Попросите собаку сесть. Затем с лакомством в руке медленно опускайте руку к полу между лапами — собака потянется вниз и ляжет.
+
+### Терпение
+Некоторым собакам нужно 2–3 сессии, прежде чем они поймут движение. Не торопите.`,
+      checklist: JSON.stringify([
+        { id: 1, text: 'Попросить собаку сесть', required: true },
+        { id: 2, text: 'Опустить лакомство к полу между передними лапами', required: true },
+        { id: 3, text: 'Когда собака легла — сказать «Лежать» и дать лакомство', required: true },
+        { id: 4, text: 'Повторить 5 раз с паузами', required: true },
+        { id: 5, text: 'Попробовать без лакомства в руке — только жест', required: false },
+      ]),
+      order_index: 1,
+      xp_reward: 15,
+    },
+    {
+      title: 'Команда «Ко мне»',
+      description: 'Самая важная команда с точки зрения безопасности',
+      theory: `## Команда «Ко мне»
+
+Это самая важная команда для безопасности. Собака, которая приходит по команде, защищена от многих опасностей.
+
+### Золотое правило
+Никогда не наказывайте собаку, когда она пришла к вам — даже если она набедокурила. Иначе следующий раз она не придёт.
+
+### Делайте «Ко мне» весёлым
+Когда собака подходит — искренне радуйтесь, давайте лакомство, хвалите голосом. Это должна быть лучшая вещь в её жизни.`,
+      checklist: JSON.stringify([
+        { id: 1, text: 'Отойти от собаки на 3 шага', required: true },
+        { id: 2, text: 'Присесть и позвать весёлым голосом: «Ко мне!»', required: true },
+        { id: 3, text: 'Когда подошла — дать лакомство и похвалить', required: true },
+        { id: 4, text: 'Постепенно увеличивать расстояние до 5–10 шагов', required: true },
+        { id: 5, text: 'Попробовать в другой комнате или на улице', required: false },
+      ]),
+      order_index: 2,
+      xp_reward: 20,
+    },
+  ],
+  // Курс 2 — Контроль поводка
+  [
+    {
+      title: 'Техника слабого поводка',
+      description: 'Учим собаку не тянуть на поводке',
+      theory: `## Техника слабого поводка
+
+Рывки на поводке — одна из самых частых жалоб владельцев. Но это решаемо!
+
+### Принцип «Стоп и жди»
+Как только поводок натянулся — остановитесь. Полностью. Не двигайтесь. Когда собака вернулась к вам и поводок ослаб — идите дальше. Собака быстро понимает: натянул поводок = прогулка остановилась.
+
+### Смена направления
+Если собака тянет вперёд — разворачивайтесь и идите в другую сторону. Не дёргайте поводок, просто меняйте направление.`,
+      checklist: JSON.stringify([
+        { id: 1, text: 'Выйти на прогулку с лакомствами в кармане', required: true },
+        { id: 2, text: 'Как только поводок натянулся — полностью остановиться', required: true },
+        { id: 3, text: 'Ждать, пока собака вернётся к вам', required: true },
+        { id: 4, text: 'Похвалить и продолжить движение', required: true },
+        { id: 5, text: 'Практиковать не менее 15 минут', required: true },
+      ]),
+      order_index: 0,
+      xp_reward: 15,
+    },
+    {
+      title: 'Команда «Рядом»',
+      description: 'Ходьба у ноги по команде',
+      theory: `## Команда «Рядом»
+
+«Рядом» — формальная команда для ходьбы у левой ноги. Полезна в людных местах, на дороге, при встрече с другими собаками.
+
+### Позиция
+Собака должна идти так, чтобы её плечо было у вашего левого бедра. Поводок свободный, в форме буквы J.
+
+### Начинайте дома
+Отработайте команду в коридоре или комнате — без отвлекающих факторов. Потом переходите на улицу.`,
+      checklist: JSON.stringify([
+        { id: 1, text: 'Начать в помещении без отвлекающих факторов', required: true },
+        { id: 2, text: 'Взять лакомство в левую руку у своего бедра', required: true },
+        { id: 3, text: 'Сказать «Рядом» и начать движение', required: true },
+        { id: 4, text: 'Давать лакомство каждые 3–5 шагов, пока собака идёт у ноги', required: true },
+        { id: 5, text: 'Постепенно увеличить дистанцию до 20 шагов', required: true },
+      ]),
+      order_index: 1,
+      xp_reward: 20,
+    },
+  ],
+  // Курс 3 — Социализация
+  [
+    {
+      title: 'Знакомство с незнакомцами',
+      description: 'Как правильно знакомить собаку с новыми людьми',
+      theory: `## Знакомство с незнакомцами
+
+Страх или агрессия к людям — результат недостаточной социализации. Чем раньше начать, тем лучше.
+
+### Правило «Пусть собака решает»
+Никогда не заставляйте собаку подходить к человеку. Пусть она сама решит, готова ли она. Это снижает тревогу.
+
+### Попросите незнакомца
+Пусть человек не смотрит в глаза собаке, повернётся боком, присядет и протянет руку с лакомством. Это нейтральная поза, не угрожающая.`,
+      checklist: JSON.stringify([
+        { id: 1, text: 'Выйти в место с умеренным количеством людей', required: true },
+        { id: 2, text: 'Наблюдать за языком тела собаки: расслаблена или напряжена?', required: true },
+        { id: 3, text: 'Попросить одного знакомого/незнакомца поздороваться по правилам', required: true },
+        { id: 4, text: 'Если собака подошла добровольно — похвалить', required: true },
+        { id: 5, text: 'Если напряглась — отойти подальше и попробовать с большей дистанции', required: false },
+      ]),
+      order_index: 0,
+      xp_reward: 20,
+    },
+  ],
+  // Курс 4 — Спортивная дрессировка
+  [
+    {
+      title: 'Введение в аджилити',
+      description: 'Первые шаги в спортивной дрессировке',
+      theory: `## Введение в аджилити
+
+Аджилити — это не просто спорт, это способ создать глубокую связь с собакой. Вы учитесь читать друг друга.
+
+### С чего начать
+Начните с простых упражнений: преодоление невысоких препятствий, туннель из обручей или картонных коробок.
+
+### Важно: физическая готовность
+Не начинайте прыжки со щенками до 12–18 месяцев — суставы ещё не сформированы.`,
+      checklist: JSON.stringify([
+        { id: 1, text: 'Сделать простой туннель из картонных коробок', required: true },
+        { id: 2, text: 'Заманить собаку через туннель лакомством 3 раза', required: true },
+        { id: 3, text: 'Добавить команду «Тоннель» на 4-м повторении', required: true },
+        { id: 4, text: 'Постепенно убирать лакомство — только жест рукой', required: false },
+      ]),
+      order_index: 0,
+      xp_reward: 25,
+    },
+  ],
+  // Курс 5 — Коррекция поведения
+  [
+    {
+      title: 'Прыжки на людей',
+      description: 'Как отучить собаку прыгать на людей',
+      theory: `## Прыжки на людей
+
+Собаки прыгают, чтобы поздороваться — это естественно. Но владельцы невольно подкрепляют это поведение, отталкивая или ругая (внимание = награда).
+
+### Стратегия «Игнорировать»
+Когда собака прыгает: отвернуться, скрестить руки, не смотреть, не говорить. Как только все четыре лапы на полу — сразу похвалить и поздороваться.
+
+### Важно
+Все члены семьи и гости должны делать то же самое. Непоследовательность — главный враг обучения.`,
+      checklist: JSON.stringify([
+        { id: 1, text: 'Объяснить всем домочадцам стратегию «игнорировать»', required: true },
+        { id: 2, text: 'Зайти домой: если прыгает — повернуться спиной', required: true },
+        { id: 3, text: 'Как только все лапы на полу — сразу похвалить и присесть к собаке', required: true },
+        { id: 4, text: 'Попрактиковать 5 «приходов» подряд', required: true },
+        { id: 5, text: 'Попросить гостя повторить то же самое', required: false },
+      ]),
+      order_index: 0,
+      xp_reward: 20,
+    },
+  ],
 ];
 
 const tracks = [
-  {
-    title: 'Ежедневные команды',
-    description: 'Повторяйте базовые команды каждый день по 10-15 минут. Регулярность — ключ к успеху.',
-    category: 'Базовые навыки',
-    difficulty: 'Начинающий',
-    duration_days: 21,
-    is_active: true,
-  },
-  {
-    title: 'Прогулка без рывков',
-    description: 'Практикуйте ходьбу на слабом поводке в парке или дворе. Начинайте с 10 минут, постепенно увеличивайте.',
-    category: 'Поведение на прогулке',
-    difficulty: 'Начинающий',
-    duration_days: 14,
-    is_active: true,
-  },
-  {
-    title: 'Социальные встречи',
-    description: 'Организуйте одну контролируемую встречу с другой собакой или незнакомым человеком.',
-    category: 'Поведение',
-    difficulty: 'Средний',
-    duration_days: 30,
-    is_active: true,
-  },
+  { title: 'Ежедневные команды', description: 'Повторяйте базовые команды каждый день по 10-15 минут.', category: 'Базовые навыки', difficulty: 'Начинающий', duration_days: 21, is_active: true },
+  { title: 'Прогулка без рывков', description: 'Практикуйте ходьбу на слабом поводке.', category: 'Поведение на прогулке', difficulty: 'Начинающий', duration_days: 14, is_active: true },
+  { title: 'Социальные встречи', description: 'Организуйте одну контролируемую встречу с другой собакой или незнакомым человеком.', category: 'Поведение', difficulty: 'Средний', duration_days: 30, is_active: true },
 ];
 
 const achievements = [
-  {
-    name: 'Первые шаги',
-    description: 'Завершите первое задание трека',
-    icon: 'Star',
-    color: 'yellow',
-    condition: JSON.stringify({ type: 'tracks_completed', value: 1 }),
-  },
-  {
-    name: 'Неделя обучения',
-    description: 'Занимайтесь 7 дней подряд',
-    icon: 'Calendar',
-    color: 'green',
-    condition: JSON.stringify({ type: 'streak', value: 7 }),
-  },
-  {
-    name: 'Мастер команд',
-    description: 'Завершите 3 трека',
-    icon: 'Target',
-    color: 'blue',
-    condition: JSON.stringify({ type: 'tracks_completed', value: 3 }),
-  },
-  {
-    name: 'Друг питомца',
-    description: 'Занимайтесь 30 дней подряд',
-    icon: 'Heart',
-    color: 'red',
-    condition: JSON.stringify({ type: 'streak', value: 30 }),
-  },
-  {
-    name: 'Эксперт',
-    description: 'Завершите 5 треков',
-    icon: 'Crown',
-    color: 'purple',
-    condition: JSON.stringify({ type: 'tracks_completed', value: 5 }),
-  },
-  {
-    name: 'Молния',
-    description: 'Завершите трек за 1 день',
-    icon: 'Zap',
-    color: 'orange',
-    condition: JSON.stringify({ type: 'track_speed', value: 1 }),
-  },
+  { name: 'Первые шаги', description: 'Завершите первый трек', icon: 'Star', color: 'yellow', condition: JSON.stringify({ type: 'tracks_completed', value: 1 }) },
+  { name: 'Неделя обучения', description: 'Занимайтесь 7 дней подряд', icon: 'Calendar', color: 'green', condition: JSON.stringify({ type: 'streak', value: 7 }) },
+  { name: 'Мастер команд', description: 'Завершите 3 трека', icon: 'Target', color: 'blue', condition: JSON.stringify({ type: 'tracks_completed', value: 3 }) },
+  { name: 'Друг питомца', description: 'Занимайтесь 30 дней подряд', icon: 'Heart', color: 'red', condition: JSON.stringify({ type: 'streak', value: 30 }) },
+  { name: 'Эксперт', description: 'Завершите 5 треков', icon: 'Crown', color: 'purple', condition: JSON.stringify({ type: 'tracks_completed', value: 5 }) },
+  { name: 'Молния', description: 'Завершите трек за 1 день', icon: 'Zap', color: 'orange', condition: JSON.stringify({ type: 'track_speed', value: 1 }) },
 ];
 
 async function main() {
   console.log('🌱 Начало заполнения базы данных...');
 
-  for (const course of courses) {
-    await prisma.course.upsert({
-      where: { id: courses.indexOf(course) + 1 },
-      update: course,
-      create: course,
+  const createdCourses = [];
+  for (let i = 0; i < courses.length; i++) {
+    const course = await prisma.course.upsert({
+      where: { id: i + 1 },
+      update: courses[i],
+      create: courses[i],
     });
+    createdCourses.push(course);
   }
-  console.log(`✅ Создано курсов: ${courses.length}`);
+  console.log(`✅ Создано курсов: ${createdCourses.length}`);
 
-  for (const track of tracks) {
-    await prisma.track.upsert({
-      where: { id: tracks.indexOf(track) + 1 },
-      update: track,
-      create: track,
-    });
+  // Уроки — пересоздаём для каждого курса
+  for (let i = 0; i < createdCourses.length; i++) {
+    const courseId = createdCourses[i].id;
+    const lessons = lessonsByCourse[i] || [];
+
+    await prisma.lesson.deleteMany({ where: { course_id: courseId } });
+
+    for (const lesson of lessons) {
+      await prisma.lesson.create({ data: { ...lesson, course_id: courseId } });
+    }
+    console.log(`  📚 Курс "${createdCourses[i].title}": ${lessons.length} уроков`);
+  }
+
+  for (let i = 0; i < tracks.length; i++) {
+    await prisma.track.upsert({ where: { id: i + 1 }, update: tracks[i], create: tracks[i] });
   }
   console.log(`✅ Создано треков: ${tracks.length}`);
 
-  for (const achievement of achievements) {
-    await prisma.achievement.upsert({
-      where: { id: achievements.indexOf(achievement) + 1 },
-      update: achievement,
-      create: achievement,
-    });
+  for (let i = 0; i < achievements.length; i++) {
+    await prisma.achievement.upsert({ where: { id: i + 1 }, update: achievements[i], create: achievements[i] });
   }
   console.log(`✅ Создано достижений: ${achievements.length}`);
 
@@ -156,10 +262,5 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Ошибка seed:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch((e) => { console.error('❌ Ошибка seed:', e); process.exit(1); })
+  .finally(async () => { await prisma.$disconnect(); });

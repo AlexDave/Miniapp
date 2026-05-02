@@ -54,6 +54,8 @@ import {
 } from 'lucide-react';
 import config from '../config.jsx';
 import useStore from '../store';
+import { useCourseLessons } from '../hooks/useLessons';
+import { apiClient } from '../hooks/useApi';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -76,10 +78,12 @@ function CourseDetail() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textColor = useColorModeValue('gray.600', 'gray.300');
 
+  const { data: lessons = [], isLoading: lessonsLoading } = useCourseLessons(id);
+
   useEffect(() => {
     async function fetchCourse() {
       try {
-        const response = await axios.get(`${config.baseUrl}/api/courses/${id}`);
+        const response = await apiClient.get(`/api/courses/${id}`);
         setCourse(response.data);
       } catch (err) {
         setError('Ошибка при загрузке курса');
@@ -90,7 +94,7 @@ function CourseDetail() {
 
     async function fetchUserTracks() {
       try {
-        const response = await axios.get(`${config.baseUrl}/api/user/tracks`, { withCredentials: true });
+        const response = await apiClient.get('/api/user/tracks');
         setTracks(response.data);
       } catch (err) {
         console.error('Ошибка при загрузке треков пользователя:', err);
@@ -361,7 +365,7 @@ function CourseDetail() {
                 </CardBody>
               </MotionCard>
 
-              {/* Tasks */}
+              {/* Lessons */}
               <MotionCard
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -372,61 +376,67 @@ function CourseDetail() {
               >
                 <CardBody>
                   <VStack align="start" spacing={4}>
-                    <Heading size="md" color="purple.600">Задания курса</Heading>
-                    
-                    {course?.tasks && course.tasks.length > 0 ? (
-                      <VStack spacing={4} align="stretch" width="100%">
-                        {course.tasks.map((task, index) => (
+                    <HStack justify="space-between" width="100%">
+                      <Heading size="md" color="purple.600">Уроки</Heading>
+                      {lessons.length > 0 && (
+                        <Text fontSize="sm" color={textColor}>
+                          {lessons.filter((l) => l.is_completed).length}/{lessons.length} выполнено
+                        </Text>
+                      )}
+                    </HStack>
+
+                    {lessonsLoading ? (
+                      <Spinner size="sm" color="purple.500" />
+                    ) : lessons.length > 0 ? (
+                      <VStack spacing={3} align="stretch" width="100%">
+                        {lessons.map((lesson, index) => (
                           <Box
-                            key={task.trackId}
+                            key={lesson.id}
+                            as="button"
+                            textAlign="left"
                             p={4}
                             border="1px solid"
-                            borderColor={borderColor}
+                            borderColor={lesson.is_completed ? 'green.300' : borderColor}
                             borderRadius="lg"
-                            bg={useColorModeValue('gray.50', 'gray.700')}
+                            bg={lesson.is_completed ? useColorModeValue('green.50', 'green.900') : useColorModeValue('gray.50', 'gray.700')}
+                            onClick={() => navigate(`/lesson/${lesson.id}`)}
+                            _hover={{ borderColor: 'purple.400', transform: 'translateY(-1px)', transition: 'all 0.15s' }}
+                            w="100%"
                           >
-                            <VStack align="start" spacing={3}>
-                              <HStack justify="space-between" width="100%">
-                                <HStack spacing={2}>
-                                  <Icon as={Target} color="purple.500" />
-                                  <Text fontWeight="semibold" color="purple.700">
-                                    Задание {index + 1}
-                                  </Text>
-                                </HStack>
-                                {isTaskInTracks(task) && (
-                                  <Badge colorScheme="green" variant="solid">
-                                    <HStack spacing={1}>
-                                      <Icon as={CheckCircle} size={12} />
-                                      <Text>Добавлено</Text>
-                                    </HStack>
-                                  </Badge>
-                                )}
-                              </HStack>
-                              
-                              <Text fontWeight="semibold" color="purple.700">
-                                {task.title}
-                              </Text>
-                              
-                              <Text color={textColor} fontSize="sm">
-                                {task.description}
-                              </Text>
-                              
-                              {!isTaskInTracks(task) && (
-                                <Button
-                                  size="sm"
-                                  colorScheme="purple"
-                                  leftIcon={<Plus size={16} />}
-                                  onClick={() => addTaskToTracks(task)}
+                            <HStack justify="space-between">
+                              <HStack spacing={3}>
+                                <Box
+                                  w={7}
+                                  h={7}
+                                  borderRadius="full"
+                                  bg={lesson.is_completed ? 'green.500' : 'purple.100'}
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  flexShrink={0}
                                 >
-                                  Добавить в треки
-                                </Button>
-                              )}
-                            </VStack>
+                                  {lesson.is_completed ? (
+                                    <Icon as={CheckCircle} w={4} h={4} color="white" />
+                                  ) : (
+                                    <Text fontSize="xs" fontWeight="bold" color="purple.600">{index + 1}</Text>
+                                  )}
+                                </Box>
+                                <VStack align="start" spacing={0}>
+                                  <Text fontWeight="semibold" fontSize="sm">{lesson.title}</Text>
+                                  {lesson.description && (
+                                    <Text fontSize="xs" color={textColor} noOfLines={1}>{lesson.description}</Text>
+                                  )}
+                                </VStack>
+                              </HStack>
+                              <Badge colorScheme={lesson.is_completed ? 'green' : 'purple'} variant="subtle" fontSize="xs">
+                                {lesson.is_completed ? '✓' : `+${lesson.xp_reward} XP`}
+                              </Badge>
+                            </HStack>
                           </Box>
                         ))}
                       </VStack>
                     ) : (
-                      <Text color={textColor}>Заданий для этого курса пока нет</Text>
+                      <Text color={textColor} fontSize="sm">Уроки для этого курса появятся скоро</Text>
                     )}
                   </VStack>
                 </CardBody>

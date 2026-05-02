@@ -17,13 +17,14 @@ model User {
   updated_at  DateTime @updatedAt
   
   // Связи
-  profile     Profile?
-  userTasks   UserTask[]
-  userTracks  UserTrack[]
-  achievements UserAchievement[]
-  notifications UserNotification[]
+  profile        Profile?
+  userTasks      UserTask[]
+  userTracks     UserTrack[]
+  achievements   UserAchievement[]
+  notifications  UserNotification[]
   courseProgress CourseProgress[]
-  chatMessages ChatMessage[]
+  chatMessages   ChatMessage[]
+  lessonProgress LessonProgress[]
   
   @@map("users")
 }
@@ -65,12 +66,47 @@ model Course {
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-  
+
   // Связи
   tasks       Task[]
+  lessons     Lesson[]
   courseProgress CourseProgress[]
-  
+
   @@map("courses")
+}
+
+// Урок курса
+model Lesson {
+  id          Int      @id @default(autoincrement())
+  course_id   Int
+  title       String
+  description String?
+  theory      String?  // Markdown-текст теории
+  checklist   String?  // JSON: [{id, text, required}]
+  order_index Int      @default(0)
+  xp_reward   Int      @default(10)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  course      Course   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  userProgress LessonProgress[]
+
+  @@map("lessons")
+}
+
+// Прогресс пользователя по уроку
+model LessonProgress {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  lesson_id    Int
+  is_completed Boolean  @default(false)
+  completed_at DateTime?
+
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson  Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, lesson_id])
+  @@map("lesson_progress")
 }
 
 // Задача курса

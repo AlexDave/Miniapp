@@ -59,25 +59,34 @@
 
 ---
 
-## Спринт 4: Тесты и логирование
+## Спринт 4: Lesson Loop ✅ (2026-05-02)
 
 ### Задачи
-- [ ] Настроить Vitest + Testing Library для фронтенда
-- [ ] Настроить Jest + Supertest для бэкенда
-- [ ] Написать тесты на auth middleware (верификация initData)
-- [ ] Написать тесты на tracks API (cooldown, completion)
-- [ ] Заменить `console.log` на `winston` или `pino`
+- [x] Prisma: добавить модели `Lesson` + `LessonProgress` (миграция `20260502204303_add_lessons`)
+- [x] Backend: `utils/xp.js` — начисление XP + level up (5 уровней)
+- [x] Backend: `utils/achievements.js` — автовыдача достижений при событиях
+- [x] Backend: `routes/lessons.js` — GET уроки курса, GET урок, POST завершение, GET урок дня
+- [x] Backend: `tracks.js` — при завершении трека выдаёт +5 XP + проверяет достижения
+- [x] Seed: 8 уроков по 5 курсам с теорией и чеклистами
+- [x] Frontend: `hooks/useLessons.js` — useCourseLessons, useLesson, useTodayLesson, useCompleteLesson
+- [x] Frontend: `LessonView.jsx` — теория + интерактивный чеклист + экран завершения с XP
+- [x] Frontend: `CourseDetail.jsx` — список уроков с прогрессом, клик → переход на урок
+- [x] Frontend: `Dashboard.jsx` — виджет "Урок дня"
 
 ---
 
-## Спринт 5: Production-готовность
+## Спринт 5: Production-готовность ✅ (2026-05-02)
 
 ### Задачи
-- [ ] Настроить vite proxy для dev-режима (убрать CORS-хак)
-- [ ] Добавить `VITE_API_URL` в frontend `.env.example`
-- [ ] Настроить ESLint + Prettier на уровне monorepo (сейчас только frontend)
-- [ ] Добавить health check с состоянием БД
-- [ ] Настроить CI/CD (GitHub Actions)
+- [x] Vite proxy для dev-режима (убрать CORS-хак)
+- [x] `frontend/.env.example` с `VITE_API_URL`
+- [x] Исправлен hook violation (`useColorModeValue` в `toastOptions.style`)
+- [x] Все React Query хуки используют единый `apiClient` с auth interceptor
+- [x] GitHub Actions CI (`.github/workflows/ci.yml`) — backend syntax + frontend build
+
+### Остаётся
+- [ ] Настроить ESLint + Prettier на уровне monorepo
+- [ ] Тесты: Vitest (frontend), Jest + Supertest (backend)
 - [ ] Документировать API (OpenAPI/Swagger)
 
 ---

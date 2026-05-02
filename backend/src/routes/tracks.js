@@ -1,5 +1,7 @@
 const express = require('express');
 const { prisma } = require('../database/connection');
+const { awardXp } = require('../utils/xp');
+const { checkAndAwardAchievements } = require('../utils/achievements');
 
 const router = express.Router();
 
@@ -151,10 +153,15 @@ router.put('/:trackId', async (req, res) => {
       include: { track: true },
     });
 
-    // Обновляем streak в профиле пользователя
     await updateStreak(req.user.id, now);
+    await awardXp(req.user.id, 5);
+    const newAchievements = await checkAndAwardAchievements(req.user.id);
 
-    res.json({ message: 'Задание выполнено', userTrack: updated });
+    res.json({
+      message: 'Задание выполнено',
+      userTrack: updated,
+      new_achievements: newAchievements.map((a) => ({ id: a.id, name: a.name, icon: a.icon })),
+    });
   } catch (err) {
     console.error('❌ Ошибка при выполнении задания:', err);
     res.status(500).json({ error: 'Ошибка при выполнении задания' });

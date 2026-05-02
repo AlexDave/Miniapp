@@ -35,6 +35,7 @@ import Profile from './components/Profile';
 import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './components/Dashboard';
 import Notifications from './components/Notifications';
+import LessonView from './components/LessonView';
 
 import theme from './theme';
 import useStore from './store';
@@ -53,10 +54,8 @@ const queryClient = new QueryClient({
 
 function App() {
   useEffect(() => {
-    // Инициализация Telegram WebApp
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
-      // Можно настроить настройки Telegram WebApp, например, закрыть меню или изменить стиль
       window.Telegram.WebApp.setBackgroundColor('#ffffff');
       window.Telegram.WebApp.setHeaderColor('#6200EE');
     }
@@ -65,22 +64,11 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-      <ChakraProvider theme={theme}>
-        <Router>
-          <AppContent />
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: useColorModeValue('#fff', '#2D3748'),
-                color: useColorModeValue('#1A202C', '#E2E8F0'),
-                border: `1px solid ${useColorModeValue('#E2E8F0', '#4A5568')}`,
-              },
-            }}
-          />
-        </Router>
-      </ChakraProvider>
+        <ChakraProvider theme={theme}>
+          <Router>
+            <AppContent />
+          </Router>
+        </ChakraProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
@@ -90,10 +78,19 @@ function AppContent() {
   const { colorMode, toggleColorMode } = useColorMode();
   const { sidebarOpen, toggleSidebar, notifications } = useStore();
   const bg = useColorModeValue('gray.50', 'gray.900');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const toastBg = useColorModeValue('#fff', '#2D3748');
+  const toastColor = useColorModeValue('#1A202C', '#E2E8F0');
+  const toastBorder = useColorModeValue('#E2E8F0', '#4A5568');
 
   return (
     <Flex direction="column" minHeight="100vh" bg={bg}>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: { background: toastBg, color: toastColor, border: `1px solid ${toastBorder}` },
+        }}
+      />
       {/* Header */}
       <Header toggleColorMode={toggleColorMode} colorMode={colorMode} />
       
@@ -104,6 +101,7 @@ function AppContent() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/course/:id" element={<CourseDetail />} />
+            <Route path="/lesson/:id" element={<LessonView />} />
             <Route path="/tracks" element={<Tracks />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />

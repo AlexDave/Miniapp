@@ -31,20 +31,24 @@ import {
   Award,
   Zap,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useStore from '../store';
 import { useCourses } from '../hooks/useCourses';
 import { useTracks } from '../hooks/useTracks';
 import { useProfile } from '../hooks/useProfile';
+import { useTodayLesson } from '../hooks/useLessons';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
 
 function Dashboard() {
   const { userProfile } = useStore();
+  const navigate = useNavigate();
 
   const { data: courses = [], isLoading: coursesLoading } = useCourses();
   const { data: tracks = [], isLoading: tracksLoading } = useTracks();
-  useProfile(); // загружает профиль и синхронизирует Zustand store
+  const { data: todayLesson } = useTodayLesson();
+  useProfile();
 
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -109,6 +113,38 @@ function Dashboard() {
             </CardBody>
           </Card>
         </VStack>
+
+        {/* Today's Lesson */}
+        {todayLesson && (
+          <MotionCard
+            whileHover={{ scale: 1.01 }}
+            bg="purple.600"
+            color="white"
+            cursor="pointer"
+            onClick={() => navigate(`/lesson/${todayLesson.id}`)}
+          >
+            <CardBody>
+              <HStack justify="space-between" align="start">
+                <VStack align="start" spacing={2}>
+                  <HStack spacing={2}>
+                    <Icon as={Play} w={4} h={4} />
+                    <Text fontSize="xs" fontWeight="semibold" opacity={0.85} textTransform="uppercase" letterSpacing="wide">
+                      Урок дня
+                    </Text>
+                  </HStack>
+                  <Text fontWeight="bold" fontSize="lg" lineHeight="tight">{todayLesson.title}</Text>
+                  <Text fontSize="sm" opacity={0.85}>{todayLesson.course_title}</Text>
+                  <Badge bg="rgba(255,255,255,0.2)" color="white" fontSize="xs">
+                    +{todayLesson.xp_reward} XP
+                  </Badge>
+                </VStack>
+                <Box p={3} bg="rgba(255,255,255,0.15)" borderRadius="full">
+                  <Icon as={BookOpen} w={7} h={7} />
+                </Box>
+              </HStack>
+            </CardBody>
+          </MotionCard>
+        )}
 
         {/* Stats Grid */}
         {isLoading ? (
