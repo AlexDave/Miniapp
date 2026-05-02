@@ -1,5 +1,6 @@
 const express = require('express');
 const { prisma } = require('../database/connection');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -24,7 +25,7 @@ router.get('/', async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error('❌ Ошибка при получении достижений:', err);
+    logger.error({ err }, 'Ошибка при получении достижений');
     res.status(500).json({ error: 'Ошибка при получении достижений' });
   }
 });

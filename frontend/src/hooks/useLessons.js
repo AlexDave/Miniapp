@@ -1,49 +1,65 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { apiClient } from './useApi';
+import axios from 'axios';
+import config from '../config';
 
-export function useCourseLessons(courseId) {
-  return useQuery(
-    ['lessons', courseId],
-    async () => {
-      const { data } = await apiClient.get(`/api/courses/${courseId}/lessons`);
-      return data;
-    },
-    { enabled: !!courseId }
-  );
+const api = axios.create({ baseURL: config.baseUrl, withCredentials: true });
+
+export function useTodayLesson() {
+  return useQuery(['lesson', 'today'], async () => {
+    const { data } = await api.get('/api/lessons/today');
+    return data;
+  }, { staleTime: 1000 * 60 * 5 });
 }
 
 export function useLesson(lessonId) {
   return useQuery(
     ['lesson', lessonId],
     async () => {
-      const { data } = await apiClient.get(`/api/lessons/${lessonId}`);
+      const { data } = await api.get(`/api/lessons/${lessonId}`);
       return data;
     },
     { enabled: !!lessonId }
   );
 }
 
-export function useTodayLesson() {
-  return useQuery(['today-lesson'], async () => {
-    const { data } = await apiClient.get('/api/user/today-lesson');
-    return data;
-  });
+export function useCourseModules(courseId) {
+  return useQuery(
+    ['modules', courseId],
+    async () => {
+      const { data } = await api.get(`/api/lessons/course/${courseId}/modules`);
+      return data;
+    },
+    { enabled: !!courseId }
+  );
 }
 
-export function useCompleteLesson() {
+export function useModuleLessons(moduleId) {
+  return useQuery(
+    ['lessons', 'module', moduleId],
+    async () => {
+      const { data } = await api.get(`/api/lessons/module/${moduleId}`);
+      return data;
+    },
+    { enabled: !!moduleId }
+  );
+}
+
+export function useSubmitReport() {
   const queryClient = useQueryClient();
+
   return useMutation(
-    async (lessonId) => {
-      const { data } = await apiClient.post(`/api/lessons/${lessonId}/complete`);
+    async ({ lessonId, steps_data, rating, note }) => {
+      const { data } = await api.post(`/api/lessons/${lessonId}/report`, { steps_data, rating, note });
       return data;
     },
     {
-      onSuccess: (_, lessonId) => {
-        queryClient.invalidateQueries(['lesson', lessonId]);
-        queryClient.invalidateQueries(['lessons']);
-        queryClient.invalidateQueries(['today-lesson']);
+      onSuccess: () => {
+        queryClient.invalidateQueries(['lesson', 'today']);
+        queryClient.invalidateQueries(['lesson']);
         queryClient.invalidateQueries(['profile']);
-        queryClient.invalidateQueries(['achievements']);
+        queryClient.invalidateQueries(['stats']);
+        queryClient.invalidateQueries(['activity']);
+        queryClient.invalidateQueries(['skill-map']);
       },
     }
   );

@@ -6,12 +6,14 @@ const prisma = new PrismaClient({
 
 async function connect() {
   await prisma.$connect();
-  console.log('✅ Подключение к SQLite (Prisma) успешно');
+  const logger = require('../utils/logger');
+  logger.info('Подключение к SQLite (Prisma) успешно');
 }
 
 async function disconnect() {
   await prisma.$disconnect();
-  console.log('🔌 Соединение с БД закрыто');
+  const logger = require('../utils/logger');
+  logger.info('Соединение с БД закрыто');
 }
 
 module.exports = { prisma, connect, disconnect };

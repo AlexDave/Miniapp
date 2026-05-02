@@ -30,25 +30,26 @@ import {
   Play,
   Award,
   Zap,
+  Activity,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import useStore from '../store';
 import { useCourses } from '../hooks/useCourses';
 import { useTracks } from '../hooks/useTracks';
 import { useProfile } from '../hooks/useProfile';
-import { useTodayLesson } from '../hooks/useLessons';
+import TodayLesson from './lesson/TodayLesson';
+import { useUserStats } from '../hooks/useProgress';
+import ActivityHeatmap from './progress/ActivityHeatmap';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
 
 function Dashboard() {
   const { userProfile } = useStore();
-  const navigate = useNavigate();
 
   const { data: courses = [], isLoading: coursesLoading } = useCourses();
   const { data: tracks = [], isLoading: tracksLoading } = useTracks();
-  const { data: todayLesson } = useTodayLesson();
-  useProfile();
+  const { data: userStats } = useUserStats();
+  useProfile(); // загружает профиль и синхронизирует Zustand store
 
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -94,57 +95,50 @@ function Dashboard() {
             </Text>
           </Box>
 
+          {/* Урок дня */}
+          <TodayLesson />
+
           {/* Level Progress */}
           <Card bg={bg} border="1px solid" borderColor={borderColor}>
             <CardBody>
               <HStack justify="space-between" mb={4}>
                 <VStack align="start" spacing={1}>
-                  <Text fontSize="sm" color={textColor}>Уровень {userProfile.level}</Text>
+                  <Text fontSize="sm" color={textColor}>
+                    {userStats?.level_name ? `Ур. ${userStats.level} · ${userStats.level_name}` : `Уровень ${userProfile.level}`}
+                  </Text>
                   <Text fontSize="2xl" fontWeight="bold" color="purple.600">
-                    {userProfile.experience} XP
+                    {userStats?.total_xp ?? userProfile.experience} XP
                   </Text>
                 </VStack>
-                <Icon as={Trophy} w={8} h={8} color="yellow.500" />
+                <HStack>
+                  {userStats?.streak > 0 && (
+                    <HStack bg="orange.50" px={2} py={1} borderRadius="full">
+                      <Text fontSize="sm">🔥</Text>
+                      <Text fontSize="sm" fontWeight="semibold" color="orange.600">{userStats.streak}</Text>
+                    </HStack>
+                  )}
+                  <Icon as={Trophy} w={8} h={8} color="yellow.500" />
+                </HStack>
               </HStack>
-              <Progress value={getLevelProgress()} colorScheme="purple" size="lg" borderRadius="full" />
+              <Progress
+                value={
+                  userStats?.next_level_xp
+                    ? ((userStats.total_xp - ([0, 0, 100, 300, 700][userStats.level - 1] ?? 0)) /
+                        (userStats.next_level_xp - ([0, 0, 100, 300, 700][userStats.level - 1] ?? 0))) * 100
+                    : getLevelProgress()
+                }
+                colorScheme="purple"
+                size="lg"
+                borderRadius="full"
+              />
               <Text fontSize="sm" color={textColor} mt={2}>
-                {userProfile.experience % (userProfile.level * 100)} / {userProfile.level * 100} XP до следующего уровня
+                {userStats?.xp_to_next != null
+                  ? `${userStats.xp_to_next} XP до следующего уровня`
+                  : `${userProfile.experience % (userProfile.level * 100)} / ${userProfile.level * 100} XP до следующего уровня`}
               </Text>
             </CardBody>
           </Card>
         </VStack>
-
-        {/* Today's Lesson */}
-        {todayLesson && (
-          <MotionCard
-            whileHover={{ scale: 1.01 }}
-            bg="purple.600"
-            color="white"
-            cursor="pointer"
-            onClick={() => navigate(`/lesson/${todayLesson.id}`)}
-          >
-            <CardBody>
-              <HStack justify="space-between" align="start">
-                <VStack align="start" spacing={2}>
-                  <HStack spacing={2}>
-                    <Icon as={Play} w={4} h={4} />
-                    <Text fontSize="xs" fontWeight="semibold" opacity={0.85} textTransform="uppercase" letterSpacing="wide">
-                      Урок дня
-                    </Text>
-                  </HStack>
-                  <Text fontWeight="bold" fontSize="lg" lineHeight="tight">{todayLesson.title}</Text>
-                  <Text fontSize="sm" opacity={0.85}>{todayLesson.course_title}</Text>
-                  <Badge bg="rgba(255,255,255,0.2)" color="white" fontSize="xs">
-                    +{todayLesson.xp_reward} XP
-                  </Badge>
-                </VStack>
-                <Box p={3} bg="rgba(255,255,255,0.15)" borderRadius="full">
-                  <Icon as={BookOpen} w={7} h={7} />
-                </Box>
-              </HStack>
-            </CardBody>
-          </MotionCard>
-        )}
 
         {/* Stats Grid */}
         {isLoading ? (
@@ -157,18 +151,18 @@ function Dashboard() {
               <CardBody textAlign="center">
                 <Icon as={BookOpen} w={6} h={6} color="purple.500" mb={2} />
                 <Stat>
-                  <StatNumber color="purple.600">{stats.totalCourses}</StatNumber>
-                  <StatLabel fontSize="sm">Всего курсов</StatLabel>
+                  <StatNumber color="purple.600">{userStats?.reports_count ?? 0}</StatNumber>
+                  <StatLabel fontSize="sm">Уроков пройдено</StatLabel>
                 </Stat>
               </CardBody>
             </MotionCard>
 
             <MotionCard whileHover={{ scale: 1.05 }} bg={bg} border="1px solid" borderColor={borderColor}>
               <CardBody textAlign="center">
-                <Icon as={Target} w={6} h={6} color="blue.500" mb={2} />
+                <Icon as={Award} w={6} h={6} color="green.500" mb={2} />
                 <Stat>
-                  <StatNumber color="blue.600">{stats.activeTracks}</StatNumber>
-                  <StatLabel fontSize="sm">Активных треков</StatLabel>
+                  <StatNumber color="green.600">{userStats?.modules_done ?? 0}</StatNumber>
+                  <StatLabel fontSize="sm">Модулей завершено</StatLabel>
                 </Stat>
               </CardBody>
             </MotionCard>
@@ -177,13 +171,20 @@ function Dashboard() {
               <CardBody textAlign="center">
                 <Icon as={TrendingUp} w={6} h={6} color="orange.500" mb={2} />
                 <Stat>
-                  <StatNumber color="orange.600">{stats.weeklyProgress}%</StatNumber>
-                  <StatLabel fontSize="sm">Прогресс треков</StatLabel>
+                  <StatNumber color="orange.600">{stats.activeTracks}</StatNumber>
+                  <StatLabel fontSize="sm">Активных треков</StatLabel>
                 </Stat>
               </CardBody>
             </MotionCard>
           </SimpleGrid>
         )}
+
+        {/* Activity Heatmap */}
+        <Card bg={bg} border="1px solid" borderColor={borderColor} mb={8}>
+          <CardBody>
+            <ActivityHeatmap />
+          </CardBody>
+        </Card>
 
         {/* Quick Actions */}
         <VStack spacing={6} align="stretch" mb={8}>

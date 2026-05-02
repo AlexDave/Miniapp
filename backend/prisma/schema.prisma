@@ -24,7 +24,7 @@ model User {
   notifications  UserNotification[]
   courseProgress CourseProgress[]
   chatMessages   ChatMessage[]
-  lessonProgress LessonProgress[]
+  dailyReports   DailyReport[]
   
   @@map("users")
 }
@@ -68,45 +68,112 @@ model Course {
   updated_at  DateTime @updatedAt
 
   // Связи
-  tasks       Task[]
-  lessons     Lesson[]
+  tasks          Task[]
   courseProgress CourseProgress[]
+  modules        Module[]
 
   @@map("courses")
 }
 
-// Урок курса
-model Lesson {
+// Модуль курса (1–2 недели контента)
+model Module {
   id          Int      @id @default(autoincrement())
   course_id   Int
   title       String
   description String?
-  theory      String?  // Markdown-текст теории
-  checklist   String?  // JSON: [{id, text, required}]
+  order_index Int      @default(0)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  course      Course   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+
+  @@map("modules")
+}
+
+// Урок = 1 день практики
+model Lesson {
+  id          Int      @id @default(autoincrement())
+  module_id   Int
+  title       String
+  description String?
+  theory      String?
   order_index Int      @default(0)
   xp_reward   Int      @default(10)
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
-  course      Course   @relation(fields: [course_id], references: [id], onDelete: Cascade)
-  userProgress LessonProgress[]
+  module      Module        @relation(fields: [module_id], references: [id], onDelete: Cascade)
+  steps       LessonStep[]
+  daily_task  DailyTask?
+  reports     DailyReport[]
 
   @@map("lessons")
 }
 
-// Прогресс пользователя по уроку
-model LessonProgress {
+// Шаг урока (теоретический контент)
+model LessonStep {
+  id          Int      @id @default(autoincrement())
+  lesson_id   Int
+  type        String   // "text" | "diagram" | "card" | "tip"
+  content     String
+  order_index Int      @default(0)
+  created_at  DateTime @default(now())
+
+  lesson      Lesson   @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+
+  @@map("lesson_steps")
+}
+
+// Задание дня
+model DailyTask {
+  id           Int      @id @default(autoincrement())
+  lesson_id    Int      @unique
+  title        String
+  description  String?
+  duration_min Int      @default(15)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  lesson       Lesson     @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  steps        TaskStep[]
+
+  @@map("daily_tasks")
+}
+
+// Шаг задания (то что пользователь выполняет)
+model TaskStep {
+  id          Int      @id @default(autoincrement())
+  task_id     Int
+  type        String   // "checkbox" | "counter" | "rating" | "text"
+  label       String
+  max_value   Int?
+  order_index Int      @default(0)
+  created_at  DateTime @default(now())
+
+  task        DailyTask @relation(fields: [task_id], references: [id], onDelete: Cascade)
+
+  @@map("task_steps")
+}
+
+// Отчёт пользователя за день
+model DailyReport {
   id           Int      @id @default(autoincrement())
   user_id      Int
   lesson_id    Int
-  is_completed Boolean  @default(false)
-  completed_at DateTime?
+  steps_data   String   // JSON: [{step_id, value}]
+  rating       Int      @default(2)
+  note         String?
+  xp_earned    Int      @default(0)
+  completed_at DateTime @default(now())
 
-  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  lesson  Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson       Lesson   @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, lesson_id])
-  @@map("lesson_progress")
+  @@map("daily_reports")
 }
 
 // Задача курса

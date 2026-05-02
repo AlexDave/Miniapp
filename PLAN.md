@@ -59,19 +59,38 @@
 
 ---
 
-## Спринт 4: Lesson Loop ✅ (2026-05-02)
+## Спринт 4a: Daily Skill Loop — уроки и отчёты ✅
 
 ### Задачи
-- [x] Prisma: добавить модели `Lesson` + `LessonProgress` (миграция `20260502204303_add_lessons`)
-- [x] Backend: `utils/xp.js` — начисление XP + level up (5 уровней)
-- [x] Backend: `utils/achievements.js` — автовыдача достижений при событиях
-- [x] Backend: `routes/lessons.js` — GET уроки курса, GET урок, POST завершение, GET урок дня
-- [x] Backend: `tracks.js` — при завершении трека выдаёт +5 XP + проверяет достижения
-- [x] Seed: 8 уроков по 5 курсам с теорией и чеклистами
-- [x] Frontend: `hooks/useLessons.js` — useCourseLessons, useLesson, useTodayLesson, useCompleteLesson
-- [x] Frontend: `LessonView.jsx` — теория + интерактивный чеклист + экран завершения с XP
-- [x] Frontend: `CourseDetail.jsx` — список уроков с прогрессом, клик → переход на урок
-- [x] Frontend: `Dashboard.jsx` — виджет "Урок дня"
+- [x] Prisma: модули, уроки, шаги теории, задания дня, отчёты (`DailyReport`)
+- [x] Backend: `utils/xp.js` — расчёт XP от отчёта, уровни
+- [x] Backend: `utils/achievements.js` — автовыдача достижений
+- [x] Backend: `routes/lessons.js` — урок дня, модули, отчёт за урок
+- [x] Backend: `routes/progress.js` — карта навыков, активность, статистика
+- [x] Seed: контент из `seed-content.js` (курсы «Щенок», «От 6 месяцев»)
+- [x] Frontend: `hooks/useLessons.js`, `LessonView`, `TodayLesson`, `Dashboard`
+
+---
+
+## Спринт 4b: Тесты и логирование ✅
+
+### Задачи
+- [x] Настроить Vitest + Testing Library для фронтенда
+- [x] Настроить Jest + Supertest для бэкенда
+- [x] Написать тесты на auth middleware (верификация initData) — 6 unit-тестов
+- [x] Написать тесты на tracks API (cooldown, completion, streak) — 11 интеграционных тестов
+- [x] Заменить `console.log` на `pino` логгер
+
+### Что изменилось
+- `backend/src/utils/logger.js` — pino логгер (pino-pretty в dev, json в prod)
+- `backend/jest.config.js` — конфиг Jest с in-file test DB
+- `backend/src/__tests__/setup.js` — переменные окружения для тестов
+- `backend/src/__tests__/auth.test.js` — 6 unit-тестов HMAC-SHA256 верификации
+- `backend/src/__tests__/tracks.test.js` — 11 интеграционных тестов tracks API
+- `frontend/vite.config.js` — Vitest (jsdom) + proxy для локальной разработки
+- `frontend/src/__tests__/setup.js` — подключение @testing-library/jest-dom
+- `frontend/src/__tests__/Dashboard.test.jsx` — 5 тестов компонента Dashboard
+- `frontend/src/__tests__/Tracks.test.jsx` — 7 тестов компонента Tracks
 
 ---
 

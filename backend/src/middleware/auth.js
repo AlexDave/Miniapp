@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { prisma } = require('../database/connection');
+const logger = require('../utils/logger');
 
 // Верификация Telegram initData по алгоритму HMAC-SHA256
 function verifyTelegramInitData(initDataRaw, botToken) {
@@ -67,15 +68,16 @@ const authMiddleware = async (req, res, next) => {
         },
         include: { profile: true },
       });
-      console.log('👤 Зарегистрирован новый пользователь:', name);
+      logger.info({ telegram_id, name }, 'Новый пользователь зарегистрирован');
     }
 
     req.user = user;
     next();
   } catch (err) {
-    console.error('❌ Ошибка аутентификации:', err);
+    logger.error({ err }, 'Ошибка аутентификации');
     res.status(500).json({ error: 'Ошибка при аутентификации' });
   }
 };
 
 module.exports = authMiddleware;
+module.exports.verifyTelegramInitData = verifyTelegramInitData;
