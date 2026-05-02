@@ -63,6 +63,11 @@ import {
 import useStore from '../store';
 import { useProfile, useUpdateProfile } from '../hooks/useProfile';
 import { useAchievements } from '../hooks/useAchievements';
+import { useUserStats } from '../hooks/useProgress';
+import SkillMap from './progress/SkillMap';
+import ActivityHeatmap from './progress/ActivityHeatmap';
+import LevelBadge from './gamification/LevelBadge';
+import StreakBadge from './gamification/StreakBadge';
 
 const MotionCard = motion(Card);
 
@@ -73,6 +78,7 @@ function Profile() {
   const { isLoading: profileLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   const { data: achievements = [], isLoading: achievementsLoading } = useAchievements();
+  const { data: stats } = useUserStats();
 
   const [petName, setPetName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -115,9 +121,19 @@ function Profile() {
   };
 
   const getLevelProgress = () => {
+    if (stats?.next_level_xp != null) {
+      const prevLevelXP = [0, 0, 100, 300, 700][stats.level - 1] ?? 0;
+      const range = stats.next_level_xp - prevLevelXP;
+      return range > 0 ? ((stats.total_xp - prevLevelXP) / range) * 100 : 100;
+    }
     const expForNextLevel = userProfile.level * 100;
     return ((userProfile.experience % expForNextLevel) / expForNextLevel) * 100;
   };
+
+  const totalXP = stats?.total_xp ?? userProfile.experience;
+  const level = stats?.level ?? userProfile.level;
+  const levelName = stats?.level_name;
+  const streak = stats?.streak ?? userProfile.streak;
 
   const earnedCount = achievements.filter((a) => a.earned).length;
 
@@ -211,7 +227,11 @@ function Profile() {
                     />
                   </HStack>
                 )}
-                <Text color={textColor}>Уровень {userProfile.level} • {userProfile.experience} XP</Text>
+                <HStack spacing={2}>
+                  <LevelBadge level={level} levelName={levelName} />
+                  <Text color={textColor} fontSize="sm">· {totalXP} XP</Text>
+                  {streak > 0 && <StreakBadge streak={streak} />}
+                </HStack>
               </VStack>
 
               {/* Level Progress */}
@@ -231,9 +251,9 @@ function Profile() {
         {/* Stats Grid */}
         <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
           {[
-            { icon: BookOpen, color: 'purple', value: userProfile.totalCourses, label: 'Всего курсов' },
-            { icon: Award, color: 'green', value: userProfile.completedCourses, label: 'Завершено' },
-            { icon: Calendar, color: 'blue', value: userProfile.streak, label: 'Дней подряд' },
+            { icon: BookOpen, color: 'purple', value: stats?.reports_count ?? 0, label: 'Уроков' },
+            { icon: Award, color: 'green', value: stats?.modules_done ?? 0, label: 'Модулей' },
+            { icon: Calendar, color: 'blue', value: streak, label: 'Дней подряд' },
             { icon: Trophy, color: 'yellow', value: earnedCount, label: 'Достижений' },
           ].map(({ icon: IconComp, color, value, label }) => (
             <MotionCard key={label} whileHover={{ scale: 1.05 }} bg={bg} border="1px solid" borderColor={borderColor}>
@@ -251,12 +271,29 @@ function Profile() {
         {/* Tabs */}
         <Tabs variant="enclosed" colorScheme="purple">
           <TabList>
+            <Tab>Прогресс</Tab>
             <Tab>Достижения</Tab>
             <Tab>Настройки</Tab>
             <Tab>Поддержка</Tab>
           </TabList>
 
           <TabPanels>
+            {/* Прогресс */}
+            <TabPanel>
+              <VStack spacing={5} align="stretch">
+                <Card bg={bg} border="1px solid" borderColor={borderColor}>
+                  <CardBody>
+                    <ActivityHeatmap />
+                  </CardBody>
+                </Card>
+                <Card bg={bg} border="1px solid" borderColor={borderColor}>
+                  <CardBody>
+                    <SkillMap />
+                  </CardBody>
+                </Card>
+              </VStack>
+            </TabPanel>
+
             {/* Achievements */}
             <TabPanel>
               <VStack spacing={4} align="stretch">

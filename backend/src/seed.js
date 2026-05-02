@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const extras = require('./seed-content');
 
 const prisma = new PrismaClient();
 
@@ -650,8 +651,15 @@ async function main() {
   }
   console.log(`✅ Курсов: ${courses.length}`);
 
+  // Слияние основных модулей с дополнительными из seed-content.js
+  const mergedModules = { ...modulesData };
+  for (const key of Object.keys(extras)) {
+    const courseTitle = key.replace('_extras', '');
+    mergedModules[courseTitle] = [...(mergedModules[courseTitle] ?? []), ...extras[key]];
+  }
+
   // Модули и уроки
-  for (const [courseTitle, modules] of Object.entries(modulesData)) {
+  for (const [courseTitle, modules] of Object.entries(mergedModules)) {
     const course = createdCourses[courseTitle];
     if (!course) continue;
 
