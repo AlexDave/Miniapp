@@ -1,0 +1,249 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Пользователь
+model User {
+  id          Int      @id @default(autoincrement())
+  telegram_id String   @unique
+  name        String?
+  email       String?  @unique
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  // Связи
+  profile     Profile?
+  userTasks   UserTask[]
+  userTracks  UserTrack[]
+  achievements UserAchievement[]
+  notifications UserNotification[]
+  courseProgress CourseProgress[]
+  chatMessages ChatMessage[]
+  
+  @@map("users")
+}
+
+// Профиль пользователя
+model Profile {
+  id          Int      @id @default(autoincrement())
+  user_id     Int      @unique
+  pet_name    String   @default("Ваш питомец")
+  avatar      String?
+  level       Int      @default(1)
+  experience  Int      @default(0)
+  total_courses Int    @default(0)
+  completed_courses Int @default(0)
+  streak      Int      @default(0)
+  bio         String?
+  preferences String?  // JSON как строка
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  // Связи
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  @@map("profiles")
+}
+
+// Курс
+model Course {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  video_url   String?
+  content     String?
+  duration    String?
+  rating      Float    @default(0)
+  difficulty  String?  @default("Начинающий")
+  category    String?
+  image       String?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  // Связи
+  tasks       Task[]
+  courseProgress CourseProgress[]
+  
+  @@map("courses")
+}
+
+// Задача курса
+model Task {
+  id             Int      @id @default(autoincrement())
+  course_id      Int
+  title          String
+  description    String?
+  required_per_day Int
+  available_until DateTime?
+  order_index    Int      @default(0)
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  
+  // Связи
+  course         Course   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  userTasks      UserTask[]
+  
+  @@map("tasks")
+}
+
+// Прогресс пользователя по задаче
+model UserTask {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  task_id         Int
+  completed_today Int      @default(0)
+  last_completed_at DateTime?
+  progress        Int      @default(0)
+  is_completed    Boolean  @default(false)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  
+  // Связи
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  task            Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  
+  @@unique([user_id, task_id])
+  @@map("user_tasks")
+}
+
+// Трек обучения
+model Track {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  category    String?
+  difficulty  String?  @default("Начинающий")
+  duration_days Int
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  // Связи
+  userTracks  UserTrack[]
+  
+  @@map("tracks")
+}
+
+// Прогресс пользователя по треку
+model UserTrack {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  track_id        Int
+  days_remaining  Int
+  completed_today Int      @default(0)
+  last_completed_at DateTime?
+  is_completed    Boolean  @default(false)
+  started_at      DateTime @default(now())
+  completed_at    DateTime?
+  
+  // Связи
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  track           Track    @relation(fields: [track_id], references: [id], onDelete: Cascade)
+  
+  @@unique([user_id, track_id])
+  @@map("user_tracks")
+}
+
+// Достижения
+model Achievement {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  icon        String?
+  color       String?  @default("blue")
+  condition   String   // Условия получения достижения (JSON как строка)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  // Связи
+  userAchievements UserAchievement[]
+  
+  @@map("achievements")
+}
+
+// Достижения пользователя
+model UserAchievement {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  achievement_id Int
+  earned_at     DateTime @default(now())
+  
+  // Связи
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievement_id], references: [id], onDelete: Cascade)
+  
+  @@unique([user_id, achievement_id])
+  @@map("user_achievements")
+}
+
+// Уведомления
+model Notification {
+  id          Int      @id @default(autoincrement())
+  title       String
+  message     String
+  type        String   @default("info") // info, success, warning, error
+  is_read     Boolean  @default(false)
+  created_at  DateTime @default(now())
+  
+  // Связи
+  userNotifications UserNotification[]
+  
+  @@map("notifications")
+}
+
+// Уведомления пользователя
+model UserNotification {
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  notification_id Int
+  is_read        Boolean  @default(false)
+  read_at        DateTime?
+  
+  // Связи
+  user           User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  notification   Notification @relation(fields: [notification_id], references: [id], onDelete: Cascade)
+  
+  @@unique([user_id, notification_id])
+  @@map("user_notifications")
+}
+
+// Прогресс по курсу
+model CourseProgress {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  course_id   Int
+  progress    Int      @default(0) // Процент завершения
+  is_completed Boolean @default(false)
+  started_at  DateTime @default(now())
+  completed_at DateTime?
+  last_activity DateTime @default(now())
+  
+  // Связи
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  
+  @@unique([user_id, course_id])
+  @@map("course_progress")
+}
+
+// Сообщения чата
+model ChatMessage {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  message     String
+  is_bot      Boolean  @default(false)
+  created_at  DateTime @default(now())
+  
+  // Связи
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  @@map("chat_messages")
+}

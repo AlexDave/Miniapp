@@ -33,6 +33,36 @@ export function useCourseModules(courseId) {
   );
 }
 
+/** Плоский список уроков курса (все модули подряд) для экрана курса */
+export function useCourseLessons(courseId) {
+  return useQuery(
+    ['course-lessons-flat', courseId],
+    async () => {
+      const { data: modules } = await api.get(`/api/lessons/course/${courseId}/modules`);
+      if (!modules?.length) return [];
+      const responses = await Promise.all(
+        modules.map((m) => api.get(`/api/lessons/module/${m.id}`))
+      );
+      const flat = [];
+      for (const { data: modData } of responses) {
+        const lessons = modData?.lessons ?? [];
+        for (const l of lessons) {
+          flat.push({
+            id: l.id,
+            title: l.title,
+            description: l.description,
+            order_index: l.order_index,
+            xp_reward: l.xp_reward,
+            is_completed: l.status === 'completed',
+          });
+        }
+      }
+      return flat;
+    },
+    { enabled: !!courseId }
+  );
+}
+
 export function useModuleLessons(moduleId) {
   return useQuery(
     ['lessons', 'module', moduleId],
