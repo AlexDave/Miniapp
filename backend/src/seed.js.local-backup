@@ -1,0 +1,57 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
+const fs = require('fs');
+const prisma = require('./lib/prisma');
+
+const COURSES_PATH = path.join(__dirname, '../data/courses.json');
+
+async function main() {
+  const existing = await prisma.course.count();
+  if (existing > 0) {
+    console.log('Курсы уже есть — пропуск seed');
+    return;
+  }
+
+  if (!fs.existsSync(COURSES_PATH)) {
+    console.error('Нет файла данных:', COURSES_PATH, '— сначала: npm run parse:courses');
+    process.exit(1);
+  }
+
+  const raw = fs.readFileSync(COURSES_PATH, 'utf8');
+  const { courses } = JSON.parse(raw);
+
+  for (const c of courses) {
+    await prisma.course.create({
+      data: {
+        title: c.title,
+        description: c.description,
+        content: c.description,
+        duration: c.duration,
+        difficulty: c.difficulty,
+        category: c.category,
+        tasks: {
+          create: c.lessons.map((lesson, idx) => ({
+            title: lesson.title,
+            description: null,
+            video_url: lesson.video_url,
+            required_per_day: 1,
+            duration_days: 7,
+            order_index: idx,
+          })),
+        },
+      },
+    });
+  }
+
+  console.log(`✅ Seed: добавлено курсов — ${courses.length} (задач всего: ${courses.reduce((n, x) => n + x.lessons.length, 0)})`);
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
