@@ -53,10 +53,8 @@ const queryClient = new QueryClient({
 
 function App() {
   useEffect(() => {
-    // Инициализация Telegram WebApp
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
-      // Можно настроить настройки Telegram WebApp, например, закрыть меню или изменить стиль
       window.Telegram.WebApp.setBackgroundColor('#ffffff');
       window.Telegram.WebApp.setHeaderColor('#6200EE');
     }
@@ -65,22 +63,11 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-      <ChakraProvider theme={theme}>
-        <Router>
-          <AppContent />
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: useColorModeValue('#fff', '#2D3748'),
-                color: useColorModeValue('#1A202C', '#E2E8F0'),
-                border: `1px solid ${useColorModeValue('#E2E8F0', '#4A5568')}`,
-              },
-            }}
-          />
-        </Router>
-      </ChakraProvider>
+        <ChakraProvider theme={theme}>
+          <Router>
+            <AppContent />
+          </Router>
+        </ChakraProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
@@ -88,16 +75,16 @@ function App() {
 
 function AppContent() {
   const { colorMode, toggleColorMode } = useColorMode();
-  const { sidebarOpen, toggleSidebar, notifications } = useStore();
+  const { notifications } = useStore();
   const bg = useColorModeValue('gray.50', 'gray.900');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const toastBg = useColorModeValue('#fff', '#2D3748');
+  const toastColor = useColorModeValue('#1A202C', '#E2E8F0');
+  const toastBorder = useColorModeValue('#E2E8F0', '#4A5568');
 
   return (
     <Flex direction="column" minHeight="100vh" bg={bg}>
-      {/* Header */}
       <Header toggleColorMode={toggleColorMode} colorMode={colorMode} />
-      
-      {/* Main Content */}
+
       <Container maxW="container.xl" flex="1" px={4} py={6}>
         <AnimatePresence mode="wait">
           <Routes>
@@ -111,11 +98,20 @@ function AppContent() {
         </AnimatePresence>
       </Container>
 
-      {/* Bottom Navigation */}
       <BottomNavigation />
-      
-      {/* Notifications Panel */}
       <Notifications />
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: toastBg,
+            color: toastColor,
+            border: `1px solid ${toastBorder}`,
+          },
+        }}
+      />
     </Flex>
   );
 }
