@@ -1,505 +1,139 @@
 const { PrismaClient } = require('@prisma/client');
+const { courses, modulesData } = require('./seed-content');
 
 const prisma = new PrismaClient();
 
-// ─── Курс 1: Добро пожаловать, щенок! ─────────────────────────────────────
-const course1Tasks = [
-  {
-    title: 'Особенности щенка по возрастам',
-    description:
-      'Щенок — это ребёнок со своим характером. Узнайте про режим сна (15-20 минут каждые 3 часа), питание (5 раз в день до 2.5 мес), концентрацию внимания и привязанность к хозяину. Домашнее задание: напишите список «Хочу/Не хочу» от своей собаки.',
-    required_per_day: 1,
-    order_index: 1,
-  },
-  {
-    title: 'Что купить до приезда щенка',
-    description:
-      'Полный список необходимого: миски, лежанка, игрушки, поводок, ошейник, пелёнки, переноска. Разбираемся, что действительно нужно, а что маркетинг. Готовьте дом заранее.',
-    required_per_day: 1,
-    order_index: 2,
-  },
-  {
-    title: 'Как подготовить квартиру',
-    description:
-      'Уберите провода, ядовитые растения, мелкие предметы. Определите зону для сна, еды и туалета. Создайте безопасное пространство — щенок всё пробует на зуб.',
-    required_per_day: 1,
-    order_index: 3,
-  },
-  {
-    title: 'Туалет на пелёнку',
-    description:
-      'Как приучить щенка к пелёнке: выбор места, замена запахом старой пелёнки, правильная реакция на промахи (без криков!). Терпение и последовательность — ключ к успеху.',
-    required_per_day: 1,
-    order_index: 4,
-  },
-  {
-    title: 'Первый туалет на улице',
-    description:
-      'С какого возраста начинать (после всех прививок), как выбрать место, как хвалить за результат на улице. Постепенно сокращаем пелёнки дома, добавляем прогулки.',
-    required_per_day: 1,
-    order_index: 5,
-  },
-];
-
-// ─── Курс 2: Здоровье и уход ──────────────────────────────────────────────
-const course2Tasks = [
-  {
-    title: 'Поощрения, наказания и границы',
-    description:
-      'Как формировать нужное поведение: только положительное подкрепление, никаких физических наказаний. Устанавливайте правила с первого дня — «нельзя сейчас» значит «нельзя всегда».',
-    required_per_day: 1,
-    order_index: 1,
-  },
-  {
-    title: 'Правила здоровья и профилактика',
-    description:
-      'Прививки, дегельминтизация, обработка от клещей и блох. График профилактических осмотров у ветеринара. Признаки, при которых нужно срочно к врачу.',
-    required_per_day: 1,
-    order_index: 2,
-  },
-  {
-    title: 'Гигиена: купание, уши, когти',
-    description:
-      'Как часто купать (не чаще 1 раза в 2 недели), выбор шампуня по типу шерсти. Чистка ушей ватным диском без глубокого введения. Стрижка когтей: как правильно, чтобы не травмировать.',
-    required_per_day: 1,
-    order_index: 3,
-  },
-  {
-    title: 'Вольеры, клетки и переноски',
-    description:
-      'Клетка — это не наказание, а домик собаки. Как приучить щенка к клетке постепенно. Когда использовать вольер. Выбор переноски для поездок.',
-    required_per_day: 1,
-    order_index: 4,
-  },
-  {
-    title: 'Кто такой кинолог и зачем он нужен',
-    description:
-      'Кинолог помогает хозяину, а не дрессирует собаку без вас. Когда стоит обратиться к специалисту. Как самостоятельно заниматься дрессировкой: 5-минутные сессии дают отличный результат.',
-    required_per_day: 1,
-    order_index: 5,
-  },
-];
-
-// ─── Курс 3: Первые команды щенка ─────────────────────────────────────────
-const course3Tasks = [
-  {
-    title: 'Команды «Фу» и «Нельзя»',
-    description:
-      '«Фу» — запрет брать что-то с земли/с рук (съедобное). «Нельзя» — запрет действия (грызть мебель, прыгать). Одна команда — один запрет. Говорите спокойно и твёрдо, без крика.',
-    required_per_day: 1,
-    order_index: 1,
-  },
-  {
-    title: 'Команды «Сидеть» и «Лежать»',
-    description:
-      'Обучение через лакомство: подносим к носу, ведём рукой. «Сидеть» — рука движется назад-вверх. «Лежать» — рука опускается вниз к полу. 3-5 повторений в сессии, хвалите сразу.',
-    required_per_day: 1,
-    order_index: 2,
-  },
-  {
-    title: 'Подзыв на кличку',
-    description:
-      'Произносите кличку радостным голосом и сразу давайте лакомство. Никогда не зовите по кличке для наказания. Постепенно увеличивайте расстояние. Цель: 100% отзыв в любой ситуации.',
-    required_per_day: 1,
-    order_index: 3,
-  },
-  {
-    title: 'Как отучить кусать руки и ноги',
-    description:
-      'Щенок кусает руки — это нормально, он так познаёт мир. При покусе сразу прекращайте игру и игнорируйте. Предлагайте взамен игрушку. Постоянство реакции — залог успеха за 1-2 недели.',
-    required_per_day: 1,
-    order_index: 4,
-  },
-];
-
-// ─── Курс 4: Поведение и прогулки щенка ───────────────────────────────────
-const course4Tasks = [
-  {
-    title: 'Как избавиться от лая',
-    description:
-      'Причины лая: страх, возбуждение, требование внимания. Не подкрепляйте лай вниманием. Команда «тихо» вводится через поощрение тишины. Социализация снижает тревожный лай.',
-    required_per_day: 1,
-    order_index: 1,
-  },
-  {
-    title: 'Собака мешает спать и работать',
-    description:
-      'Создайте режим дня: активность → кормление → сон. Утомляйте щенка перед вашим отдыхом. Навык «займи себя сам» прививается через специальные упражнения и развивающие игрушки.',
-    required_per_day: 1,
-    order_index: 2,
-  },
-  {
-    title: 'Первая прогулка',
-    description:
-      'Долгожданный момент после карантина! Начинайте с тихих мест без других собак. Дайте щенку самому исследовать территорию. Не тяните, не торопите. 10-15 минут для начала.',
-    required_per_day: 1,
-    order_index: 3,
-  },
-  {
-    title: 'Типы щенков и развивающие игры',
-    description:
-      'Холерики и флегматики: как заниматься с каждым. Поисковые игры (прячьте лакомство в коробки), нюхательные коврики, конги. Умственная нагрузка утомляет так же, как физическая.',
-    required_per_day: 1,
-    order_index: 4,
-  },
-  {
-    title: 'Как утомить щенка за 10 минут',
-    description:
-      'Комбинируйте физическую и умственную нагрузку: 3 мин дрессировки + 3 мин активной игры + 3 мин нюхательной игры. После такой сессии щенок крепко спит 2-3 часа.',
-    required_per_day: 1,
-    order_index: 5,
-  },
-];
-
-// ─── Курс 5: Базовые команды (собака 6+ месяцев) ──────────────────────────
-const course5Tasks = [
-  {
-    title: 'Зачем учить собаку командам',
-    description:
-      'Команды — это не роскошь, это необходимость. 5 минут дрессировки утомляют как 4 часа прогулки. Команды помогают концентрировать собаку в стрессе, успокаивать после игры, управлять в любой ситуации.',
-    required_per_day: 1,
-    order_index: 1,
-  },
-  {
-    title: 'Как утомить взрослую собаку',
-    description:
-      'Собака грызёт мебель — она не натренирована! Комбинация дрессировки и активных игр. Нюхательные упражнения. Важно давать нагрузку регулярно, иначе накопленная энергия разрушает квартиру.',
-    required_per_day: 1,
-    order_index: 2,
-  },
-  {
-    title: 'Команда «Сидеть»',
-    description:
-      'Базовая позиция, от которой строятся «Ждать» и «Рядом». Лакомство к носу, рука назад и вверх. Добавляем жест — открытая ладонь вверх. Отрабатываем до автоматизма: 10 раз в день.',
-    required_per_day: 1,
-    order_index: 3,
-  },
-  {
-    title: 'Команда «Лежать»',
-    description:
-      'Позиция расслабления: снижает возбуждение в стрессе. Из «Сидеть» ведём лакомство вниз к полу. Добавляем жест — открытая ладонь вниз. Идеально для успокоения гостей и новых мест.',
-    required_per_day: 1,
-    order_index: 4,
-  },
-  {
-    title: 'Ведение за рукой',
-    description:
-      'Базовый навык для обучения «Рядом». Собака следует носом за кулаком с лакомством. Начинаем на месте, затем делаем шаги в разные стороны. Это фундамент всего дальнейшего обучения.',
-    required_per_day: 1,
-    order_index: 5,
-  },
-  {
-    title: 'Команда «Ко мне»',
-    description:
-      'Стопроцентный отзыв из любой игры. Радостный тон, присядьте на корточки, раскройте руки. При подходе — лучшее лакомство и восторг. Никогда не зовите «ко мне» для неприятных процедур.',
-    required_per_day: 1,
-    order_index: 6,
-  },
-  {
-    title: 'Команда «Рядом»',
-    description:
-      'Собака идёт у левой ноги, морда у бедра. Начинаем с ведения за рукой, постепенно убираем лакомство из руки. Позволяет проходить мимо раздражителей и переходить дорогу безопасно.',
-    required_per_day: 1,
-    order_index: 7,
-  },
-  {
-    title: 'Команда «Ждать»',
-    description:
-      'Собака остаётся на месте, пока вы не разрешите двигаться. Начинаем с 3 секунд, постепенно до 2-3 минут. Повышает концентрацию внимания и спокойствие. Нужна у двери, у дороги, у магазина.',
-    required_per_day: 1,
-    order_index: 8,
-  },
-];
-
-// ─── Курс 6: Решаем проблемы поведения (6+ месяцев) ──────────────────────
-const course6Tasks = [
-  {
-    title: 'Команда «Фу» — не подбирать с земли',
-    description:
-      'Жизненно важная команда: защищает от отравлений в городе. Отрабатывается на поводке: кладём лакомство, собака тянется — говорим «фу», уводим. Хвалим за игнор. Практикуем ежедневно.',
-    required_per_day: 1,
-    order_index: 1,
-  },
-  {
-    title: 'Команда «Место»',
-    description:
-      'Собака убегает на лежанку по команде из любой точки квартиры. Начинаем рядом с лежанкой, постепенно увеличиваем расстояние. Незаменимо когда пришли гости или вы едите.',
-    required_per_day: 1,
-    order_index: 2,
-  },
-  {
-    title: 'Команда «Глазки»',
-    description:
-      'Собака смотрит вам в глаза по команде. Показывает: «я слушаю тебя, не отвлекаюсь». Помогает понять, о чём думает собака. Основа концентрации внимания на прогулке.',
-    required_per_day: 1,
-    order_index: 3,
-  },
-  {
-    title: 'Улучшаем подзыв',
-    description:
-      'Собака подбегает несмотря на раздражители: другие собаки, запахи, люди. Практикуем на длинном поводке в парке. Называем кличку — бежим сами в другую сторону, собака догоняет.',
-    required_per_day: 1,
-    order_index: 4,
-  },
-  {
-    title: 'Отучаем тянуть на поводке',
-    description:
-      'Метод «стоп как столб»: натянулся поводок — вы замерли. Собака возвращается — идёте дальше. Нужно 2-3 недели последовательной работы. Болезненная проблема решается без рывков и криков.',
-    required_per_day: 1,
-    order_index: 5,
-  },
-  {
-    title: 'Приучаем к одиночеству',
-    description:
-      'Собака разрушает квартиру при отсутствии хозяина. Начинаем с 1 минуты, постепенно до 4-8 часов. Наполненный конг, физическая нагрузка перед уходом, спокойный уход и приход — без эмоций.',
-    required_per_day: 1,
-    order_index: 6,
-  },
-  {
-    title: 'Закрепляем: не подбирать с земли',
-    description:
-      'Практика в реальных условиях: на прогулке проходим мимо «подброшенных» вами лакомств. Собака отворачивается — получает лучшее угощение от вас. Навык должен работать без поводка.',
-    required_per_day: 1,
-    order_index: 7,
-  },
-  {
-    title: 'Отучаем собаку лаять',
-    description:
-      'Разбираем причины: лай на звонок, на курьеров, из-за скуки. Игнорируем лай, хвалим тишину. Команда «тихо» вводится через отвлечение. Лай на улице снижает нагрузка и социализация.',
-    required_per_day: 1,
-    order_index: 8,
-  },
-];
-
-const courses = [
-  {
-    id: 1,
-    title: 'Добро пожаловать, щенок!',
-    description:
-      'Первые дни со щенком: режим сна и питания, подготовка квартиры, приучение к туалету на пелёнку и первые шаги к прогулкам на улице. Курс для щенков до 6 месяцев.',
-    difficulty: 'Начинающий',
-    category: 'Щенки',
-    duration: '2 дня',
-    rating: 4.9,
-    is_active: true,
-  },
-  {
-    id: 2,
-    title: 'Здоровье и уход за щенком',
-    description:
-      'Прививки, гигиена, купание, чистка ушей и стрижка когтей. Поощрения и границы дома. Когда нужен кинолог и как самостоятельно заниматься с щенком.',
-    difficulty: 'Начинающий',
-    category: 'Щенки',
-    duration: '2 дня',
-    rating: 4.8,
-    is_active: true,
-  },
-  {
-    id: 3,
-    title: 'Первые команды щенка',
-    description:
-      'Учим «Фу», «Нельзя», «Сидеть», «Лежать» и подзыв на кличку. Решаем проблему покусов рук и ног. Простые методики с лакомством за 5 минут в день.',
-    difficulty: 'Начинающий',
-    category: 'Щенки',
-    duration: '2 дня',
-    rating: 4.9,
-    is_active: true,
-  },
-  {
-    id: 4,
-    title: 'Поведение и прогулки щенка',
-    description:
-      'Лай, нарушенный сон хозяина, первая прогулка после карантина. Развивающие игры по типу темперамента щенка. Как утомить щенка за 10 минут.',
-    difficulty: 'Начинающий',
-    category: 'Щенки',
-    duration: '3 дня',
-    rating: 4.7,
-    is_active: true,
-  },
-  {
-    id: 5,
-    title: 'Базовые команды (6+ месяцев)',
-    description:
-      'Полный курс базовых команд для взрослой собаки: Сидеть, Лежать, Ко мне, Рядом, Ждать. Ведение за рукой как основа обучения. Для собак от 6 месяцев до 1.5 лет.',
-    difficulty: 'Начинающий',
-    category: 'Взрослые собаки',
-    duration: '3 дня',
-    rating: 4.9,
-    is_active: true,
-  },
-  {
-    id: 6,
-    title: 'Решаем проблемы поведения',
-    description:
-      'Тянет на поводке, лает, подбирает с земли, разрушает квартиру в одиночестве. Практические методы коррекции без криков и рывков. Для собак от 6 месяцев.',
-    difficulty: 'Средний',
-    category: 'Взрослые собаки',
-    duration: '3 дня',
-    rating: 4.8,
-    is_active: true,
-  },
-];
+// ─── Треки (ежедневные привычки) ──────────────────────────────────────────────
 
 const tracks = [
-  {
-    id: 1,
-    title: 'Щенок: первые дни дома',
-    description:
-      'Всё самое важное для первых дней со щенком. Подготовка, режим, туалет и первые правила жизни вместе.',
-    category: 'Щенки',
-    difficulty: 'Начинающий',
-    duration_days: 2,
-    is_active: true,
-  },
-  {
-    id: 2,
-    title: 'Здоровый щенок',
-    description:
-      'Гигиена, профилактика болезней, правильные поощрения и границы. Формируем здоровые привычки с первых недель.',
-    category: 'Щенки',
-    difficulty: 'Начинающий',
-    duration_days: 2,
-    is_active: true,
-  },
-  {
-    id: 3,
-    title: 'Дрессировка щенка с нуля',
-    description:
-      'Первые команды и решение поведенческих проблем. От «Фу» до первой прогулки — всё по шагам.',
-    category: 'Щенки',
-    difficulty: 'Начинающий',
-    duration_days: 3,
-    is_active: true,
-  },
-  {
-    id: 4,
-    title: 'Послушная взрослая собака',
-    description:
-      '8 ключевых команд и устранение самых частых проблем поведения. Для собак, которые прошли щенячий карантин.',
-    category: 'Взрослые собаки',
-    difficulty: 'Начинающий',
-    duration_days: 3,
-    is_active: true,
-  },
-  {
-    id: 5,
-    title: 'Коррекция поведения',
-    description:
-      'Тянет, лает, подбирает, боится одиночества. Практические решения за 3 дня без стресса для вас и собаки.',
-    category: 'Взрослые собаки',
-    difficulty: 'Средний',
-    duration_days: 3,
-    is_active: true,
-  },
+  { title: 'Ежедневные команды', description: 'Повторяйте базовые команды каждый день по 5–10 минут. Регулярность — ключ к успеху.', category: 'Базовые навыки', difficulty: 'Начинающий', duration_days: 21, is_active: true },
+  { title: 'Прогулка без рывков', description: 'Метод «стоп-и-жди» — каждый раз когда поводок натягивается. 14 дней практики.', category: 'Поведение на прогулке', difficulty: 'Начинающий', duration_days: 14, is_active: true },
+  { title: 'Социализация', description: 'Каждый день — одно новое место, человек или звук. 30 дней постепенной адаптации.', category: 'Поведение', difficulty: 'Средний', duration_days: 30, is_active: true },
 ];
+
+// ─── Достижения ───────────────────────────────────────────────────────────────
 
 const achievements = [
-  {
-    name: 'Первые шаги',
-    description: 'Завершите первый урок',
-    icon: 'Star',
-    color: 'yellow',
-    condition: JSON.stringify({ type: 'tracks_completed', value: 1 }),
-  },
-  {
-    name: 'Неделя занятий',
-    description: 'Занимайтесь 7 дней подряд',
-    icon: 'Calendar',
-    color: 'green',
-    condition: JSON.stringify({ type: 'streak', value: 7 }),
-  },
-  {
-    name: 'Мастер команд',
-    description: 'Завершите 3 трека',
-    icon: 'Target',
-    color: 'blue',
-    condition: JSON.stringify({ type: 'tracks_completed', value: 3 }),
-  },
-  {
-    name: 'Верный хозяин',
-    description: 'Занимайтесь 30 дней подряд',
-    icon: 'Heart',
-    color: 'red',
-    condition: JSON.stringify({ type: 'streak', value: 30 }),
-  },
-  {
-    name: 'Эксперт дрессировки',
-    description: 'Завершите все 5 треков',
-    icon: 'Crown',
-    color: 'purple',
-    condition: JSON.stringify({ type: 'tracks_completed', value: 5 }),
-  },
-  {
-    name: 'Спринтер',
-    description: 'Пройдите трек за 1 день',
-    icon: 'Zap',
-    color: 'orange',
-    condition: JSON.stringify({ type: 'track_speed', value: 1 }),
-  },
+  { name: 'Первые шаги', description: 'Завершите первое задание трека', icon: 'Star', color: 'yellow', condition: JSON.stringify({ type: 'tracks_completed', value: 1 }) },
+  { name: 'Неделя обучения', description: 'Занимайтесь 7 дней подряд', icon: 'Calendar', color: 'green', condition: JSON.stringify({ type: 'streak', value: 7 }) },
+  { name: 'Мастер команд', description: 'Завершите 3 трека', icon: 'Target', color: 'blue', condition: JSON.stringify({ type: 'tracks_completed', value: 3 }) },
+  { name: 'Друг питомца', description: 'Занимайтесь 30 дней подряд', icon: 'Heart', color: 'red', condition: JSON.stringify({ type: 'streak', value: 30 }) },
+  { name: 'Эксперт', description: 'Завершите 5 треков', icon: 'Crown', color: 'purple', condition: JSON.stringify({ type: 'tracks_completed', value: 5 }) },
+  { name: 'Молния', description: 'Завершите трек за 1 день', icon: 'Zap', color: 'orange', condition: JSON.stringify({ type: 'track_speed', value: 1 }) },
+  { name: 'Данные не врут', description: 'Заполняй отчёт 10 дней подряд', icon: 'BarChart', color: 'teal', condition: JSON.stringify({ type: 'reports_streak', value: 10 }) },
+  { name: 'Перфекционист', description: 'Получи оценку «Отлично» 5 раз', icon: 'Award', color: 'yellow', condition: JSON.stringify({ type: 'perfect_reports', value: 5 }) },
+  { name: 'Первый модуль', description: 'Завершил первый модуль курса', icon: 'BookOpen', color: 'blue', condition: JSON.stringify({ type: 'modules_complete', value: 1 }) },
 ];
 
-const courseTasksMap = [
-  { courseIdx: 0, tasks: course1Tasks },
-  { courseIdx: 1, tasks: course2Tasks },
-  { courseIdx: 2, tasks: course3Tasks },
-  { courseIdx: 3, tasks: course4Tasks },
-  { courseIdx: 4, tasks: course5Tasks },
-  { courseIdx: 5, tasks: course6Tasks },
-];
+// ─── Заполнение БД ────────────────────────────────────────────────────────────
 
 async function main() {
   console.log('🌱 Начало заполнения базы данных...');
 
-  // Курсы
+  // Деактивируем все старые курсы (тестовые/выдуманные)
+  await prisma.course.updateMany({ data: { is_active: false } });
+  console.log('🔄 Старые курсы деактивированы');
+
+  // Курсы — два реальных
+  const createdCourses = {};
   for (const course of courses) {
-    await prisma.course.upsert({
-      where: { id: course.id },
-      update: course,
-      create: course,
-    });
+    const existing = await prisma.course.findFirst({ where: { title: course.title } });
+    let saved;
+    if (existing) {
+      saved = await prisma.course.update({
+        where: { id: existing.id },
+        data: { ...course, is_active: true },
+      });
+    } else {
+      saved = await prisma.course.create({ data: { ...course, is_active: true } });
+    }
+    createdCourses[saved.title] = saved;
   }
   console.log(`✅ Курсов: ${courses.length}`);
 
-  // Задачи (уроки) курсов
-  let taskCount = 0;
-  for (const { courseIdx, tasks } of courseTasksMap) {
-    const courseId = courses[courseIdx].id;
-    for (const task of tasks) {
-      const key = `${courseId}-${task.order_index}`;
-      const existing = await prisma.task.findFirst({
-        where: { course_id: courseId, order_index: task.order_index },
+  // Модули и уроки
+  let totalLessons = 0;
+  for (const [courseTitle, modules] of Object.entries(modulesData)) {
+    const course = createdCourses[courseTitle];
+    if (!course) continue;
+
+    for (const moduleData of modules) {
+      const { lessons, ...moduleFields } = moduleData;
+
+      let module = await prisma.module.findFirst({
+        where: { course_id: course.id, order_index: moduleFields.order_index },
       });
-      if (existing) {
-        await prisma.task.update({ where: { id: existing.id }, data: { ...task, course_id: courseId } });
+      if (module) {
+        module = await prisma.module.update({ where: { id: module.id }, data: moduleFields });
       } else {
-        await prisma.task.create({ data: { ...task, course_id: courseId } });
+        module = await prisma.module.create({ data: { ...moduleFields, course_id: course.id } });
       }
-      taskCount++;
+
+      for (const lessonData of lessons) {
+        const { steps, daily_task, ...lessonFields } = lessonData;
+
+        let lesson = await prisma.lesson.findFirst({
+          where: { module_id: module.id, order_index: lessonFields.order_index },
+        });
+        if (lesson) {
+          lesson = await prisma.lesson.update({ where: { id: lesson.id }, data: lessonFields });
+        } else {
+          lesson = await prisma.lesson.create({ data: { ...lessonFields, module_id: module.id } });
+        }
+        totalLessons++;
+
+        // Шаги теории — пересоздаём, чтобы порядок и содержание было актуальным
+        await prisma.lessonStep.deleteMany({ where: { lesson_id: lesson.id } });
+        if (steps && steps.length > 0) {
+          await prisma.lessonStep.createMany({
+            data: steps.map((s, i) => ({ ...s, lesson_id: lesson.id, order_index: i })),
+          });
+        }
+
+        // Задание дня
+        if (daily_task) {
+          const { steps: taskSteps, ...taskFields } = daily_task;
+          let task = await prisma.dailyTask.findUnique({ where: { lesson_id: lesson.id } });
+          if (task) {
+            await prisma.dailyTask.update({ where: { id: task.id }, data: taskFields });
+            await prisma.taskStep.deleteMany({ where: { task_id: task.id } });
+          } else {
+            task = await prisma.dailyTask.create({ data: { ...taskFields, lesson_id: lesson.id } });
+          }
+          if (taskSteps && taskSteps.length > 0) {
+            await prisma.taskStep.createMany({
+              data: taskSteps.map((s, i) => ({ ...s, task_id: task.id, order_index: i })),
+            });
+          }
+        }
+      }
     }
   }
-  console.log(`✅ Уроков: ${taskCount}`);
+  console.log(`✅ Модули и уроки созданы: ${totalLessons} уроков`);
 
   // Треки
   for (const track of tracks) {
-    await prisma.track.upsert({
-      where: { id: track.id },
-      update: track,
-      create: track,
-    });
+    const existing = await prisma.track.findFirst({ where: { title: track.title } });
+    if (existing) {
+      await prisma.track.update({ where: { id: existing.id }, data: track });
+    } else {
+      await prisma.track.create({ data: track });
+    }
   }
   console.log(`✅ Треков: ${tracks.length}`);
 
   // Достижения
-  for (const [i, achievement] of achievements.entries()) {
-    await prisma.achievement.upsert({
-      where: { id: i + 1 },
-      update: achievement,
-      create: achievement,
-    });
+  for (const achievement of achievements) {
+    const existing = await prisma.achievement.findFirst({ where: { name: achievement.name } });
+    if (existing) {
+      await prisma.achievement.update({ where: { id: existing.id }, data: achievement });
+    } else {
+      await prisma.achievement.create({ data: achievement });
+    }
   }
   console.log(`✅ Достижений: ${achievements.length}`);
 
-  console.log('🎉 База данных заполнена!');
+  console.log('🎉 База данных заполнена успешно!');
 }
 
 main()
