@@ -35,7 +35,6 @@ import Profile from './components/Profile';
 import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './components/Dashboard';
 import Notifications from './components/Notifications';
-import LessonView from './components/LessonView';
 
 import theme from './theme';
 import useStore from './store';
@@ -76,7 +75,7 @@ function App() {
 
 function AppContent() {
   const { colorMode, toggleColorMode } = useColorMode();
-  const { sidebarOpen, toggleSidebar, notifications } = useStore();
+  const { notifications } = useStore();
   const bg = useColorModeValue('gray.50', 'gray.900');
   const toastBg = useColorModeValue('#fff', '#2D3748');
   const toastColor = useColorModeValue('#1A202C', '#E2E8F0');
@@ -84,24 +83,14 @@ function AppContent() {
 
   return (
     <Flex direction="column" minHeight="100vh" bg={bg}>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: { background: toastBg, color: toastColor, border: `1px solid ${toastBorder}` },
-        }}
-      />
-      {/* Header */}
       <Header toggleColorMode={toggleColorMode} colorMode={colorMode} />
-      
-      {/* Main Content */}
+
       <Container maxW="container.xl" flex="1" px={4} py={6}>
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/course/:id" element={<CourseDetail />} />
-            <Route path="/lesson/:id" element={<LessonView />} />
             <Route path="/tracks" element={<Tracks />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
@@ -109,11 +98,20 @@ function AppContent() {
         </AnimatePresence>
       </Container>
 
-      {/* Bottom Navigation */}
       <BottomNavigation />
-      
-      {/* Notifications Panel */}
       <Notifications />
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: toastBg,
+            color: toastColor,
+            border: `1px solid ${toastBorder}`,
+          },
+        }}
+      />
     </Flex>
   );
 }

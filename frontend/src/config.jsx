@@ -16,6 +16,7 @@ const config = {
     retryAttempts: 3,
     endpoints: {
       courses: '/api/courses',
+      tracksCatalog: '/api/courses/tracks',
       tracks: '/api/user/tracks',
       profile: '/api/user/profile',
       achievements: '/api/user/achievements'
