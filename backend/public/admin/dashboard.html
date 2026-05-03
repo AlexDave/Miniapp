@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DogCourse — админ аналитика</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; background: #f7fafc; color: #1a202c; }
+    h1 { font-size: 1.25rem; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+    label { display: flex; flex-direction: column; font-size: 12px; gap: 4px; }
+    input { padding: 8px; min-width: 200px; border: 1px solid #cbd5e0; border-radius: 8px; }
+    button { padding: 10px 16px; background: #6b46c1; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+    .card { background: #fff; border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; }
+    .card b { font-size: 1.4rem; color: #553c9a; }
+    .err { color: #c53030; font-size: 14px; }
+    canvas { max-height: 360px; }
+  </style>
+</head>
+<body>
+  <h1>Аналитика (спринт 24)</h1>
+  <p>Введите тот же ключ, что в <code>ADMIN_API_KEY</code> на сервере. Ключ не сохраняется на сервере — только в памяти вкладки (sessionStorage).</p>
+  <div class="row">
+    <label>ADMIN_API_KEY
+      <input type="password" id="apiKey" placeholder="ключ" autocomplete="off" />
+    </label>
+    <label>from (ISO)
+      <input type="text" id="from" />
+    </label>
+    <label>to (ISO)
+      <input type="text" id="to" />
+    </label>
+    <label>cohort week_start (YYYY-MM-DD)
+      <input type="text" id="weekStart" />
+    </label>
+    <button type="button" id="loadBtn">Загрузить</button>
+  </div>
+  <div id="err" class="err"></div>
+  <div class="cards" id="cards"></div>
+  <h2>События по дням</h2>
+  <canvas id="chart"></canvas>
+  <script>
+    const LS = 'admin_api_key_dogcourse';
+    const keyInput = document.getElementById('apiKey');
+    keyInput.value = sessionStorage.getItem(LS) || '';
+    const fromInput = document.getElementById('from');
+    const toInput = document.getElementById('to');
+    const weekInput = document.getElementById('weekStart');
+    const t = new Date();
+    toInput.value = t.toISOString();
+    const f = new Date(t.getTime() - 30 * 86400000);
+    fromInput.value = f.toISOString();
+    const dow = t.getUTCDay();
+    const mon = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate() - ((dow + 6) % 7)));
+    weekInput.value = mon.toISOString().slice(0, 10);
+
+    let chart;
+    document.getElementById('loadBtn').onclick = async function () {
+      const err = document.getElementById('err');
+      err.textContent = '';
+      const key = keyInput.value.trim();
+      if (!key) {
+        err.textContent = 'Укажите ключ';
+        return;
+      }
+      sessionStorage.setItem(LS, key);
+      const headers = { 'X-Admin-Key': key };
+      const base = '';
+      const q = new URLSearchParams({ from: fromInput.value, to: toInput.value });
+      document.getElementById('loadBtn').disabled = true;
+      try {
+        const [funnelRes, cohortRes] = await Promise.all([
+          fetch(base + '/api/admin/funnel?' + q.toString(), { headers }),
+          fetch(base + '/api/admin/cohort?week_start=' + encodeURIComponent(weekInput.value), { headers }),
+        ]);
+        const funnel = await funnelRes.json().catch(() => ({}));
+        const cohort = await cohortRes.json().catch(() => ({}));
+        if (!funnelRes.ok) {
+          err.textContent = funnel.error || JSON.stringify(funnel);
+          return;
+        }
+        if (!cohortRes.ok) {
+          err.textContent = cohort.error || JSON.stringify(cohort);
+          return;
+        }
+        const s = funnel.snapshot || {};
+        const cards = document.getElementById('cards');
+        cards.innerHTML = [
+          ['Пользователи', s.users_total],
+          ['Онбординг завершён', s.onboarding_completed],
+          ['≥1 урок', s.at_least_one_lesson],
+          ['Streak ≥7', s.streak_7_days_or_more],
+          ['Онбординг→урок (оценка %)', s.onboarding_to_first_lesson_pct_approx],
+          ['Успех отчётов %', s.lesson_success_rate_pct],
+          ['Событий в диапазоне', funnel.analytics_events_in_range],
+          ['Когорта (неделя)', cohort.cohort_size],
+          ['Retention D1 %', cohort.retention?.d1_pct],
+          ['Retention D7 %', cohort.retention?.d7_pct],
+          ['Retention D30 %', cohort.retention?.d30_pct],
+        ].map(([t, v]) => '<div class="card"><div>' + t + '</div><b>' + (v ?? '—') + '</b></div>').join('');
+
+        const byDay = funnel.events_by_day || [];
+        const allEvents = new Set();
+        byDay.forEach((d) => Object.keys(d.counts || {}).forEach((e) => allEvents.add(e)));
+        const labels = byDay.map((d) => d.date);
+        const colors = ['#6b46c1', '#38a169', '#d69e2e', '#3182ce', '#e53e3e', '#805ad5'];
+        const datasets = [...allEvents].slice(0, 8).map((ev, i) => ({
+          label: ev,
+          data: byDay.map((d) => (d.counts && d.counts[ev]) || 0),
+          borderColor: colors[i % colors.length],
+          backgroundColor: colors[i % colors.length] + '33',
+          tension: 0.2,
+          fill: false,
+        }));
+        const ctx = document.getElementById('chart').getContext('2d');
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { beginAtZero: true } },
+          },
+        });
+      } catch (e) {
+        err.textContent = String(e.message || e);
+      } finally {
+        document.getElementById('loadBtn').disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 const { prisma } = require('../database/connection');
+const { getPetIdForUser } = require('./petContext');
 
 function isSameDay(d1, d2) {
   return (
@@ -19,12 +20,13 @@ function startOfDay(d) {
  * Легаси-отчёты без поля success считаются успешными.
  */
 async function updateStreakAfterLessonReport(userId, completedAt, success, excludeReportId) {
-  const profile = await prisma.profile.findUnique({ where: { user_id: userId } });
-  if (!profile) return 0;
+  const petId = await getPetIdForUser(userId);
+  const pet = await prisma.pet.findUnique({ where: { id: petId } });
+  if (!pet) return 0;
 
   const countsAsSuccess = success === null || success === undefined || success === 'yes';
   if (!countsAsSuccess) {
-    return profile.streak;
+    return pet.streak;
   }
 
   const now = new Date(completedAt);
@@ -32,7 +34,7 @@ async function updateStreakAfterLessonReport(userId, completedAt, success, exclu
 
   const earlierToday = await prisma.dailyReport.findFirst({
     where: {
-      user_id: userId,
+      pet_id: petId,
       ...(excludeReportId ? { id: { not: excludeReportId } } : {}),
       completed_at: { gte: todayStart, lt: now },
       OR: [{ success: null }, { success: 'yes' }],
@@ -41,12 +43,12 @@ async function updateStreakAfterLessonReport(userId, completedAt, success, exclu
   });
 
   if (earlierToday) {
-    return profile.streak;
+    return pet.streak;
   }
 
   const lastYesBeforeToday = await prisma.dailyReport.findFirst({
     where: {
-      user_id: userId,
+      pet_id: petId,
       OR: [{ success: null }, { success: 'yes' }],
       completed_at: { lt: todayStart },
     },
@@ -60,14 +62,14 @@ async function updateStreakAfterLessonReport(userId, completedAt, success, exclu
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (isSameDay(lastDay, yesterday)) {
-      newStreak = profile.streak + 1;
+      newStreak = pet.streak + 1;
     } else if (isSameDay(lastDay, todayStart)) {
-      newStreak = profile.streak;
+      newStreak = pet.streak;
     }
   }
 
-  await prisma.profile.update({
-    where: { user_id: userId },
+  await prisma.pet.update({
+    where: { id: petId },
     data: { streak: newStreak },
   });
 

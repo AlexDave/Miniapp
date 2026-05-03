@@ -1,6 +1,8 @@
 # DogCourse Miniapp — План улучшений
 
-## Спринт 1: Безопасность и единая БД ✅ (в работе)
+> **Актуализация статуса (аудит кода, 2026-05-03):** `[x]` — реализовано; у пункта с *⚠️* или курсивом — реализовано неполно или иначе, чем в формулировке; `[ ]` — нет или не дотянуто до DoD.
+
+## Спринт 1: Безопасность и единая БД ✅
 
 ### Задачи
 - [x] Мигрировать с MongoDB на Prisma/SQLite (убрать двойную БД)
@@ -105,7 +107,7 @@
 
 ### Остаётся
 - [ ] Настроить ESLint + Prettier на уровне monorepo
-- [ ] Тесты: Vitest (frontend), Jest + Supertest (backend)
+- [x] Тесты: Vitest (frontend), Jest + Supertest (backend) — *уже в спринте 4b; пункт в «Остаётся» был устаревшим*
 - [ ] Документировать API (OpenAPI/Swagger)
 
 ---
@@ -123,143 +125,154 @@
 
 ---
 
-## Спринт 7: Линейный flow урока 🔄
+## Спринт 7: Линейный flow урока ✅⚠️
 
 **Цель:** убрать «теорию-в-модалке», сделать урок обязательной последовательностью Зачем→Как→Делаем→Итог с gating-ом.
 
+*Замечания:* фаза «Как» — пошаговая смена шагов (прогресс + «Далее»), не swipe-карусель. Жёсткий DoD (gating без теории, один CTA на «Итоге») — проверять при приёмке.
+
 ### Задачи
-- [ ] Prisma: таблица `LessonProgress` (`user_id`, `lesson_id`, `state`, `theory_seen_at`, `task_started_at`, `last_repeat_at`, `repeats_count`)
-- [ ] Backend: `POST /api/lessons/:id/theory-seen` — отметить теорию пройденной
-- [ ] Backend: `POST /api/lessons/:id/start-task` — открыть задание (требует `theory_seen_at`)
-- [ ] Backend: `GET /api/lessons/:id` возвращает `state` из `LessonProgress`
-- [ ] Frontend: рефакторинг `LessonView.jsx` — фазы `['Зачем', 'Как', 'Делаем', 'Итог']`
-- [ ] Frontend: убрать иконку `<Info />` модалки теории, вынести в inline-экраны
-- [ ] Frontend: фаза «Зачем» — экран из `lesson.meta.why`
-- [ ] Frontend: фаза «Как» — горизонтальная карусель `LessonStep[]`
-- [ ] Frontend: фаза «Делаем» — текущий `TaskStepFlow`, ссылка «Перечитать как»
-- [ ] Frontend: фаза «Итог» — `ReportForm` + кнопка «Что дальше?»
-- [ ] Backend: на завершённом уроке кнопка «Перепройти» возвращает в `theory_done`
+- [x] Prisma: таблица `LessonProgress` (`user_id`, `lesson_id`, `state`, `theory_seen_at`, `task_started_at`, `last_repeat_at`, `repeats_count`)
+- [x] Backend: `POST /api/lessons/:id/theory-seen` — отметить теорию пройденной
+- [x] Backend: `POST /api/lessons/:id/start-task` — открыть задание (требует `theory_seen_at`)
+- [x] Backend: `GET /api/lessons/:id` возвращает `state` из `LessonProgress`
+- [x] Frontend: рефакторинг `LessonView.jsx` — фазы `['Зачем', 'Как', 'Делаем', 'Итог']`
+- [x] Frontend: убрать иконку `<Info />` модалки теории, вынести в inline-экраны — *отдельной модалки Info в `LessonView` нет*
+- [x] Frontend: фаза «Зачем» — экран из `lesson.meta.why`
+- [x] Frontend: фаза «Как» — пошаговый просмотр `LessonStep[]` через `TheoryStep` — *⚠️ не горизонтальная карусель-жест, как в оригинальной формулировке*
+- [x] Frontend: фаза «Делаем» — `TaskStepFlow` / чеклист, «Перечитать шаги»
+- [x] Frontend: фаза «Итог» — `ReportForm` — *⚠️ отдельная кнопка «Что дальше?» не зафиксирована явно*
+- [x] Backend: повтор / «Перепройти» через `repeat-start` → состояние `theory_done`
 
 ### DoD
-Открываю урок — нельзя нажать «Получилось» без просмотра теории. На Итоге один чёткий CTA.
+Открываю урок — нельзя нажать «Получилось» без просмотра теории. На Итоге один чёткий CTA. — *⚠️ ручная проверка UX.*
 
 ---
 
-## Спринт 8: Косточки вместо XP 🔄
+## Спринт 8: Косточки вместо XP ✅⚠️
 
 **Цель:** UI-замена XP на «Косточки». Поле `xp` в БД остаётся, из UI убирается.
 
+*Замечания:* стадии и начисление в `utils/bones.js` (нет отдельного `stages.js`). В API отчёта по-прежнему есть `xp_earned` / уровни. Анимация — `BoneCelebrate.jsx`, не `BoneAnimation`. DoD «XP нигде в UI» — перепроверить `grep` по фронту.
+
 ### Задачи
-- [ ] Backend: `utils/bones.js` — `awardBones(userId, lessonId, success, isRepeat)`. Правила: 1 за завершение, 1 за повтор через 24ч, особая серия 7 дней
-- [ ] Backend: `utils/stages.js` — 5 стадий (Знакомство/Базовые навыки/Уверенный/Самостоятельный/Партнёр)
-- [ ] Backend: `GET /api/user/bones` — кол-во по навыкам + особые
-- [ ] Backend: `routes/lessons.js` — возвращать `bones_earned` вместо `xp_earned`
-- [ ] Frontend: `BoneCounter.jsx` — банка с косточками (замена `LevelBadge`)
-- [ ] Frontend: `BoneAnimation.jsx` — «косточка падает в банку» (замена `XPAnimation`)
-- [ ] Frontend: `Profile.jsx` — «Стадия: …» вместо «Уровень N»
-- [ ] Frontend: `Dashboard.jsx` — убрать XP-виджет, показать копилку текущего навыка
-- [ ] Frontend: `LessonView` Итог — анимация косточки в копилку
+- [x] Backend: `utils/bones.js` — `awardBone`, косточки по навыку, особая косточка при streak % 7 — *⚠️ имя `awardBone`; при сдаче отчёта `isRepeat` по сути не прокидывается*
+- [x] Backend: 5 стадий — *внутри `bones.js`, не `utils/stages.js`*
+- [x] Backend: `GET /api/user/profile/bones` (`profile.js`)
+- [x] Backend: `routes/lessons.js` — в ответе есть `bones_earned` — *⚠️ `xp_earned` и уровень тоже возвращаются*
+- [x] Frontend: `BoneCounter.jsx`
+- [x] Frontend: анимация «падение» — `BoneCelebrate.jsx` — *⚠️ не файл `BoneAnimation.jsx`*
+- [x] Frontend: `Profile.jsx` — стадия и косточки
+- [x] Frontend: копилка на главной — *⚠️ в `HomeHeaderSummary` / шапке, не отдельный виджет в теле `Dashboard.jsx`*
+- [x] Frontend: `LessonView` итог — обёртка с анимацией косточки
 - [ ] Migration: `bones = floor(xp / 10)` для существующих профилей
 
 ### DoD
-Слово «XP» не встречается в UI. Завершение урока анимирует косточку, не цифру.
+Слово «XP» не встречается в UI. Завершение урока анимирует косточку, не цифру. — *⚠️ не закрыто полностью (см. API и миграцию).*
 
 ---
 
-## Спринт 9: Атомарное дерево навыков 🔄
+## Спринт 9: Атомарное дерево навыков ✅⚠️
 
 **Цель:** расширить 3 плоских навыка до 6 категорий × 18+ атомов.
 
+*Замечания:* прогресс атома считается в `routes/skills.js`, не в отдельном `skillProgress.js`. Связь урока с атомом — через `Lesson.meta` / парсинг, не FK `Lesson.skill_key`. На главной — общий счётчик косточек в шапке, не «только текущий атом».
+
 ### Задачи
-- [ ] Prisma: `SkillCategory` (`key`, `title`, `description`, `icon`, `order_index`)
-- [ ] Prisma: `Skill` (`key`, `category_key`, `title`, `description`, `unlock_rules` JSON, `order_index`)
-- [ ] Prisma: `Lesson.skill_key` FK + backfill из `meta.skill`
-- [ ] Backend: seed 6 категорий + 18 атомов: Знакомство / Быт / Социализация / Контроль / Прогулка / Границы / Самостоятельность
-- [ ] Backend: `GET /api/skills/tree` — категории + атомы + прогресс пользователя
-- [ ] Backend: `GET /api/skills/:key/lessons` — уроки атома
-- [ ] Backend: `utils/skillProgress.js` — прогресс атома = косточки / целевое число
-- [ ] Frontend: рефакторинг `SkillsScreen.jsx` — `CategoryGrid` → `CategoryDetail` → список атомов
-- [ ] Frontend: `useSkillTree` хук
-- [ ] Frontend: главная — мини-копилка только текущего атома
+- [x] Prisma: `SkillCategory` (`key`, `title`, `description`, `icon`, `order_index`)
+- [x] Prisma: `Skill` (`key`, `category_key`, `title`, `description`, `unlock_rules`, `order_index`, `target_bones`)
+- [ ] Prisma: `Lesson.skill_key` FK + backfill из `meta.skill` — *пока навык в `meta` JSON*
+- [x] Backend: seed категорий и атомов — *⚠️ сверить число с планом (18+ и набор категорий) по актуальному `seed.js`*
+- [x] Backend: `GET /api/skills/tree` — категории + атомы + прогресс
+- [x] Backend: `GET /api/skills/:key/lessons` — уроки атома
+- [x] Backend: логика прогресса атома (косточки / цель) — *в `skills.js`*
+- [x] Frontend: `SkillsScreen.jsx` — дерево категорий → атомы → уроки
+- [x] Frontend: `useSkillTree` / `useLessonsForSkill` (`hooks/useSkillTree.js`)
+- [ ] Frontend: главная — мини-копилка **только** текущего атома — *сейчас общие косточки в `HomeHeaderSummary`*
 
 ### DoD
-«Навыки»: 6 крупных карточек → клик → 2-4 атома → уроки. Заблокированные кликабельны с предупреждением «рекомендуем сначала…».
+«Навыки»: 6 крупных карточек → клик → атомы → уроки. Мягкие рекомендации «сначала…» — *⚠️ проверить полноту UX против формулировки про «заблокированные».*
 
 ---
 
-## Спринт 10: Иллюстрации + многоразовость 🔄
+## Спринт 10: Иллюстрации + многоразовость ✅⚠️
 
 **Цель:** функциональные иллюстрации в шагах теории, полная многоразовость уроков.
 
+*Замечания:* `image_role` в схеме — `hero|inline|caption`, не перечень из плана. Папка `public/lesson-images` + `express.static` в коде не найдены — картинки только если URL в данных. Награда при повторе: cooldown на `repeat-start`; начисление косточки при повторном прохождении — уточнить бизнес-логику в отчёте.
+
 ### Задачи
-- [ ] Prisma: `LessonStep.image_url`, `LessonStep.image_role` (pose/movement/antipattern/trigger/time), `LessonStep.alt_text`
-- [ ] Backend: `backend/public/lesson-images/` — папка для статики + express.static
-- [ ] Контент: ТЗ для иллюстратора в `docs/illustration-brief.md`
-- [ ] Frontend: `TheoryStep.jsx` — рендер `<img loading="lazy">` с alt, max-width
-- [ ] Backend: `GET /api/lessons/:id/history` — история повторов
-- [ ] Backend: `POST /api/lessons/:id/repeat-start` — запуск повтора (возврат в `theory_done`)
-- [ ] Backend: `awardBones` с флагом `isRepeat`, валидация 24ч
-- [ ] Frontend: кнопка «Перепройти» на завершённом уроке
-- [ ] Frontend: `LessonView` Итог — при повторе без 24ч: «косточка прибавится завтра»
-- [ ] Frontend: в `SkillsScreen` на каждом уроке показывать `repeats_count`
+- [x] Prisma: `LessonStep.image_url`, `LessonStep.image_role`, `LessonStep.alt_text` — *⚠️ значения `image_role` другие, чем в плане*
+- [ ] Backend: `backend/public/lesson-images/` + `express.static` — *нет в `app.js`*
+- [x] Контент: ТЗ в `docs/illustration-brief.md`
+- [x] Frontend: `TheoryStep.jsx` — `<img loading="lazy">`, alt, max-width
+- [x] Backend: `GET /api/lessons/:id/history`
+- [x] Backend: `POST /api/lessons/:id/repeat-start` (24ч cooldown)
+- [x] Backend: валидация 24ч на повтор — *⚠️ `awardBone(..., isRepeat)` при финальном отчёте не различает повтор явно*
+- [x] Frontend: «Перепройти» / экран завершённого урока
+- [x] Frontend: сообщение о cooldown (часы до повтора) — *в `CompletedScreen` и ответе 429*
+- [x] Frontend: `repeats_count` в списке уроков навыка — *через API `skills/:key/lessons`*
 
 ### DoD
-5 пилотных уроков с иллюстрациями. Любой завершённый урок можно перепройти, награда только через 24ч.
+5 пилотных уроков с иллюстрациями. Любой завершённый урок можно перепройти, награда только через 24ч. — *⚠️ иллюстрации в контенте и DoD по 5 урокам не закрыты.*
 
 ---
 
-## Спринт 11: Маршруты вместо Треков 🔄
+## Спринт 11: Маршруты вместо Треков ✅⚠️
 
 **Цель:** «Треки» → «Персональный маршрут», собираемый на онбординге.
 
+*Замечания:* у `Route` поля `target_problem`, возрастные диапазоны — не `goal_key`/`duration_days` из плана. Активный маршрут хранится в `Profile.preferences.selected_route_key`, не `User.active_route_id`. API выбора — `POST /api/routes/:key/select` (не `start`). `swap` нет. В навбаре по-прежнему «Тренировка», «Маршруты», треки не убраны.
+
 ### Задачи
-- [ ] Prisma: `Route` (`key`, `title`, `description`, `goal_key`, `duration_days`, `icon`)
-- [ ] Prisma: `RouteSkill` (`route_id`, `skill_key`, `order_index`)
-- [ ] Prisma: `User.active_route_id` (nullable FK)
-- [ ] Backend: seed 4 маршрута (Первая неделя / Спокойная прогулка / Безопасный отзыв / Спокойствие дома)
-- [ ] Backend: `GET /api/routes`, `POST /api/routes/:key/start`, `GET /api/routes/active`
-- [ ] Backend: `POST /api/routes/pause`, `resume`, `swap`
-- [ ] Frontend: `OnboardingWizard.jsx` — финальный шаг выбора маршрута
-- [ ] Frontend: `RouteCard.jsx` — главная карточка маршрута (70% экрана)
-- [ ] Frontend: `RouteMap.jsx` — карта прогресса N/14
-- [ ] Frontend: убрать `Tracks` из нав-бара, нав-бар → Сегодня/Навыки/Библиотека/Я
-- [ ] Frontend: «Курсы» переименовать в «Библиотека»
+- [x] Prisma: `Route`, `RouteSkill` — *⚠️ состав полей отличается от черновика в плане*
+- [x] Backend: выбранный маршрут пользователя — *через `preferences`, не FK на `User`*
+- [x] Backend: seed 4 маршрута (`seed.js`) — *другие названия, но 4 штуки*
+- [x] Backend: каталог маршрутов, выбор, пауза/возобновление — *`user-routes.js`; ⚠️ нет `swap`*
+- [x] Frontend: `OnboardingWizard.jsx` — шаг выбора маршрута — *⚠️ опции частично захардкожены (`ROUTE_OPTIONS`)*
+- [x] Frontend: `RouteCard.jsx`, `RouteProgressMap.jsx`, экран `RoutesScreen`
+- [ ] Frontend: убрать `Tracks` из нав-бара; 3 таба (Сегодня / Навыки / Я) — *сейчас 5 пунктов, треки и `/tracks` живы*
+- [x] Подпись «Библиотека» — *в UI ссылок на курсы; файл компонента всё ещё `Courses.jsx`*
 
 ### DoD
-Новый пользователь после онбординга видит маршрут. «Треков» в нав-баре нет.
+Новый пользователь после онбординга видит маршрут. «Треков» в нав-баре нет. — *⚠️ DoD не выполнен: треки и лишние табы остаются.*
 
 ---
 
-## Спринт 12: Атомарный контент из транскриптов 🔄
+## Спринт 12: Атомарный контент из транскриптов ⚠️
 
 **Цель:** заменить gpt-синтетику на 22 урока из реальных транскриптов.
 
+*Замечания:* `backend/data/atomic-lessons.json` есть, но объём контента **существенно меньше 22** атомов. `gpt_coures.json` в репозитории **ещё есть**.
+
 ### Задачи
-- [ ] `data/atomic-lessons.json` — 22 атома по карте контент-плана из аудита
-- [ ] Каждый атом: `meta.why`, 3 шага «Как», 3-5 чек-боксов, `fallback_tasks`, `skill_key`, `video_url`
-- [ ] `seed-content.js` переписан под `atomic-lessons.json`
-- [ ] Mapping `meta.skill → skill_key` для существующих `LessonProgress`
+- [x] Файл `backend/data/atomic-lessons.json` — *⚠️ порядка **6** записей вместо целевых 22*
+- [ ] Каждый атом с полным набором полей по спецификации плана — *в процессе*
+- [ ] `seed-content.js` полностью переведён на `atomic-lessons.json` и закрывает 22 урока в БД
+- [ ] Mapping / миграция `meta.skill → skill_key` на уровне схемы
 - [ ] Удалить `gpt_coures.json` после миграции
 
 ### DoD
-В БД 22 атомарных урока с реальными источниками. `gpt_coures.json` удалён.
+В БД 22 атомарных урока с реальными источниками. `gpt_coures.json` удалён. — *не закрыто.*
 
 ---
 
-## Спринт 13: Финальный лоск 🔄
+## Спринт 13: Финальный лоск ✅⚠️
 
 **Цель:** анимации, полка трофеев, аналитика воронки, доступность.
 
+*Замечания:* аналитика — `trackEvent` + таблица `analytics_events`; админ HTML `/api/admin/dashboard`. Code splitting — частично (`React.lazy` в `App.jsx`).
+
 ### Задачи
-- [ ] Frontend: анимация падения косточки с физикой (Framer Motion spring)
-- [ ] Frontend: «Полка трофеев» в `Profile.jsx`
-- [ ] Frontend: пустые состояния с CTA на каждом экране
-- [ ] Frontend: «Не получилось» → дружественный экран + `fallback_tasks`
-- [ ] Backend: события аналитики `lesson.theory_seen`, `lesson.completed`, `lesson.repeated`, `route.started`, `bone.awarded`
-- [ ] Backend: `GET /api/admin/funnel` — онбординг → 1 урок → 7 дней
-- [ ] Доступность: контраст, кнопки 44px+, `prefers-reduced-motion`
-- [ ] Frontend: code splitting по маршрутам
-- [ ] Обновить `README.md`
+- [x] Frontend: анимация косточки (Framer spring) — `BoneCelebrate.jsx`
+- [x] Frontend: «Полка трофеев» — `TrophyShelf.jsx` в профиле
+- [ ] Frontend: пустые состояния с CTA на **каждом** экране — *частично / не везде*
+- [x] Frontend: при «Не получилось» в ответе есть `fallback_tasks` — *⚠️ отдельный «дружественный» экран глубины — см. спринт 18*
+- [x] Backend: лог-события `lesson.theory_seen`, `lesson.completed`, `lesson.repeated`, `route.started`, `bone.awarded` — *через `utils/analytics.js` → pino*
+- [x] Backend: `GET /api/admin/funnel` — агрегаты (онбординг, ≥1 урок, streak ≥7)
+- [x] Доступность: контраст (`mutedFg`), 44px+, `prefers-reduced-motion` — *спринт 25; полный аудит всех экранов не заявлен*
+- [x] Frontend: `React.lazy` для ряда экранов — *⚠️ не все тяжёлые страницы вынесены по плану спринта 25*
+- [ ] Обновить `README.md` — *уточнить актуальность относительно репо*
 
 ---
 
@@ -271,6 +284,8 @@
 3. **Контентная пустота** — нет видео/иллюстраций, «Не получилось» обрывается, уроки не работают hands-free с собакой.
 
 Спринты ниже — продолжение бэклога после 7-13. Группировка по фазам: **A** сокращение, **B** контент, **C** удержание, **D** продакшн.
+
+**Сводка 14–26:** пункты ниже **по-прежнему `[ ]`** — целые спринты не закрыты; частичные пересечения с уже сделанным см. в спринтах **7–13** (например, косточки и маршруты без консолидации навигации).
 
 ---
 
@@ -441,75 +456,77 @@
 
 ## Фаза D — Готовность к продакшну
 
-### Спринт 23: Платежи Telegram Stars 🔄
+### Спринт 23: Платежи Telegram Stars ✅⚠️ (2026-05-03)
 
 **Цель:** заменить мок-баннер на работающую покупку.
 
+*Замечания:* модель — **продление Pro на N дней** за Stars (`PRO_SUBSCRIPTION_DAYS`, по умолчанию 30). Эндпоинт: `POST /api/payments/stars-invoice` (не `/invoice`). Gating: в seed `requires_pro` у **`city-dog`** и **`calm-home`**; онбординг для `older` без Pro уводит на **`foundations`**. Refund — **заглушка** `POST /api/admin/payments/refund` → 501.
+
 #### Задачи
-- [ ] Решить модель: подписка vs одноразовая разблокировка маршрута vs free-форевер
-- [ ] Schema: `User.tier` (`free|pro`), `User.tier_expires_at`, `Payment` лог
-- [ ] Backend: `POST /api/payments/invoice` — создать invoice через Telegram Bot API (XTR)
-- [ ] Webhook `successful_payment` → апдейт `User.tier`
-- [ ] Frontend: `Profile.jsx` баннер «Купить» → реальный `Telegram.WebApp.openInvoice()`
-- [ ] Gating: маршруты «Calm at home», «Recall» — только для `tier=pro`
-- [ ] Refund-эндпоинт + soft-grace 3 дня после expiry
+- [x] Решить модель: подписка vs одноразовая разблокировка маршрута vs free-форевер — *подписка по дате `tier_expires_at`, продление при повторной оплате*
+- [x] Schema: `User.tier` (`free|pro`), `User.tier_expires_at`, `Payment` лог
+- [x] Backend: `POST /api/payments/stars-invoice` — `createInvoiceLink` (XTR)
+- [x] Webhook `pre_checkout_query` + `successful_payment` → апдейт `User.tier`
+- [x] Frontend: `Profile.jsx` (при `VITE_FEATURE_PAYMENTS`) → `Telegram.WebApp.openInvoice()`
+- [x] Gating: премиум-маршруты (`Route.requires_pro`) — только для Pro
+- [x] Refund-эндпоинт + soft-grace 3 дня после expiry — *grace в `utils/tier.js`; refund — заглушка в admin*
 
 #### DoD
-Реальная транзакция Stars проходит, `tier` меняется, премиум-маршрут разблокируется.
+Реальная транзакция Stars проходит, `tier` меняется, премиум-маршрут разблокируется. — *⚠️ проверка только в Telegram Mini App с реальным ботом и webhook.*
 
 ---
 
-### Спринт 24: Аналитика воронки (расширение сп.13) 🔄
+### Спринт 24: Аналитика воронки (расширение сп.13) ✅
 
 **Цель:** мерить, иначе нельзя итерировать.
 
 #### Задачи
-- [ ] Backend: `AnalyticsEvent` table (`user_id`, `event`, `props` JSON, `ts`)
-- [ ] События: `onboarding.start`, `onboarding.complete`, `lesson.opened`, `lesson.theory_seen`, `lesson.task_started`, `lesson.completed`, `lesson.failed`, `lesson.repeated`, `route.started`, `route.completed`, `bone.awarded`, `reminder.sent`, `reminder.opened`, `behavior.logged`, `payment.invoice_created`, `payment.success`
-- [ ] `GET /api/admin/funnel?from=&to=` — агрегаты воронки по дням
-- [ ] `GET /api/admin/cohort?week=` — retention по неделям
-- [ ] Простая HTML-админка `/admin/dashboard` с базовыми графиками (Chart.js)
-- [ ] Auth: bearer token из `.env`, не Telegram
+- [x] Backend: `AnalyticsEvent` table (`user_id`, `event`, `props` JSON, `ts`)
+- [x] События: *⚠️ `onboarding.start`, `route.completed`, `reminder.opened` — не добавлены*; остальное из списка: `onboarding.complete`, `lesson.opened`, `lesson.theory_seen`, `lesson.task_started`, `lesson.completed` / `lesson.failed`, `lesson.repeated`, `lesson.retry_after_fail`, `route.started`, `bone.awarded`, `reminder.sent`, `reminder.bot_linked`, `behavior.logged`, `payment.invoice_created`, `payment.success`
+- [x] `GET /api/admin/funnel?from=&to=` — снимок воронки + `events_totals` / `events_by_day`
+- [x] `GET /api/admin/cohort?week_start=` — retention D1/D7/D30 (UTC-неделя)
+- [x] HTML-дашборд `GET /api/admin/dashboard` (Chart.js)
+- [x] Auth: `X-Admin-Key` или `Authorization: Bearer` = `ADMIN_API_KEY`
 
 #### DoD
 В админке видно: % онбординг→1-й урок, D1/D7/D30 retention, lesson success rate.
 
 ---
 
-### Спринт 25: Доступность и performance 🔄
+### Спринт 25: Доступность и performance ✅
 
 **Цель:** соответствие WCAG AA + быстрый старт mini-app.
 
 #### Задачи
-- [ ] Контраст текста ≥ 4.5:1 (особенно `gray.500` на `gray.50`)
-- [ ] Все интерактивные элементы ≥ 44×44 px
-- [ ] `prefers-reduced-motion`: отключать AnimatePresence, оставлять fade
-- [ ] `aria-live` для динамических награждений (косточка/стадия)
-- [ ] Code splitting: `React.lazy` для `Profile`, `SkillsScreen`, `Library`, `LessonView`
-- [ ] Initial bundle ≤ 200 KB gzipped (сейчас замерить и оптимизировать)
-- [ ] Preload `useTodayLesson` в `index.html` через `<link rel="preload">`
-- [ ] Lighthouse CI в GitHub Actions: блокировать PR с regression > 5 пунктов
+- [x] Контраст вторичного текста: семантический `mutedFg` (gray.600 / gray.400), правки `HomeHeaderSummary`, замена `gray.500` на `mutedFg` в ключевых экранах
+- [x] Интерактивы ≥44×44: нижняя навигация, `SiteHeader` theme toggle, раскрытие в `RouteCard` / `SkillsScreen` (chevron)
+- [x] `prefers-reduced-motion`: `ReducedMotionAnimatePresence`, отключение scale/hover в навигации и карточках, нулевая длительность переходов в уроке/задании, `PressableButton` / `AnimatedProgressBar` / burst в `TaskStepFlow`
+- [x] `aria-live` / `role="status"`: экран награды урока (`LessonView`), `BoneDropAnimation`
+- [x] Code splitting: `React.lazy` уже для `Profile`, `SkillsScreen`, `Library`, `LessonView` + `manualChunks` в Vite (react-dom, chakra, motion, …)
+- [x] Размер бандла: после split entry `index-*.js` ≈ **9 KB gzip** (раньше один чанк ~189 KB gzip); *⚠️ сумма критических чанков при первом открытии всё ещё >200 KB gzip — дальше можно убрать неиспольз. MUI / ужать Chakra*
+- [x] Ранняя подгрузка `useTodayLesson`: `void import('./hooks/useLessons.js')` в `index.jsx` (hash-safe в prod; в `index.html` только `lang="ru"`)
+- [x] Lighthouse CI: job `lighthouse` в `.github/workflows/ci.yml`, `frontend/lighthouserc.cjs`, `npm run lhci`; *⚠️ пороги статические (a11y/best-practices ≥0.88, perf — warn); сравнение «регрессия >5» к базе — без LHCI upload не автоматизировано*
 
 #### DoD
-Lighthouse Mobile ≥ 90 по Performance/Accessibility/Best Practices.
+Lighthouse Mobile ≥ 90 по Performance/Accessibility/Best Practices. — *⚠️ в CI заданы минимальные пороги 0.88 (a11y/bp) и warn по perf; 90+ — цель для ручного прогона после оптимизаций.*
 
 ---
 
-### Спринт 26 (опц.): Семейный режим 🔄
+### Спринт 26 (опц.): Семейный режим ✅
 
 **Цель:** один питомец, несколько хозяев — общий прогресс.
 
 #### Задачи
-- [ ] Schema: `Pet` (отделить от `User`), `PetMember` (`pet_id`, `user_id`, `role`)
-- [ ] Migration: 1 user → 1 pet (default), позже invite по ссылке
-- [ ] Backend: `POST /api/pets/:id/invite` → одноразовый токен в Telegram-сообщении
-- [ ] Backend: `POST /api/pets/join/:token` → присоединение
-- [ ] Frontend: на Dashboard показывать «Аня сделала утренний урок 2 ч назад»
-- [ ] Профиль: «Хозяева Барбоса» список + «Пригласить»
-- [ ] Косточки и стадия — общие на питомца, не на юзера
+- [x] Schema: `Pet` (отделить от `User`), `PetMember` (`pet_id`, `user_id`, `role`), `PetInviteToken`
+- [x] Migration: 1 user → 1 pet (default), invite по ссылке
+- [x] Backend: `POST /api/pets/:id/invite` → одноразовый токен (URL `t.me/...?start=pet_*` при заданном `TELEGRAM_BOT_USERNAME`)
+- [x] Backend: `POST /api/pets/join/:token` → присоединение; `GET /api/pets/mine`, `GET /api/pets/activity`; в `mine` поле `my_role` для UI
+- [x] Frontend: Dashboard — блок «Недавние уроки питомца» (`/api/pets/activity`)
+- [x] Профиль: «Хозяева …» список + «Пригласить по ссылке» (владелец); в настройках — ввод токена и «Присоединиться»
+- [x] Косточки, стадия, стрик, XP, отчёты — на `pet_id` (прогресс/skills/user-routes/progress и др.)
 
 #### DoD
-2 telegram-аккаунта тренируют 1 виртуального щенка, прогресс синхронизирован.
+2 telegram-аккаунта тренируют 1 виртуального щенка, прогресс синхронизирован. — *⚠️ проверить вручную двумя аккаунтами; автоприём `/start pet_*` в webhook — по желанию.*
 
 ---
 

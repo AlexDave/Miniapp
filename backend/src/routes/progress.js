@@ -1,6 +1,8 @@
 const express = require('express');
 const { prisma } = require('../database/connection');
 const { getLevelByXP, getNextLevel } = require('../utils/xp');
+const { trophyStreamQuery } = require('../utils/trophyVideoSign');
+const { getPetIdForUser } = require('../utils/petContext');
 
 const router = express.Router();
 
@@ -8,6 +10,7 @@ const router = express.Router();
 router.get('/skill-map', async (req, res) => {
   try {
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const courses = await prisma.course.findMany({
       where: { is_active: true },
@@ -16,7 +19,7 @@ router.get('/skill-map', async (req, res) => {
           include: {
             lessons: {
               include: {
-                reports: { where: { user_id: userId }, select: { id: true, rating: true } },
+                reports: { where: { pet_id: petId }, select: { id: true, rating: true } },
               },
             },
           },
@@ -58,11 +61,12 @@ router.get('/skill-map', async (req, res) => {
 router.get('/activity', async (req, res) => {
   try {
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
     const since = new Date();
     since.setDate(since.getDate() - 89);
 
     const reports = await prisma.dailyReport.findMany({
-      where: { user_id: userId, completed_at: { gte: since } },
+      where: { pet_id: petId, completed_at: { gte: since } },
       select: { completed_at: true, xp_earned: true },
       orderBy: { completed_at: 'asc' },
     });
@@ -96,28 +100,30 @@ router.get('/activity', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
-    const [profile, reportsCount, completedTracks] = await Promise.all([
+    const [profile, pet, reportsCount] = await Promise.all([
       prisma.profile.findUnique({ where: { user_id: userId } }),
-      prisma.dailyReport.count({ where: { user_id: userId } }),
-      prisma.userTrack.count({ where: { user_id: userId, is_completed: true } }),
+      prisma.pet.findUnique({ where: { id: petId } }),
+      prisma.dailyReport.count({ where: { pet_id: petId } }),
     ]);
 
     // Завершённые модули — уникальные module_id из отчётов пользователя
     const doneReports = await prisma.dailyReport.findMany({
-      where: { user_id: userId },
+      where: { pet_id: petId },
       include: { lesson: { select: { module_id: true } } },
     });
     const modulesData = [...new Set(doneReports.map((r) => r.lesson.module_id))];
 
-    const totalXP = profile?.experience ?? 0;
+    const totalXP = pet?.experience ?? profile?.experience ?? 0;
     const level = getLevelByXP(totalXP);
     const nextLevel = getNextLevel(totalXP);
 
-    const skills = profile?.skills_json
+    const skillsJson = pet?.skills_json ?? profile?.skills_json;
+    const skills = skillsJson
       ? (() => {
           try {
-            return JSON.parse(profile.skills_json);
+            return JSON.parse(skillsJson);
           } catch {
             return {};
           }
@@ -130,16 +136,16 @@ router.get('/stats', async (req, res) => {
       level_name: level.name,
       next_level_xp: nextLevel?.min ?? null,
       xp_to_next: nextLevel ? nextLevel.min - totalXP : 0,
-      streak: profile?.streak ?? 0,
-      coins: profile?.coins ?? 0,
+      streak: pet?.streak ?? profile?.streak ?? 0,
+      coins: pet?.coins ?? profile?.coins ?? 0,
       skills,
       reports_count: reportsCount,
       modules_done: modulesData.length,
-      tracks_done: completedTracks,
+      tracks_done: 0,
       kpi: {
-        streak_length: profile?.streak ?? 0,
+        streak_length: pet?.streak ?? profile?.streak ?? 0,
         reports_total: reportsCount,
-        tracks_completed: completedTracks,
+        tracks_completed: 0,
         hint:
           'Для D1/D7 retention и avg session time добавьте таблицу событий или внешнюю аналитику.',
       },
@@ -147,6 +153,32 @@ router.get('/stats', async (req, res) => {
   } catch (err) {
     console.error('❌ Ошибка /stats:', err);
     res.status(500).json({ error: 'Ошибка при получении статистики' });
+  }
+});
+
+/** Короткие видео после уроков (полка в профиле) */
+router.get('/trophy-videos', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const rows = await prisma.userTrophyVideo.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: 'desc' },
+      take: 40,
+    });
+    const videos = rows.map((v) => ({
+      id: v.id,
+      lesson_id: v.lesson_id,
+      skill_key: v.skill_key,
+      atomic_outcome_snapshot: v.atomic_outcome_snapshot,
+      mime_type: v.mime_type,
+      size_bytes: v.size_bytes,
+      created_at: v.created_at,
+      stream_url: `/api/media/trophy/${v.id}${trophyStreamQuery(v.user_id, v.id)}`,
+    }));
+    res.json({ videos });
+  } catch (err) {
+    console.error('❌ Ошибка GET /user/trophy-videos:', err);
+    res.status(500).json({ error: 'Ошибка при получении видео' });
   }
 });
 

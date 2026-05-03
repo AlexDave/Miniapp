@@ -1,12 +1,18 @@
 // Контент курсов из backend/data/atomic-lessons.json (атомы → уроки БД)
 
 const atomic = require('../data/atomic-lessons.json');
+const { buildFallbackTreePayload } = require('./utils/fallbackTree');
 
 const DIFFICULTY_MAP = {
   easy: 'Начинающий',
   medium: 'Средний',
   hard: 'Сложный',
 };
+
+/** Демо-ролик для DoD «≥1 шаг с видео» (замените на свои MP4/WebM в `public/lesson-media/`). */
+const LESSON_DEMO_VIDEO_URL =
+  process.env.LESSON_DEMO_VIDEO_URL ||
+  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
 
 const baseTaskSteps = (extra = []) => [
   ...extra,
@@ -57,7 +63,16 @@ function lessonFromAtomic(al) {
     xp_reward: al.xp,
     order_index: al.day,
     meta: JSON.stringify(meta),
-    steps: al.how_steps.map((t) => ({ type: 'card', content: t })),
+    fallback_tree: JSON.stringify(buildFallbackTreePayload(al)),
+    steps: al.how_steps.map((t, i) => {
+      const row = { type: 'card', content: t };
+      if (i === 0) {
+        row.media_type = 'video';
+        row.media_url = LESSON_DEMO_VIDEO_URL;
+        row.alt_text = `Демонстрация: ${al.title} — первый шаг`;
+      }
+      return row;
+    }),
     daily_task: {
       title: al.title,
       description: al.goal,

@@ -43,8 +43,8 @@ export default function TrophyShelf({ achievements = [], title = 'Полка т�
         borderColor="gray.200"
         _dark={{ bg: 'gray.700', borderColor: 'gray.600' }}
       >
-        <Text fontSize="xs" color="gray.500" textAlign="center">
-          Выполняйте уроки и треки — трофеи появятся здесь.
+        <Text fontSize="xs" color="mutedFg" textAlign="center">
+          Выполняйте уроки — трофеи появятся здесь.
         </Text>
       </Box>
     );

@@ -24,11 +24,14 @@ function parseBones(json) {
  * Начислить косточку пользователю за урок.
  * Возвращает { bones_earned, is_special, new_total, new_stage, bones_json }.
  */
-async function awardBone(prisma, userId, skillKey, { isRepeat = false, streakCount = 0 } = {}) {
-  const profile = await prisma.profile.findUnique({ where: { user_id: userId } });
-  if (!profile) return { bones_earned: 0 };
+const { getPetIdForUser } = require('./petContext');
 
-  const bones = parseBones(profile.bones_json);
+async function awardBone(prisma, userId, skillKey, { isRepeat = false, streakCount = 0 } = {}) {
+  const petId = await getPetIdForUser(userId);
+  const profilePet = await prisma.pet.findUnique({ where: { id: petId } });
+  if (!profilePet) return { bones_earned: 0 };
+
+  const bones = parseBones(profilePet.bones_json);
   const key = skillKey || 'general';
 
   let bonesEarned = 1;
@@ -43,12 +46,12 @@ async function awardBone(prisma, userId, skillKey, { isRepeat = false, streakCou
   }
 
   bones[key] = (bones[key] ?? 0) + bonesEarned;
-  const totalBones = (profile.total_bones ?? 0) + bonesEarned;
-  const specialBones = (profile.special_bones ?? 0) + (isSpecial ? 1 : 0);
+  const totalBones = (profilePet.total_bones ?? 0) + bonesEarned;
+  const specialBones = (profilePet.special_bones ?? 0) + (isSpecial ? 1 : 0);
   const newStage = getStage(totalBones);
 
-  await prisma.profile.update({
-    where: { user_id: userId },
+  await prisma.pet.update({
+    where: { id: petId },
     data: {
       bones_json:    JSON.stringify(bones),
       total_bones:   totalBones,

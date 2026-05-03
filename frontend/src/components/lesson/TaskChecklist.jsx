@@ -116,8 +116,8 @@ export default function TaskChecklist({ task, onComplete }) {
     <VStack spacing={4} align="stretch">
       <Box>
         <HStack justify="space-between" mb={1}>
-          <Text fontSize="xs" color="gray.500">Прогресс задания</Text>
-          <Text fontSize="xs" color="gray.500">{filledCount}/{steps.length}</Text>
+          <Text fontSize="xs" color="mutedFg">Прогресс задания</Text>
+          <Text fontSize="xs" color="mutedFg">{filledCount}/{steps.length}</Text>
         </HStack>
         <Progress value={progress} colorScheme="green" size="sm" borderRadius="full" />
       </Box>

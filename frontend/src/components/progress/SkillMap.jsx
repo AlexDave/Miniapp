@@ -38,7 +38,7 @@ export default function SkillMap() {
   if (skills.length === 0) {
     return (
       <Box p={4} bg="gray.50" _dark={{ bg: 'gray.700' }} borderRadius="lg" textAlign="center">
-        <Text fontSize="sm" color="gray.500">Начни первый урок чтобы увидеть карту навыков</Text>
+        <Text fontSize="sm" color="mutedFg">Начни первый урок чтобы увидеть карту навыков</Text>
       </Box>
     );
   }

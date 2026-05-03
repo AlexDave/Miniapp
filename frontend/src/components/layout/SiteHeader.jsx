@@ -7,8 +7,7 @@ import {
   Text,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { Bell, Moon, Sun, PawPrint } from 'lucide-react';
-import useStore from '../../store';
+import { Moon, Sun, PawPrint } from 'lucide-react';
 import HomeHeaderSummary from './HomeHeaderSummary';
 
 const HEADER_PY = 3;
@@ -17,8 +16,6 @@ const HEADER_PY = 3;
  * Единый хедер приложения: логотип | плашка имя / огоньки / косточки | действия.
  */
 export default function SiteHeader({ toggleColorMode, colorMode }) {
-  const { notifications } = useStore();
-
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const iconColor = useColorModeValue('gray.600', 'gray.300');
   const headerBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)');
@@ -67,39 +64,14 @@ export default function SiteHeader({ toggleColorMode, colorMode }) {
 
           <Flex align="center" gap={2} justify="flex-end">
             <IconButton
-              icon={<Bell size={20} />}
+              icon={colorMode === 'light' ? <Moon size={22} /> : <Sun size={22} />}
               variant="ghost"
-              color={iconColor}
-              position="relative"
-              onClick={() => useStore.getState().toggleSidebar()}
-              aria-label="Notifications"
-            >
-              {notifications.length > 0 && (
-                <Box
-                  position="absolute"
-                  top={1}
-                  right={1}
-                  w={3}
-                  h={3}
-                  bg="red.500"
-                  borderRadius="full"
-                  fontSize="xs"
-                  color="white"
-                  display="flex"
-                  align="center"
-                  justify="center"
-                >
-                  {notifications.length}
-                </Box>
-              )}
-            </IconButton>
-
-            <IconButton
-              icon={colorMode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-              variant="ghost"
+              size="lg"
+              minW="44px"
+              minH="44px"
               color={iconColor}
               onClick={toggleColorMode}
-              aria-label="Toggle color mode"
+              aria-label="Переключить светлую или тёмную тему"
             />
           </Flex>
         </Grid>

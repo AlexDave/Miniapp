@@ -4,6 +4,7 @@ import {
   BrowserRouter as Router,
   Route,
   Routes,
+  Navigate,
   useNavigate,
   useLocation,
 } from 'react-router-dom';
@@ -17,39 +18,26 @@ import {
   useColorMode,
   useColorModeValue,
   Container,
-  SlideFade,
-  Portal,
 } from '@chakra-ui/react';
-import {
-  Target,
-  User,
-  Home,
-  Brain,
-  Map,
-} from 'lucide-react';
+import { User, Home, Brain } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import ReducedMotionAnimatePresence from './motion/ReducedMotionAnimatePresence';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import SiteHeader from './components/layout/SiteHeader';
-import Notifications from './components/Notifications';
 import OnboardingWizard from './components/onboarding/OnboardingWizard';
 import OnboardingGate from './components/onboarding/OnboardingGate';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
-const Courses = lazy(() => import('./components/Courses'));
+const Library = lazy(() => import('./components/Library'));
 const CourseDetail = lazy(() => import('./components/CourseDetail'));
-const Tracks = lazy(() => import('./components/Tracks'));
 const RoutesScreen = lazy(() => import('./components/routes/RoutesScreen'));
 const Chat = lazy(() => import('./components/Chat'));
 const Profile = lazy(() => import('./components/Profile'));
 const LessonView = lazy(() => import('./components/lesson/LessonView'));
 const SkillsScreen = lazy(() => import('./components/skills/SkillsScreen'));
-const TrainScreen = lazy(() => import('./components/train/TrainScreen'));
-const OnboardingRecommendations = lazy(() => import('./components/onboarding/OnboardingRecommendations'));
-
 import theme from './theme';
-import useStore from './store';
 
 const MotionBox = motion(Box);
 
@@ -58,7 +46,7 @@ function PageSpinner() {
     <Flex justify="center" align="center" minH="50vh" py={12}>
       <VStack spacing={3}>
         <Spinner size="lg" color="purple.500" thickness="4px" />
-        <Text fontSize="sm" color="gray.500">Загрузка…</Text>
+        <Text fontSize="sm" color="mutedFg">Загрузка…</Text>
       </VStack>
     </Flex>
   );
@@ -99,7 +87,6 @@ function App() {
 function AppContent() {
   const location = useLocation();
   const { colorMode, toggleColorMode } = useColorMode();
-  const { notifications } = useStore();
   const bg = useColorModeValue('gray.50', 'gray.900');
   const toastBg = useColorModeValue('#fff', '#2D3748');
   const toastColor = useColorModeValue('#1A202C', '#E2E8F0');
@@ -111,11 +98,15 @@ function AppContent() {
       {!hideAppChrome && <SiteHeader toggleColorMode={toggleColorMode} colorMode={colorMode} />}
 
       <Container maxW="container.xl" flex="1" px={4} py={6}>
-        <AnimatePresence mode="wait">
+        <ReducedMotionAnimatePresence mode="wait">
           <Suspense fallback={<PageSpinner />}>
             <Routes>
             <Route path="/onboarding" element={<OnboardingWizard />} />
-            <Route path="/onboarding/recommendations" element={<OnboardingRecommendations />} />
+            <Route path="/onboarding/recommendations" element={<Navigate to="/" replace />} />
+            <Route path="/courses" element={<Navigate to="/library" replace />} />
+            <Route path="/train" element={<Navigate to="/" replace />} />
+            <Route path="/tracks" element={<Navigate to="/" replace />} />
+            <Route path="/routes" element={<Navigate to="/profile/marshrut" replace />} />
             <Route
               path="/"
               element={
@@ -133,18 +124,10 @@ function AppContent() {
               }
             />
             <Route
-              path="/train"
+              path="/library"
               element={
                 <OnboardingGate>
-                  <TrainScreen />
-                </OnboardingGate>
-              }
-            />
-            <Route
-              path="/courses"
-              element={
-                <OnboardingGate>
-                  <Courses />
+                  <Library />
                 </OnboardingGate>
               }
             />
@@ -165,18 +148,10 @@ function AppContent() {
               }
             />
             <Route
-              path="/routes"
+              path="/profile/marshrut"
               element={
                 <OnboardingGate>
                   <RoutesScreen />
-                </OnboardingGate>
-              }
-            />
-            <Route
-              path="/tracks"
-              element={
-                <OnboardingGate>
-                  <Tracks />
                 </OnboardingGate>
               }
             />
@@ -198,11 +173,10 @@ function AppContent() {
             />
             </Routes>
           </Suspense>
-        </AnimatePresence>
+        </ReducedMotionAnimatePresence>
       </Container>
 
       {!hideAppChrome && <BottomNavigation />}
-      <Notifications />
 
       <Toaster
         position="top-right"
@@ -222,24 +196,23 @@ function AppContent() {
 function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
+  const prefersReducedMotion = useReducedMotion();
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const navBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)');
-  const inactiveColor = useColorModeValue('gray.500', 'gray.400');
+  const inactiveColor = useColorModeValue('gray.600', 'gray.400');
   const activeItemBg = useColorModeValue('purple.50', 'purple.900');
   const activeItemHoverBg = useColorModeValue('purple.100', 'purple.800');
   const inactiveItemHoverBg = useColorModeValue('gray.100', 'gray.700');
 
   const navigationItems = [
-    { path: '/', icon: <Home size={24} />, label: 'Главная', match: (p) => p === '/' },
-    { path: '/skills', icon: <Brain size={24} />, label: 'Навыки', match: (p) => p.startsWith('/skills') },
     {
-      path: '/train',
-      icon: <Target size={24} />,
-      label: 'Тренировка',
-      match: (p) => p.startsWith('/train') || p.startsWith('/lesson/'),
+      path: '/',
+      icon: <Home size={24} />,
+      label: 'Сегодня',
+      match: (p) => p === '/' || p.startsWith('/lesson/'),
     },
-    { path: '/routes', icon: <Map size={24} />, label: 'Маршруты', match: (p) => p.startsWith('/routes') },
-    { path: '/profile', icon: <User size={24} />, label: 'Профиль', match: (p) => p.startsWith('/profile') },
+    { path: '/skills', icon: <Brain size={24} />, label: 'Навыки', match: (p) => p.startsWith('/skills') },
+    { path: '/profile', icon: <User size={24} />, label: 'Я', match: (p) => p.startsWith('/profile') },
   ];
 
   return (
@@ -255,35 +228,42 @@ function BottomNavigation() {
       backdropFilter="blur(10px)"
       bg={navBg}
     >
-      <Flex justify="space-around" align="center" py={2}>
+      <Flex justify="space-around" align="center" py={1} px={1} minH="56px">
         {navigationItems.map(({ path, icon, label, match }) => {
           const isActive = match ? match(location.pathname) : location.pathname === path;
           const color = isActive ? 'purple.500' : inactiveColor;
+          const motionProps = prefersReducedMotion
+            ? {}
+            : { whileHover: { scale: 1.06 }, whileTap: { scale: 0.97 } };
 
           return (
-            <MotionBox
-              key={label}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
+            <MotionBox key={label} {...motionProps}>
               <VStack
                 spacing={1}
+                as="button"
+                type="button"
                 cursor="pointer"
                 onClick={() => navigate(path)}
-                p={2}
+                py={2}
+                px={3}
+                minH="44px"
+                minW="44px"
+                justify="center"
                 borderRadius="lg"
                 bg={isActive ? activeItemBg : 'transparent'}
                 _hover={{ bg: isActive ? activeItemHoverBg : inactiveItemHoverBg }}
-                transition="all 0.2s"
-                minW="60px"
+                transition="background 0.2s ease"
+                aria-label={label}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <Box color={color}>
+                <Box color={color} lineHeight={0}>
                   {icon}
                 </Box>
                 <Text
                   fontSize="xs"
                   color={color}
                   fontWeight={isActive ? 'semibold' : 'normal'}
+                  lineHeight="shorter"
                 >
                   {label}
                 </Text>
@@ -294,16 +274,6 @@ function BottomNavigation() {
       </Flex>
     </Box>
   );
-}
-
-function ScrollToTop() {
-  const location = useLocation();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location]);
-
-  return null;
 }
 
 export default App;

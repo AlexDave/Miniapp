@@ -10,15 +10,17 @@ import {
   Divider,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import ReducedMotionAnimatePresence from '../../motion/ReducedMotionAnimatePresence';
 import { Link as RouterLink } from 'react-router-dom';
 import { CheckCircle, ChevronDown, ChevronRight, MapPin } from 'lucide-react';
 import RouteProgressMap from './RouteProgressMap';
 
 const MotionBox = motion(Box);
 
-export default function RouteCard({ route, isSelected, onSelect, isSelecting }) {
+export default function RouteCard({ route, isSelected, onSelect, isSelecting, isProUser = false }) {
   const [expanded, setExpanded] = useState(false);
+  const reduceMotion = useReducedMotion();
   const bg = useColorModeValue('white', 'gray.800');
   const border = useColorModeValue('gray.200', 'gray.600');
   const selectedBorder = 'purple.400';
@@ -42,8 +44,7 @@ export default function RouteCard({ route, isSelected, onSelect, isSelecting }) 
       borderColor={isSelected ? selectedBorder : border}
       borderRadius="2xl"
       overflow="hidden"
-      whileHover={{ scale: 1.01 }}
-      transition={{ duration: 0.18 }}
+      {...(reduceMotion ? {} : { whileHover: { scale: 1.01 }, transition: { duration: 0.18 } })}
     >
       <Box p={4}>
         <HStack justify="space-between" mb={2}>
@@ -59,6 +60,11 @@ export default function RouteCard({ route, isSelected, onSelect, isSelecting }) 
                     <HStack spacing={1}><CheckCircle size={10} /><span>Мой</span></HStack>
                   </Badge>
                 )}
+                {route.requires_pro && (
+                  <Badge colorScheme="orange" variant="subtle" fontSize="xs">
+                    Pro
+                  </Badge>
+                )}
               </HStack>
               {ageLabel() && <Text fontSize="xs" color={muted}>{ageLabel()}</Text>}
               {isSelected && (
@@ -70,13 +76,21 @@ export default function RouteCard({ route, isSelected, onSelect, isSelecting }) 
           </HStack>
           <MotionBox
             as="button"
-            animate={{ rotate: expanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
+            type="button"
+            minW="44px"
+            minH="44px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            {...(reduceMotion
+              ? {}
+              : { animate: { rotate: expanded ? 180 : 0 }, transition: { duration: 0.2 } })}
             onClick={() => setExpanded((v) => !v)}
             color={muted}
-            aria-label="Раскрыть маршрут"
+            aria-label={expanded ? 'Свернуть описание маршрута' : 'Раскрыть описание маршрута'}
+            aria-expanded={expanded}
           >
-            <ChevronDown size={18} />
+            <ChevronDown size={18} style={{ transform: reduceMotion && expanded ? 'rotate(180deg)' : undefined }} />
           </MotionBox>
         </HStack>
 
@@ -104,18 +118,22 @@ export default function RouteCard({ route, isSelected, onSelect, isSelecting }) 
           onClick={onSelect}
           leftIcon={isSelected ? <CheckCircle size={14} /> : <MapPin size={14} />}
         >
-          {isSelected ? 'Активный маршрут' : 'Выбрать маршрут'}
+          {isSelected
+            ? 'Активный маршрут'
+            : route.requires_pro && !isProUser
+              ? 'Только в Pro'
+              : 'Выбрать маршрут'}
         </Button>
       </Box>
 
-      <AnimatePresence initial={false}>
+      <ReducedMotionAnimatePresence initial={false}>
         {expanded && (
           <MotionBox
             key="skills"
-            initial={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, height: reduceMotion ? 'auto' : 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.22 }}
+            exit={{ opacity: 0, height: reduceMotion ? 'auto' : 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.22 }}
             overflow="hidden"
           >
             <Divider borderColor={border} />
@@ -171,7 +189,7 @@ export default function RouteCard({ route, isSelected, onSelect, isSelecting }) 
             </Box>
           </MotionBox>
         )}
-      </AnimatePresence>
+      </ReducedMotionAnimatePresence>
     </MotionBox>
   );
 }

@@ -11,6 +11,7 @@ const CLIENT_WRITABLE_KEYS = new Set([
   'coach_dashboard_tip_seen',
   'coach_train_tip_seen',
   'coach_lesson_tip_seen',
+  'lesson_quiet_mode',
 ]);
 
 /** @typedef {'under6mo' | '6mo_2y' | 'older'} DogAgeBucket */
@@ -42,7 +43,8 @@ function mergePreferences(existingRaw, patch) {
         key === 'onboarding_completed' ||
         key === 'coach_dashboard_tip_seen' ||
         key === 'coach_train_tip_seen' ||
-        key === 'coach_lesson_tip_seen'
+        key === 'coach_lesson_tip_seen' ||
+        key === 'lesson_quiet_mode'
       ) {
         next[key] = Boolean(v);
       } else if (key === 'dog_age_bucket') {
@@ -59,6 +61,8 @@ function preferencesToPublic(prefs) {
   return {
     onboardingCompleted: prefs.onboarding_completed === true,
     dogAgeBucket: prefs.dog_age_bucket ?? null,
+    selectedRouteKey: prefs.selected_route_key ?? null,
+    routePaused: prefs.route_paused === true,
     learningGoals: Array.isArray(prefs.learning_goals) ? prefs.learning_goals : [],
     primaryProblem: prefs.primary_problem ?? null,
     coachTips: {
@@ -66,6 +70,7 @@ function preferencesToPublic(prefs) {
       train: prefs.coach_train_tip_seen === true,
       lesson: prefs.coach_lesson_tip_seen === true,
     },
+    lessonQuietMode: prefs.lesson_quiet_mode === true,
   };
 }
 

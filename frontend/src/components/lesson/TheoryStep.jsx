@@ -1,5 +1,6 @@
 import { Box, Text, HStack, Image, AspectRatio } from '@chakra-ui/react';
 import { Lightbulb, Info, AlertCircle } from 'lucide-react';
+import LazyStepMedia from './LazyStepMedia';
 
 const STEP_STYLES = {
   text: {
@@ -75,7 +76,7 @@ function StepImage({ imageUrl, altText, role }) {
         loading="lazy"
       />
       {altText && role === 'caption' && (
-        <Text fontSize="xs" color="gray.500" textAlign="center" mt={1}>{altText}</Text>
+        <Text fontSize="xs" color="mutedFg" textAlign="center" mt={1}>{altText}</Text>
       )}
     </Box>
   );
@@ -114,7 +115,7 @@ function DiagramContent({ content }) {
 
     if (data.type === 'position' || data.type === 'distance') {
       return (
-        <Box p={2} bg="white" _dark={{ bg: 'gray.700', borderColor: 'gray.500' }} borderRadius="md" border="1px dashed" borderColor="gray.300">
+        <Box p={2} bg="white" _dark={{ bg: 'gray.700', borderColor: 'gray.600' }} borderRadius="md" border="1px dashed" borderColor="gray.300">
           <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.300' }} fontStyle="italic">{data.label}</Text>
         </Box>
       );
@@ -158,7 +159,16 @@ export default function TheoryStep({ step }) {
           </Text>
         </HStack>
       )}
-      {step.image_url && step.image_role === 'hero' && (
+      {step.media_url && step.media_type && (
+        <LazyStepMedia
+          mediaType={step.media_type}
+          mediaUrl={step.media_url}
+          posterUrl={step.poster_url}
+          imageUrl={step.image_url}
+          altText={step.alt_text}
+        />
+      )}
+      {step.image_url && step.image_role === 'hero' && !step.media_url && (
         <StepImage imageUrl={step.image_url} altText={step.alt_text} role="hero" />
       )}
       {step.type === 'diagram' ? (

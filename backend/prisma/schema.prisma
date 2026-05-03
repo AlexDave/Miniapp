@@ -15,9 +15,23 @@ model User {
   email       String?  @unique
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+
+  // telegram_chat_id: личный чат для sendMessage (строка chat.id)
+  telegram_chat_id String?
+  // Напоминания о тренировке (спринт 20)
+  reminders_enabled         Boolean   @default(false)
+  reminder_time               String?   // "HH:mm" 24h, напр. "19:00"
+  reminder_tz                 String?   // IANA, напр. "Europe/Moscow"
+  reminder_quiet_weekends     Boolean   @default(false)
+  last_reminder_sent_at       DateTime?
+  // Подписка / Stars (спринт 23)
+  tier             String    @default("free") // free | pro
+  tier_expires_at  DateTime?
   
   // Связи
   profile         Profile?
+  payments        Payment[]
+  reminderBindTokens ReminderBindToken[]
   userTasks       UserTask[]
   userTracks      UserTrack[]
   achievements    UserAchievement[]
@@ -26,14 +40,90 @@ model User {
   chatMessages    ChatMessage[]
   dailyReports    DailyReport[]
   lessonProgress  LessonProgress[]
-  
+  behaviorEvents  BehaviorEvent[]
+  trophyVideos    UserTrophyVideo[]
+  analyticsEvents AnalyticsEvent[]
+  petMembers      PetMember[]
+  petInvitesSent  PetInviteToken[] @relation("PetInviteInviter")
+
   @@map("users")
+}
+
+// Общий виртуальный питомец (семейный режим, спринт 26)
+model Pet {
+  id                 Int      @id @default(autoincrement())
+  name               String   @default("Ваш питомец")
+  avatar             String?
+  level              Int      @default(1)
+  experience         Int      @default(0)
+  coins              Int      @default(0)
+  skills_json        String?
+  bones_json         String?
+  total_bones        Int      @default(0)
+  special_bones      Int      @default(0)
+  stage              String   @default("Знакомство")
+  total_courses      Int      @default(0)
+  completed_courses  Int      @default(0)
+  streak             Int      @default(0)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  members      PetMember[]
+  profiles     Profile[]
+  dailyReports DailyReport[]
+  progress     LessonProgress[]
+  inviteTokens PetInviteToken[]
+
+  @@map("pets")
+}
+
+model PetMember {
+  id        Int      @id @default(autoincrement())
+  pet_id    Int
+  user_id   Int
+  role      String   @default("owner") // owner | member
+  joined_at DateTime @default(now())
+
+  pet  Pet  @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([pet_id, user_id])
+  @@map("pet_members")
+}
+
+model PetInviteToken {
+  id               Int      @id @default(autoincrement())
+  token            String   @unique
+  pet_id           Int
+  inviter_user_id  Int
+  expires_at       DateTime
+  created_at       DateTime @default(now())
+
+  pet     Pet  @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+  inviter User @relation("PetInviteInviter", fields: [inviter_user_id], references: [id], onDelete: Cascade)
+
+  @@index([pet_id])
+  @@map("pet_invite_tokens")
+}
+
+// Одноразовый токен deep-link /start bind_* (лимит start-параметра Telegram)
+model ReminderBindToken {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  user_id    Int
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("reminder_bind_tokens")
 }
 
 // Профиль пользователя
 model Profile {
   id          Int      @id @default(autoincrement())
   user_id     Int      @unique
+  pet_id      Int?
   pet_name    String   @default("Ваш питомец")
   avatar      String?
   level       Int      @default(1)
@@ -54,7 +144,9 @@ model Profile {
   
   // Связи
   user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  
+  pet         Pet?     @relation(fields: [pet_id], references: [id], onDelete: SetNull)
+
+  @@index([pet_id])
   @@map("profiles")
 }
 
@@ -108,8 +200,9 @@ model Lesson {
   theory      String?
   order_index Int      @default(0)
   xp_reward   Int      @default(10)
-  meta        String?  // JSON: day_id, why, reflection, fallback_tasks, skill, feedback...
-  is_active   Boolean  @default(true)
+  meta          String?  // JSON: day_id, why, reflection, fallback_tasks, skill, feedback...
+  fallback_tree String?  // JSON: L1/L2/L3 упрощения + faq (см. sprint 18)
+  is_active     Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
@@ -118,8 +211,28 @@ model Lesson {
   daily_task  DailyTask?
   reports     DailyReport[]
   progress    LessonProgress[]
+  trophyVideos UserTrophyVideo[]
 
   @@map("lessons")
+}
+
+// Короткое видео после урока (только владелец; раздача через подписанный URL, спринт 22)
+model UserTrophyVideo {
+  id                       Int      @id @default(autoincrement())
+  user_id                  Int
+  lesson_id                Int
+  skill_key                String
+  storage_key              String   @unique
+  mime_type                String
+  size_bytes               Int
+  atomic_outcome_snapshot  String?
+  created_at               DateTime @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("user_trophy_videos")
 }
 
 // Шаг урока (теоретический контент)
@@ -131,6 +244,9 @@ model LessonStep {
   image_url   String?  // URL изображения (опционально для любого типа шага)
   image_role  String?  // "hero" | "inline" | "caption"
   alt_text    String?  // alt-текст для изображения
+  media_type  String?  // "image" | "gif" | "video" (спринт 19)
+  media_url   String?  // URL или путь /lesson-media/... после CDN/статики
+  poster_url  String?  // постер для video (fallback при ошибке загрузки)
   order_index Int      @default(0)
   created_at  DateTime @default(now())
 
@@ -174,6 +290,7 @@ model TaskStep {
 model DailyReport {
   id           Int      @id @default(autoincrement())
   user_id      Int
+  pet_id       Int
   lesson_id    Int
   steps_data   String   // JSON: [{step_id, value}]
   rating       Int      @default(2)
@@ -184,9 +301,11 @@ model DailyReport {
   completed_at DateTime @default(now())
 
   user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  pet          Pet      @relation(fields: [pet_id], references: [id], onDelete: Cascade)
   lesson       Lesson   @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
 
-  @@unique([user_id, lesson_id])
+  @@unique([pet_id, lesson_id])
+  @@index([user_id, completed_at])
   @@map("daily_reports")
 }
 
@@ -213,7 +332,8 @@ model Skill {
   description   String?
   unlock_rules  String? // JSON: { requires: { skill_key: min_bones } }
   order_index   Int     @default(0)
-  target_bones  Int     @default(5)
+  target_bones    Int     @default(5)
+  atomic_outcome  String? // микро-результат атома (спринт 22)
 
   category     SkillCategory @relation(fields: [category_key], references: [key], onDelete: Cascade)
   routeSkills  RouteSkill[]
@@ -225,20 +345,24 @@ model Skill {
 model LessonProgress {
   id              Int       @id @default(autoincrement())
   user_id         Int
+  pet_id          Int
   lesson_id       Int
   state           String    @default("not_started") // not_started | theory_done | completed
   theory_seen_at  DateTime?
   task_started_at DateTime?
   completed_at    DateTime?
   last_repeat_at  DateTime?
-  repeats_count   Int       @default(0)
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
+  repeats_count      Int       @default(0)
+  attempts_at_level  String?   // JSON: { by_tier: { "1"|"2"|"3": n }, no_total }
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
 
   user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  pet    Pet    @relation(fields: [pet_id], references: [id], onDelete: Cascade)
   lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
 
-  @@unique([user_id, lesson_id])
+  @@unique([pet_id, lesson_id])
+  @@index([user_id])
   @@map("lesson_progress")
 }
 
@@ -293,10 +417,30 @@ model Route {
   age_min_months  Int?
   age_max_months  Int?
   order_index     Int          @default(0)
+  requires_pro    Boolean      @default(false)
 
   skills RouteSkill[]
 
   @@map("routes")
+}
+
+// Оплата Telegram Stars (XTR), спринт 23
+model Payment {
+  id                           Int       @id @default(autoincrement())
+  user_id                      Int
+  payload                      String    @unique
+  telegram_payment_charge_id   String?   @unique
+  total_amount                 Int
+  currency                     String    @default("XTR")
+  status                       String    @default("pending")
+  plan                         String?
+  created_at                   DateTime  @default(now())
+  updated_at                   DateTime  @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("payments")
 }
 
 // Навык в маршруте (атом skill_key + позиция)
@@ -435,6 +579,21 @@ model CourseProgress {
   @@map("course_progress")
 }
 
+// Журнал поведения (инциденты → рекомендации атомов, спринт 21)
+model BehaviorEvent {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  type       String   // barking | accident | escape | aggression | chewing | other
+  note       String?
+  severity   Int      @default(2) // 1–5
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("behavior_events")
+}
+
 // Сообщения чата
 model ChatMessage {
   id          Int      @id @default(autoincrement())
@@ -447,4 +606,19 @@ model ChatMessage {
   user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   
   @@map("chat_messages")
+}
+
+// События продукта для воронки и retention (спринт 24)
+model AnalyticsEvent {
+  id      Int      @id @default(autoincrement())
+  user_id Int?
+  event   String
+  props   String?
+  ts      DateTime @default(now())
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([event, ts])
+  @@index([user_id, ts])
+  @@map("analytics_events")
 }

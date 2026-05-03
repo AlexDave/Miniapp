@@ -7,6 +7,15 @@ const theme = extendTheme({
     initialColorMode: 'light',
     useSystemColorMode: true,
   },
+  semanticTokens: {
+    colors: {
+      /** Вторичный текст: ≥4.5:1 на gray.50 (светлая тема) */
+      mutedFg: {
+        default: 'gray.600',
+        _dark: 'gray.400',
+      },
+    },
+  },
   colors: {
     brand: {
       50: '#f0f9ff',
@@ -183,12 +192,10 @@ const theme = extendTheme({
           color: 'white',
           _hover: {
             bg: 'purple.600',
-            transform: 'translateY(-1px)',
             boxShadow: 'lg',
           },
           _active: {
             bg: 'purple.700',
-            transform: 'translateY(0)',
           },
         },
         ghost: {
@@ -208,10 +215,9 @@ const theme = extendTheme({
           border: '1px solid',
           borderColor: 'gray.200',
           _hover: {
-            transform: 'translateY(-2px)',
             boxShadow: 'lg',
           },
-          transition: 'all 0.2s',
+          transition: 'box-shadow 0.2s ease',
         },
       },
     },

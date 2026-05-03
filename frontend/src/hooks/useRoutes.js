@@ -7,11 +7,12 @@ export function useRoutes() {
     async () => {
       const { data } = await apiClient.get('/api/routes');
       if (Array.isArray(data)) {
-        return { routes: data, route_paused: false };
+        return { routes: data, route_paused: false, is_pro: false };
       }
       return {
         routes: Array.isArray(data?.routes) ? data.routes : [],
         route_paused: data?.route_paused === true,
+        is_pro: data?.is_pro === true,
       };
     },
     { staleTime: 1000 * 60 * 2 }

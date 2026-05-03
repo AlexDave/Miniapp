@@ -7,7 +7,7 @@ export const MOTION = {
     fast: 150,
     normal: 250,
     slow: 400,
-    xpFloat: 600,
+    floatReward: 600,
     levelUp: 800,
     badge: 700,
   },

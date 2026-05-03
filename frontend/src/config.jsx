@@ -7,7 +7,7 @@ const config = {
   app: {
     name: 'Dog Course App',
     version: '1.0.0',
-    description: 'Приложение для обучения с курсами и треками'
+    description: 'Приложение для обучения собак по программам и маршрутам'
   },
   
   // Настройки API
@@ -16,8 +16,6 @@ const config = {
     retryAttempts: 3,
     endpoints: {
       courses: '/api/courses',
-      tracksCatalog: '/api/courses/tracks',
-      tracks: '/api/user/tracks',
       profile: '/api/user/profile',
       achievements: '/api/user/achievements'
     }

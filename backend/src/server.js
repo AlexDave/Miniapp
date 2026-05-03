@@ -3,9 +3,11 @@ const app = require('./app');
 const config = require('./config');
 const { connect, disconnect } = require('./database/connection');
 const logger = require('./utils/logger');
+const { startReminderCron } = require('./jobs/reminderCron');
 
 async function startServer() {
   await connect();
+  startReminderCron();
 
   const server = app.listen(config.server.port, config.server.host, () => {
     logger.info({ port: config.server.port, env: config.server.nodeEnv }, 'Сервер запущен');

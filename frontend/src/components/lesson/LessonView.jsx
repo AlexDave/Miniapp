@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import ReducedMotionAnimatePresence from '../../motion/ReducedMotionAnimatePresence';
 import {
   Box,
   VStack,
@@ -17,12 +18,22 @@ import {
   Progress,
 } from '@chakra-ui/react';
 import { ArrowLeft, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
-import { useLesson, useSubmitReport, useMarkTheorySeen, useStartTask, useRepeatLesson } from '../../hooks/useLessons';
+import {
+  useLesson,
+  useSubmitReport,
+  useMarkTheorySeen,
+  useStartTask,
+  useRepeatLesson,
+  useRetryAfterFail,
+} from '../../hooks/useLessons';
+import { useProfile } from '../../hooks/useProfile';
 import TaskChecklist from './TaskChecklist';
 import TaskStepFlow from './TaskStepFlow';
 import ReportForm from './ReportForm';
+import LessonFailureOutcome from './LessonFailureOutcome';
 import TheoryStep from './TheoryStep';
 import BoneCelebrate from '../gamification/BoneCelebrate';
+import LessonVictoryVideoUpload from './LessonVictoryVideoUpload';
 import { MOTION, sec } from '../../motion/tokens';
 import { mergeDailyTaskStepsData } from '../../utils/lessonSteps';
 
@@ -49,6 +60,7 @@ function WhyScreen({ why, onNext }) {
 
 function HowScreen({ steps, onNext, onBack }) {
   const [idx, setIdx] = useState(0);
+  const reduceMotion = useReducedMotion();
   const total = steps.length;
 
   function next() {
@@ -65,24 +77,24 @@ function HowScreen({ steps, onNext, onBack }) {
   return (
     <VStack spacing={4} align="stretch" pt={4} pb={8}>
       <HStack justify="space-between">
-        <Text fontSize="xs" color="gray.500">{idx + 1} из {total}</Text>
+        <Text fontSize="xs" color="mutedFg">{idx + 1} из {total}</Text>
         <Progress value={((idx + 1) / total) * 100} colorScheme="purple" size="xs" borderRadius="full" flex={1} mx={2} />
-        <Text fontSize="xs" color="gray.500">{Math.round(((idx + 1) / total) * 100)}%</Text>
+        <Text fontSize="xs" color="mutedFg">{Math.round(((idx + 1) / total) * 100)}%</Text>
       </HStack>
 
-      <AnimatePresence mode="wait" initial={false}>
+      <ReducedMotionAnimatePresence mode="wait" initial={false}>
         <motion.div
           key={idx}
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: reduceMotion ? 0 : 20 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.2 }}
+          exit={{ opacity: 0, x: reduceMotion ? 0 : -20 }}
+          transition={{ duration: reduceMotion ? 0 : 0.2 }}
         >
           <Box minH="200px">
             {step ? <TheoryStep step={step} /> : <Text color="gray.400">Шаг не найден</Text>}
           </Box>
         </motion.div>
-      </AnimatePresence>
+      </ReducedMotionAnimatePresence>
 
       <HStack spacing={3}>
         {idx > 0 && (
@@ -103,7 +115,7 @@ function HowScreen({ steps, onNext, onBack }) {
   );
 }
 
-function TaskScreen({ daily, onComplete, onReadAgain }) {
+function TaskScreen({ daily, onComplete, onGiveUp, onReadAgain, quietMode }) {
   const checkboxSteps = (daily?.steps ?? []).filter((s) => s.type === 'checkbox');
   const useMicroFlow = daily && checkboxSteps.length > 0;
 
@@ -112,7 +124,7 @@ function TaskScreen({ daily, onComplete, onReadAgain }) {
       <Button
         size="xs"
         variant="ghost"
-        color="gray.500"
+        color="mutedFg"
         alignSelf="flex-start"
         leftIcon={<ChevronLeft size={12} />}
         onClick={onReadAgain}
@@ -121,14 +133,19 @@ function TaskScreen({ daily, onComplete, onReadAgain }) {
       </Button>
 
       {useMicroFlow && (
-        <TaskStepFlow task={daily} onComplete={onComplete} />
+        <TaskStepFlow
+          task={daily}
+          onComplete={onComplete}
+          onGiveUp={onGiveUp}
+          quietMode={quietMode}
+        />
       )}
       {!useMicroFlow && daily && (
         <TaskChecklist task={daily} onComplete={(rows) => onComplete(rows)} />
       )}
       {!daily && (
         <VStack spacing={4}>
-          <Text color="gray.500" fontSize="sm">Нет практического задания — отметь итог.</Text>
+          <Text color="mutedFg" fontSize="sm">Нет практического задания — отметь итог.</Text>
           <Button colorScheme="purple" onClick={() => onComplete([])}>К итогу</Button>
         </VStack>
       )}
@@ -142,7 +159,7 @@ function CompletedScreen({ report, lessonId, onRepeat, isRepeating, cooldownHour
     <VStack spacing={6} py={10} align="center" textAlign="center">
       <Text fontSize="4xl">🦴</Text>
       <Text fontWeight="semibold" fontSize="lg">Урок уже выполнен</Text>
-      <Text fontSize="sm" color="gray.500">Косточки добавлены в копилку.</Text>
+      <Text fontSize="sm" color="mutedFg">Косточки добавлены в копилку.</Text>
       {cooldownHours ? (
         <Box px={4} py={3} bg="orange.50" borderRadius="xl" border="1px solid" borderColor="orange.100">
           <Text fontSize="sm" color="orange.700">
@@ -154,8 +171,8 @@ function CompletedScreen({ report, lessonId, onRepeat, isRepeating, cooldownHour
           Перепройти
         </Button>
       )}
-      <Button as={RouterLink} to="/train" variant="ghost" size="sm">
-        К тренировке
+      <Button as={RouterLink} to="/" variant="ghost" size="sm">
+        На главную
       </Button>
     </VStack>
   );
@@ -164,16 +181,21 @@ function CompletedScreen({ report, lessonId, onRepeat, isRepeating, cooldownHour
 export default function LessonView() {
   const { lessonId } = useParams();
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
   const { data, isLoading, error } = useLesson(lessonId);
   const submitReport = useSubmitReport();
   const markTheorySeen = useMarkTheorySeen();
   const startTask = useStartTask();
   const repeatLesson = useRepeatLesson();
+  const retryAfterFail = useRetryAfterFail();
+  const { data: profile } = useProfile();
 
   const [phase, setPhase] = useState(null);
   const [taskStepsData, setTaskStepsData] = useState([]);
+  const [taskAborted, setTaskAborted] = useState(false);
   const [bonesResult, setBonesResult] = useState(null);
   const [cooldownHours, setCooldownHours] = useState(null);
+  const wakeLockRef = useRef(null);
 
   const progress = data?.progress;
   const report = data?.report;
@@ -190,16 +212,82 @@ export default function LessonView() {
     }
   }, [data, phase, report, progress]);
 
-  if (isLoading || phase === null) {
+  useEffect(() => {
+    if (phase !== 2) return undefined;
+
+    const tw = window.Telegram?.WebApp;
+    try {
+      tw?.disableVerticalSwipes?.();
+    } catch {
+      /* ignore */
+    }
+
+    let cancelled = false;
+    async function lockScreen() {
+      if (!('wakeLock' in navigator) || wakeLockRef.current) return;
+      try {
+        const wl = await navigator.wakeLock.request('screen');
+        if (cancelled) {
+          await wl.release();
+          return;
+        }
+        wakeLockRef.current = wl;
+        wl.addEventListener?.('release', () => {
+          wakeLockRef.current = null;
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+    lockScreen();
+
+    const onVis = () => {
+      if (document.visibilityState === 'visible') lockScreen();
+    };
+    document.addEventListener('visibilitychange', onVis);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVis);
+      try {
+        tw?.enableVerticalSwipes?.();
+      } catch {
+        /* ignore */
+      }
+      wakeLockRef.current?.release?.().catch(() => {});
+      wakeLockRef.current = null;
+    };
+  }, [phase, lessonId]);
+
+  if (isLoading) {
     return <Center h="50vh"><Spinner size="lg" color="purple.500" /></Center>;
   }
 
   if (error || !data?.lesson) {
+    const detail =
+      error?.response?.data?.error ||
+      (error?.message && error.message !== 'Network Error' ? error.message : null);
     return (
       <Alert status="error" borderRadius="lg" m={4}>
-        <AlertIcon />Урок не найден
+        <AlertIcon />
+        <Box>
+          <Text fontWeight="medium">Не удалось открыть урок</Text>
+          {detail ? (
+            <Text fontSize="sm" mt={1} color="gray.600">
+              {detail}
+            </Text>
+          ) : (
+            <Text fontSize="sm" mt={1} color="gray.600">
+              Проверьте, что API запущен (порт 5000) и вы вошли в приложение.
+            </Text>
+          )}
+        </Box>
       </Alert>
     );
+  }
+
+  if (phase === null) {
+    return <Center h="50vh"><Spinner size="lg" color="purple.500" /></Center>;
   }
 
   const { lesson } = data;
@@ -251,45 +339,75 @@ export default function LessonView() {
   // Экран результата (косточки)
   if (bonesResult) {
     const isSuccess = bonesResult.outcome !== 'no';
-    const fallbacks = bonesResult.fallback_tasks ?? [];
+    if (!isSuccess) {
+      const fallbackTree = bonesResult.fallback_tree ?? lesson?.fallback_tree ?? null;
+      return (
+        <LessonFailureOutcome
+          bonesResult={bonesResult}
+          fallbackTree={fallbackTree}
+          lessonId={lessonId}
+          isRetrying={retryAfterFail.isLoading}
+          onHome={() => navigate('/')}
+          onRetryAfterFail={async () => {
+            try {
+              await retryAfterFail.mutateAsync(parseInt(lessonId, 10));
+              setBonesResult(null);
+              setTaskAborted(false);
+              setPhase(0);
+            } catch {
+              /* toast optional */
+            }
+          }}
+        />
+      );
+    }
+
+    const er = bonesResult.emotional_reward;
+
     return (
       <Box pb={24} px={4}>
-        <VStack spacing={6} py={10} align="center" textAlign="center">
-          {isSuccess ? (
-            <>
-              <BoneCelebrate>
-                <Text fontSize="5xl" display="block">🦴</Text>
-              </BoneCelebrate>
-              <Text fontWeight="bold" fontSize="xl">
-                {bonesResult.bones_earned > 0 ? `+${bonesResult.bones_earned} косточка в копилку!` : 'Выполнено!'}
+        <VStack
+          spacing={6}
+          py={10}
+          align="center"
+          textAlign="center"
+          as="section"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <BoneCelebrate>
+            <Text fontSize="5xl" display="block">🦴</Text>
+          </BoneCelebrate>
+          <Text fontWeight="bold" fontSize="xl">
+            {bonesResult.bones_earned > 0 ? `+${bonesResult.bones_earned} косточка` : 'Выполнено!'}
+            {er?.skill_bones_target != null ? (
+              <Text as="span" display="block" fontSize="md" fontWeight="medium" color="gray.600" mt={1}>
+                {er.skill_bones_current}/{er.skill_bones_target} по «{er.skill_title}»
               </Text>
-              {bonesResult.is_special_bone && (
-                <Badge colorScheme="orange" px={3} py={1} borderRadius="full" fontSize="sm">
-                  Особая косточка — 7 дней подряд!
-                </Badge>
-              )}
-              <Text fontSize="sm" color="gray.500">{bonesResult.feedback_message}</Text>
-              <Text fontSize="sm" color="purple.600" fontWeight="medium">
-                Стадия: {bonesResult.bones_stage}
+            ) : null}
+          </Text>
+          {er?.atomic_outcome ? (
+            <Text fontSize="md" color="gray.700" lineHeight="tall" px={1} maxW="md">
+              <Text as="span" fontWeight="semibold" color="purple.600">
+                {er.pet_name}
+                :{' '}
               </Text>
-            </>
-          ) : (
-            <>
-              <Text fontSize="5xl">💪</Text>
-              <Text fontWeight="bold" fontSize="xl">Бывает</Text>
-              <Text fontSize="sm" color="gray.500">{bonesResult.feedback_message}</Text>
-              {fallbacks.length > 0 && (
-                <Box w="100%" p={4} bg="orange.50" borderRadius="xl" textAlign="left">
-                  <Text fontSize="xs" fontWeight="bold" color="orange.700" mb={2}>Попробуй упрощённый вариант:</Text>
-                  {fallbacks.map((f, i) => (
-                    <Text key={i} fontSize="sm" color="orange.800">• {f}</Text>
-                  ))}
-                </Box>
-              )}
-            </>
+              {er.atomic_outcome}
+            </Text>
+          ) : null}
+          {bonesResult.is_special_bone && (
+            <Badge colorScheme="orange" px={3} py={1} borderRadius="full" fontSize="sm">
+              Особая косточка — 7 дней подряд!
+            </Badge>
           )}
-          <Button colorScheme="purple" size="lg" borderRadius="xl" onClick={() => navigate('/train')}>
-            К тренировке
+          <Text fontSize="sm" color="mutedFg">{bonesResult.feedback_message}</Text>
+          <Text fontSize="sm" color="purple.600" fontWeight="medium">
+            Стадия: {bonesResult.bones_stage}
+          </Text>
+          <LessonVictoryVideoUpload lessonId={parseInt(lessonId, 10)} />
+          <Button colorScheme="purple" size="lg" borderRadius="xl" onClick={() => navigate('/')}>
+            На главную
           </Button>
           <Button variant="ghost" size="sm" onClick={() => { setBonesResult(null); setPhase(0); }}>
             Перепройти
@@ -310,23 +428,47 @@ export default function LessonView() {
     try {
       await startTask.mutateAsync(parseInt(lessonId, 10));
     } catch { /* non-blocking */ }
+    setTaskAborted(false);
     setPhase(2);
   }
 
   async function handleTaskComplete(rows) {
+    setTaskAborted(false);
+    setTaskStepsData(rows);
+    setPhase(3);
+  }
+
+  function handleTaskGiveUp(rows) {
+    setTaskAborted(true);
     setTaskStepsData(rows);
     setPhase(3);
   }
 
   async function handleReportSubmit({ success, note }) {
     const merged = daily ? mergeDailyTaskStepsData(daily, taskStepsData, success) : [];
+    let fromFallbackTier = 1;
+    try {
+      const raw = sessionStorage.getItem(`lesson_fail_tier_${lessonId}`);
+      if (raw != null && raw !== '') {
+        const n = parseInt(raw, 10);
+        if (Number.isFinite(n) && n >= 1 && n <= 3) fromFallbackTier = n;
+      }
+    } catch {
+      fromFallbackTier = 1;
+    }
     try {
       const result = await submitReport.mutateAsync({
         lessonId: parseInt(lessonId, 10),
         steps_data: merged,
         success,
         note,
+        from_fallback_tier: fromFallbackTier,
       });
+      try {
+        sessionStorage.removeItem(`lesson_fail_tier_${lessonId}`);
+      } catch {
+        /* ignore */
+      }
       setBonesResult(result);
     } catch {
       /* toast */
@@ -369,13 +511,16 @@ export default function LessonView() {
       <Divider />
 
       <Box px={4} pt={2} overflow="hidden">
-        <AnimatePresence mode="wait" initial={false}>
+        <ReducedMotionAnimatePresence mode="wait" initial={false}>
           <motion.div
             key={phase}
-            initial={{ opacity: 0, x: 22 }}
+            initial={{ opacity: 0, x: reduceMotion ? 0 : 22 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -18 }}
-            transition={{ duration: sec(MOTION.duration.normal), ease: MOTION.easing.default }}
+            exit={{ opacity: 0, x: reduceMotion ? 0 : -18 }}
+            transition={{
+              duration: reduceMotion ? 0 : sec(MOTION.duration.normal),
+              ease: MOTION.easing.default,
+            }}
             style={{ width: '100%' }}
           >
             {phase === 0 && (
@@ -391,7 +536,7 @@ export default function LessonView() {
             )}
             {phase === 1 && theorySteps.length === 0 && (
               <VStack spacing={4} pt={4} pb={8}>
-                <Text color="gray.500" fontSize="sm">Подробные шаги будут добавлены скоро.</Text>
+                <Text color="mutedFg" fontSize="sm">Подробные шаги будут добавлены скоро.</Text>
                 <Button colorScheme="purple" onClick={handleHowDone}>К заданию</Button>
               </VStack>
             )}
@@ -400,13 +545,17 @@ export default function LessonView() {
               <TaskScreen
                 daily={daily}
                 onComplete={handleTaskComplete}
+                onGiveUp={handleTaskGiveUp}
                 onReadAgain={() => setPhase(theorySteps.length > 0 ? 1 : 0)}
+                quietMode={profile?.lessonQuietMode === true}
               />
             )}
 
             {phase === 3 && (
               <Box pt={2} pb={8}>
                 <ReportForm
+                  key={taskAborted ? 'task-abort' : 'task-normal'}
+                  initialSuccess={taskAborted ? 'no' : 'yes'}
                   fallbackTasks={Array.isArray(lessonMeta.fallback_tasks) ? lessonMeta.fallback_tasks : []}
                   onSubmit={handleReportSubmit}
                   isLoading={submitReport.isLoading}
@@ -414,7 +563,7 @@ export default function LessonView() {
               </Box>
             )}
           </motion.div>
-        </AnimatePresence>
+        </ReducedMotionAnimatePresence>
       </Box>
     </Box>
   );

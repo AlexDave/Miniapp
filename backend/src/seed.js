@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { courses, modulesData } = require('./seed-content');
 const { SKILL_CATEGORIES, SKILLS } = require('./seed-skills');
+const ATOMIC_OUTCOMES = require('../data/skill-atomic-outcomes.json');
 
 const prisma = new PrismaClient();
 
@@ -15,14 +16,14 @@ const tracks = [
 // ─── Достижения ───────────────────────────────────────────────────────────────
 
 const achievements = [
-  { name: 'Первые шаги', description: 'Завершите первое задание трека', icon: 'Star', color: 'yellow', condition: JSON.stringify({ type: 'tracks_completed', value: 1 }) },
+  { name: 'Первые шаги', description: 'Первый прогресс по атому в текущем маршруте', icon: 'Star', color: 'yellow', condition: JSON.stringify({ type: 'routes_completed', value: 1 }) },
   { name: 'Неделя обучения', description: 'Занимайтесь 7 дней подряд', icon: 'Calendar', color: 'green', condition: JSON.stringify({ type: 'streak', value: 7 }) },
-  { name: 'Мастер команд', description: 'Завершите 3 трека', icon: 'Target', color: 'blue', condition: JSON.stringify({ type: 'tracks_completed', value: 3 }) },
+  { name: 'Мастер команд', description: 'Три атома маршрута с практикой (косточки)', icon: 'Target', color: 'blue', condition: JSON.stringify({ type: 'routes_completed', value: 3 }) },
   { name: 'Друг питомца', description: 'Занимайтесь 30 дней подряд', icon: 'Heart', color: 'red', condition: JSON.stringify({ type: 'streak', value: 30 }) },
-  { name: 'Эксперт', description: 'Завершите 5 треков', icon: 'Crown', color: 'purple', condition: JSON.stringify({ type: 'tracks_completed', value: 5 }) },
-  { name: 'Молния', description: 'Завершите трек за 1 день', icon: 'Zap', color: 'orange', condition: JSON.stringify({ type: 'track_speed', value: 1 }) },
+  { name: 'Эксперт', description: 'Пять атомов маршрута с практикой', icon: 'Crown', color: 'purple', condition: JSON.stringify({ type: 'routes_completed', value: 5 }) },
+  { name: 'Молния', description: 'Сделайте 5 отчётов по урокам', icon: 'Zap', color: 'orange', condition: JSON.stringify({ type: 'reports_count', value: 5 }) },
   { name: 'Данные не врут', description: 'Заполняй отчёт 10 дней подряд', icon: 'BarChart', color: 'teal', condition: JSON.stringify({ type: 'reports_streak', value: 10 }) },
-  { name: 'Перфекционист', description: 'Получи оценку «Отлично» 5 раз', icon: 'Award', color: 'yellow', condition: JSON.stringify({ type: 'perfect_reports', value: 5 }) },
+  { name: 'Перфекционист', description: 'Соберите 15 косточек всего', icon: 'Award', color: 'yellow', condition: JSON.stringify({ type: 'bones_earned', value: 15 }) },
   { name: 'Первый модуль', description: 'Завершил первый модуль курса', icon: 'BookOpen', color: 'blue', condition: JSON.stringify({ type: 'modules_complete', value: 1 }) },
   { name: 'Мастер курса', description: 'Завершил курс от первого до последнего урока', icon: 'GraduationCap', color: 'purple', condition: JSON.stringify({ type: 'course_completed', value: 1 }) },
 ];
@@ -134,11 +135,15 @@ async function main() {
     }
   }
   for (const skill of SKILLS) {
+    const data = {
+      ...skill,
+      atomic_outcome: ATOMIC_OUTCOMES[skill.key] ?? null,
+    };
     const existing = await prisma.skill.findUnique({ where: { key: skill.key } });
     if (existing) {
-      await prisma.skill.update({ where: { key: skill.key }, data: skill });
+      await prisma.skill.update({ where: { key: skill.key }, data });
     } else {
-      await prisma.skill.create({ data: skill });
+      await prisma.skill.create({ data });
     }
   }
   console.log(`✅ Категорий навыков: ${SKILL_CATEGORIES.length}, атомов: ${SKILLS.length}`);
@@ -165,6 +170,7 @@ async function main() {
       age_min_months: 4,
       age_max_months: null,
       order_index: 1,
+      requires_pro: true,
       skills: ['social.people', 'social.sounds', 'walk.loose', 'walk.heel', 'walk.recall', 'walk.recall2', 'walk.drop'],
     },
     {
@@ -187,6 +193,7 @@ async function main() {
       age_min_months: 4,
       age_max_months: null,
       order_index: 3,
+      requires_pro: true,
       skills: ['daily.sleep', 'bound.bark', 'bound.bite', 'self.alone', 'self.tired'],
     },
   ];

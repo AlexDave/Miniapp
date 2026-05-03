@@ -1,6 +1,8 @@
 const express = require('express');
 const { prisma } = require('../database/connection');
 const { parseBones } = require('../utils/bones');
+const { lessonMatchesSkill } = require('../utils/lessonSkillMeta');
+const { getPetIdForUser } = require('../utils/petContext');
 
 const router = express.Router();
 
@@ -28,16 +30,17 @@ function isRecommended(skill, bonesBySkill = {}) {
 router.get('/tree', async (req, res) => {
   try {
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
-    const [categories, profile] = await Promise.all([
+    const [categories, pet] = await Promise.all([
       prisma.skillCategory.findMany({
         include: { skills: { orderBy: { order_index: 'asc' } } },
         orderBy: { order_index: 'asc' },
       }),
-      prisma.profile.findUnique({ where: { user_id: userId }, select: { bones_json: true } }),
+      prisma.pet.findUnique({ where: { id: petId }, select: { bones_json: true } }),
     ]);
 
-    const bones = parseBones(profile?.bones_json);
+    const bones = parseBones(pet?.bones_json);
 
     const tree = categories.map((cat) => {
       const skillsWithProgress = cat.skills.map((skill) => {
@@ -50,6 +53,7 @@ router.get('/tree', async (req, res) => {
           description:  skill.description,
           order_index:  skill.order_index,
           target_bones: skill.target_bones,
+          atomic_outcome: skill.atomic_outcome ?? null,
           bones_earned: bonesEarned,
           progress_pct: pct,
           is_complete:  pct >= 100,
@@ -85,13 +89,14 @@ router.get('/:key/lessons', async (req, res) => {
   try {
     const skillKey = req.params.key;
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const [lessons, doneReports, progress] = await Promise.all([
       prisma.lesson.findMany({
         where: { is_active: true },
         include: {
           module: { include: { course: { select: { id: true, title: true } } } },
-          reports: { where: { user_id: userId }, select: { id: true, success: true } },
+          reports: { where: { pet_id: petId }, select: { id: true, success: true } },
         },
         orderBy: [
           { module: { course: { id: 'asc' } } },
@@ -99,26 +104,14 @@ router.get('/:key/lessons', async (req, res) => {
           { order_index: 'asc' },
         ],
       }),
-      prisma.dailyReport.findMany({ where: { user_id: userId }, select: { lesson_id: true } }),
-      prisma.lessonProgress.findMany({ where: { user_id: userId }, select: { lesson_id: true, repeats_count: true } }),
+      prisma.dailyReport.findMany({ where: { pet_id: petId }, select: { lesson_id: true } }),
+      prisma.lessonProgress.findMany({ where: { pet_id: petId }, select: { lesson_id: true, repeats_count: true } }),
     ]);
 
     const doneIds = new Set(doneReports.map((r) => r.lesson_id));
     const progressMap = Object.fromEntries(progress.map((p) => [p.lesson_id, p.repeats_count]));
 
-    // Фильтруем по skill_key из meta
-    const filtered = lessons.filter((l) => {
-      try {
-        const meta = l.meta ? (typeof l.meta === 'string' ? JSON.parse(l.meta) : l.meta) : {};
-        if (meta.skill_key && meta.skill_key === skillKey) return true;
-        const sk = meta.skill ?? 'focus';
-        const keyMap = { focus: 'intro.eye', sit: 'control.sit', recall: 'walk.recall' };
-        const mappedKey = keyMap[sk] ?? sk;
-        return mappedKey === skillKey || sk === skillKey;
-      } catch {
-        return false;
-      }
-    });
+    const filtered = lessons.filter((l) => lessonMatchesSkill(l.meta, skillKey));
 
     let firstUndoneSeen = false;
     const result = filtered.map((l) => {

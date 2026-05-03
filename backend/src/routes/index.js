@@ -1,5 +1,4 @@
 const coursesRoutes = require('./courses');
-const tracksRoutes = require('./tracks');
 const profileRoutes = require('./profile');
 const achievementsRoutes = require('./achievements');
 const systemRoutes = require('./system');
@@ -8,10 +7,12 @@ const progressRoutes = require('./progress');
 const skillsRoutes = require('./skills');
 const userRoutesRoutes = require('./user-routes');
 const adminRoutes = require('./admin');
+const onboardingRoutes = require('./onboarding');
+const paymentsRoutes = require('./payments');
+const petsRoutes = require('./pets');
 
 module.exports = {
   coursesRoutes,
-  tracksRoutes,
   profileRoutes,
   achievementsRoutes,
   systemRoutes,
@@ -20,4 +21,7 @@ module.exports = {
   skillsRoutes,
   userRoutesRoutes,
   adminRoutes,
+  onboardingRoutes,
+  paymentsRoutes,
+  petsRoutes,
 };

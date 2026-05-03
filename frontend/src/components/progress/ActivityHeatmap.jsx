@@ -3,10 +3,11 @@ import { useActivity } from '../../hooks/useProgress';
 
 const WEEKS = 13; // 13 недель = ~90 дней
 
-function getIntensity(xp) {
-  if (xp === 0) return 0;
-  if (xp <= 10) return 1;
-  if (xp <= 25) return 2;
+function getIntensity(day) {
+  const n = day.lessons_count ?? 0;
+  if (n === 0) return 0;
+  if (n === 1) return 1;
+  if (n === 2) return 2;
   return 3;
 }
 
@@ -14,11 +15,11 @@ const LIGHT_COLORS = ['gray.100', 'green.100', 'green.300', 'green.700'];
 const DARK_COLORS = ['gray.700', 'green.900', 'green.600', 'green.400'];
 
 function DayCell({ day }) {
-  const intensity = getIntensity(day.xp);
+  const intensity = getIntensity(day);
 
   return (
     <Tooltip
-      label={`${day.date}: ${day.xp} XP${day.lessons_count > 0 ? `, ${day.lessons_count} урок` : ''}`}
+      label={`${day.date}: ${day.lessons_count ?? 0} ${(day.lessons_count ?? 0) === 1 ? 'урок' : 'уроков'}`}
       hasArrow
       fontSize="xs"
     >
@@ -50,14 +51,14 @@ export default function ActivityHeatmap() {
     weeks.push(days.slice(i * 7, i * 7 + 7));
   }
 
-  const totalXP = days.reduce((sum, d) => sum + d.xp, 0);
-  const activeDays = days.filter((d) => d.xp > 0).length;
+  const totalLessons = days.reduce((sum, d) => sum + (d.lessons_count ?? 0), 0);
+  const activeDays = days.filter((d) => (d.lessons_count ?? 0) > 0).length;
 
   return (
     <Box>
       <HStack justify="space-between" mb={2}>
         <Text fontSize="sm" fontWeight="semibold">Активность за 3 месяца</Text>
-        <Text fontSize="xs" color="gray.500">{activeDays} дн · {totalXP} XP</Text>
+        <Text fontSize="xs" color="mutedFg">{activeDays} дн · {totalLessons} уроков</Text>
       </HStack>
 
       <Box overflowX="auto" pb={1}>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Box, 
@@ -44,16 +43,12 @@ import {
   BookOpen,
   Clock,
   Star,
-  Target,
   CheckCircle,
-  Plus,
   Share2,
   Heart,
   Download,
   MessageCircle
 } from 'lucide-react';
-import config from '../config.jsx';
-import useStore from '../store';
 import { useCourseLessons } from '../hooks/useLessons';
 import { apiClient } from '../hooks/useApi';
 
@@ -66,12 +61,10 @@ function CourseDetail() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [tracks, setTracks] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { addTrack, addNotification } = useStore();
   const toast = useToast();
 
   const bg = useColorModeValue('white', 'gray.800');
@@ -92,39 +85,8 @@ function CourseDetail() {
       }
     }
 
-    async function fetchUserTracks() {
-      try {
-        const response = await apiClient.get('/api/user/tracks');
-        setTracks(response.data);
-      } catch (err) {
-        console.error('Ошибка при загрузке треков пользователя:', err);
-      }
-    }
-
     fetchCourse();
-    fetchUserTracks();
   }, [id]);
-
-  const addTaskToTracks = async (task) => {
-    try {
-      await axios.post(`${config.baseUrl}/api/user/tracks`, { track_id: task.id });
-      setTracks((prevTracks) => [...prevTracks, task]);
-      toast({
-        title: 'Задание добавлено!',
-        description: 'Задание добавлено в ваши треки',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (err) {
-      const msg = err?.response?.data?.error || 'Не удалось добавить задание';
-      toast({ title: 'Ошибка', description: msg, status: 'error', duration: 3000, isClosable: true });
-    }
-  };
-
-  const isTaskInTracks = (task) => {
-    return tracks.some((track) => track.id === task.id);
-  };
 
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);
@@ -194,7 +156,7 @@ function CourseDetail() {
         <Button 
           colorScheme="purple" 
           variant="outline"
-          onClick={() => navigate('/courses')}
+          onClick={() => navigate('/library')}
         >
           Вернуться в библиотеку
         </Button>
@@ -210,7 +172,7 @@ function CourseDetail() {
           <HStack spacing={4}>
             <IconButton
               icon={<ArrowLeft size={20} />}
-              onClick={() => navigate('/courses')}
+              onClick={() => navigate('/library')}
               colorScheme="purple"
               variant="ghost"
               aria-label="Назад в библиотеку"
@@ -422,7 +384,7 @@ function CourseDetail() {
                                 </VStack>
                               </HStack>
                               <Badge colorScheme={lesson.is_completed ? 'green' : 'purple'} variant="subtle" fontSize="xs">
-                                {lesson.is_completed ? '✓' : `+${lesson.xp_reward} XP`}
+                                {lesson.is_completed ? '✓' : `+${Math.max(1, Math.floor((lesson.xp_reward ?? 10) / 10))} 🦴`}
                               </Badge>
                             </HStack>
                           </Box>

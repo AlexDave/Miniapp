@@ -44,7 +44,7 @@ import { partitionCoursesByAge } from '../constants/onboarding';
 
 const MotionCard = motion(Card);
 
-function Courses() {
+function Library() {
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -322,7 +322,7 @@ function Courses() {
           <VStack spacing={6} align="center" justify="center" p={8}>
             <Box textAlign="center">
               <Icon as={BookOpen} w={12} h={12} color="gray.400" mb={4} />
-              <Text fontSize="xl" fontWeight="bold" color="gray.500" mb={2}>
+              <Text fontSize="xl" fontWeight="bold" color="mutedFg" mb={2}>
                 Ничего не найдено
               </Text>
               <Text color={textColor}>
@@ -473,4 +473,4 @@ function Courses() {
   );
 }
 
-export default Courses;
+export default Library;

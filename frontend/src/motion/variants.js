@@ -48,13 +48,13 @@ export const shake = {
   transition: { duration: sec(0.45), ease: easeOut },
 };
 
-export const floatXPGain = {
+export const floatRewardGain = {
   initial: { opacity: 0, y: 10 },
   animate: {
     opacity: [0, 1, 1, 0],
     y: [10, 0, -20, -28],
     transition: {
-      duration: sec(MOTION.duration.xpFloat),
+      duration: sec(MOTION.duration.floatReward),
       times: [0, 0.12, 0.75, 1],
       ease: ease,
     },

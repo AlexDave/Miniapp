@@ -1,4 +1,8 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const multer = require('multer');
 const { prisma } = require('../database/connection');
 const { calculateLessonReportXP, getLevelByXP } = require('../utils/xp');
 const { parseLessonMeta, applySkillDelta, normalizeSkills } = require('../utils/lessonMeta');
@@ -6,8 +10,54 @@ const { updateStreakAfterLessonReport } = require('../utils/streakLesson');
 const { checkAndAwardAchievements } = require('../utils/achievements');
 const { awardBone } = require('../utils/bones');
 const { trackEvent } = require('../utils/analytics');
+const {
+  ensureFallbackTreeOnLesson,
+  mergeNoAttempt,
+  parseAttemptsAtLevel,
+} = require('../utils/fallbackTree');
+const { getPetIdForUser } = require('../utils/petContext');
 
 const router = express.Router();
+
+const trophyVideoStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    const dir = path.join(__dirname, '../../public/user-videos');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(req, file, cb) {
+    const lessonId = parseInt(req.params.lessonId, 10);
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const allowed = ['.mp4', '.webm', '.mov'];
+    const safe = allowed.includes(ext) ? ext : '.mp4';
+    cb(null, `${req.user.id}_${lessonId}_${crypto.randomUUID()}${safe}`);
+  },
+});
+
+const trophyVideoUpload = multer({
+  storage: trophyVideoStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter(req, file, cb) {
+    if (!file.mimetype || !file.mimetype.startsWith('video/')) {
+      cb(new Error('Нужен видеофайл'));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
+function handleTrophyVideoUpload(req, res, next) {
+  trophyVideoUpload.single('video')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'Видео не больше 10 МБ' });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    if (err) return res.status(400).json({ error: String(err.message || err) });
+    next();
+  });
+}
 
 function lessonDto(lesson) {
   if (!lesson) return null;
@@ -17,6 +67,13 @@ function lessonDto(lesson) {
       out.meta = JSON.parse(out.meta);
     } catch {
       out.meta = null;
+    }
+  }
+  if (typeof out.fallback_tree === 'string' && out.fallback_tree) {
+    try {
+      out.fallback_tree = JSON.parse(out.fallback_tree);
+    } catch {
+      out.fallback_tree = null;
     }
   }
   return out;
@@ -43,9 +100,10 @@ function skillRequirementsMet(requires, skills) {
 router.get('/today', async (req, res) => {
   try {
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const doneReports = await prisma.dailyReport.findMany({
-      where: { user_id: userId },
+      where: { pet_id: petId },
       select: { lesson_id: true },
     });
     const doneIds = new Set(doneReports.map((r) => r.lesson_id));
@@ -72,7 +130,7 @@ router.get('/today', async (req, res) => {
     const moduleLessons = lessons.filter((l) => l.module_id === todayLesson.module_id);
     const moduleDone = moduleLessons.filter((l) => doneIds.has(l.id)).length;
 
-    const tl = lessonDto(todayLesson);
+    const tl = ensureFallbackTreeOnLesson(lessonDto(todayLesson));
     res.json({
       lesson: {
         id: tl.id,
@@ -82,6 +140,7 @@ router.get('/today', async (req, res) => {
         xp_reward: tl.xp_reward,
         order_index: tl.order_index,
         meta: tl.meta,
+        fallback_tree: tl.fallback_tree,
         daily_task: tl.daily_task,
       },
       module: {
@@ -103,13 +162,14 @@ router.get('/course/:courseId/modules', async (req, res) => {
   try {
     const courseId = parseInt(req.params.courseId, 10);
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const modules = await prisma.module.findMany({
       where: { course_id: courseId, is_active: true },
       include: {
         lessons: {
           where: { is_active: true },
-          include: { reports: { where: { user_id: userId }, select: { id: true } } },
+          include: { reports: { where: { pet_id: petId }, select: { id: true } } },
           orderBy: { order_index: 'asc' },
         },
       },
@@ -138,6 +198,7 @@ router.get('/module/:moduleId', async (req, res) => {
   try {
     const moduleId = parseInt(req.params.moduleId, 10);
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const [module, doneReports, profile] = await Promise.all([
       prisma.module.findUnique({
@@ -155,16 +216,16 @@ router.get('/module/:moduleId', async (req, res) => {
         },
       }),
       prisma.dailyReport.findMany({
-        where: { user_id: userId },
+        where: { pet_id: petId },
         select: { lesson_id: true },
       }),
-      prisma.profile.findUnique({ where: { user_id: userId } }),
+      prisma.profile.findUnique({ where: { user_id: userId }, include: { pet: true } }),
     ]);
 
     if (!module) return res.status(404).json({ error: 'Модуль не найден' });
 
     const doneIds = new Set(doneReports.map((r) => r.lesson_id));
-    const skills = normalizeSkills(profile?.skills_json);
+    const skills = normalizeSkills(profile?.pet?.skills_json ?? profile?.skills_json);
     const { skill_tree: skillTree } = parseCourseContent(module.course?.content);
     const unlock = skillTree?.unlock ?? [];
 
@@ -229,6 +290,7 @@ router.get('/by-skill/:skillKey', async (req, res) => {
       return res.status(400).json({ error: 'unknown skill' });
     }
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const [lessons, doneReports] = await Promise.all([
       prisma.lesson.findMany({
@@ -250,7 +312,7 @@ router.get('/by-skill/:skillKey', async (req, res) => {
         ],
       }),
       prisma.dailyReport.findMany({
-        where: { user_id: userId },
+        where: { pet_id: petId },
         select: { lesson_id: true },
       }),
     ]);
@@ -292,6 +354,7 @@ router.get('/:lessonId', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const [lesson, report, progress] = await Promise.all([
       prisma.lesson.findUnique({
@@ -303,26 +366,38 @@ router.get('/:lessonId', async (req, res) => {
         },
       }),
       prisma.dailyReport.findUnique({
-        where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+        where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
       }),
       prisma.lessonProgress.findUnique({
-        where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+        where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
       }),
     ]);
 
     if (!lesson) return res.status(404).json({ error: 'Урок не найден' });
 
+    trackEvent('lesson.opened', { user_id: userId, lesson_id: lessonId });
+
+    const lessonJson = lessonDto(lesson);
+    ensureFallbackTreeOnLesson(lessonJson);
+
     res.json({
-      lesson: lessonDto(lesson),
+      lesson: lessonJson,
       report: report ?? null,
       progress: progress
         ? {
-            state:          progress.state,
+            state: progress.state,
             theory_seen_at: progress.theory_seen_at,
-            repeats_count:  progress.repeats_count,
+            repeats_count: progress.repeats_count,
             last_repeat_at: progress.last_repeat_at,
+            attempts_at_level: parseAttemptsAtLevel(progress.attempts_at_level),
           }
-        : { state: 'not_started', theory_seen_at: null, repeats_count: 0, last_repeat_at: null },
+        : {
+            state: 'not_started',
+            theory_seen_at: null,
+            repeats_count: 0,
+            last_repeat_at: null,
+            attempts_at_level: parseAttemptsAtLevel(null),
+          },
     });
   } catch (err) {
     console.error('❌ Ошибка /lessons/:id:', err);
@@ -335,10 +410,11 @@ router.post('/:lessonId/theory-seen', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
     const now = new Date();
 
     const progress = await prisma.lessonProgress.upsert({
-      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
       update: {
         state: 'theory_done',
         theory_seen_at: now,
@@ -346,6 +422,7 @@ router.post('/:lessonId/theory-seen', async (req, res) => {
       },
       create: {
         user_id: userId,
+        pet_id: petId,
         lesson_id: lessonId,
         state: 'theory_done',
         theory_seen_at: now,
@@ -365,9 +442,10 @@ router.post('/:lessonId/start-task', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const progress = await prisma.lessonProgress.findUnique({
-      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
     });
 
     if (!progress || !progress.theory_seen_at) {
@@ -375,9 +453,11 @@ router.post('/:lessonId/start-task', async (req, res) => {
     }
 
     const updated = await prisma.lessonProgress.update({
-      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
       data: { task_started_at: new Date(), updated_at: new Date() },
     });
+
+    trackEvent('lesson.task_started', { user_id: userId, lesson_id: lessonId });
 
     res.json({ state: updated.state, task_started_at: updated.task_started_at });
   } catch (err) {
@@ -391,15 +471,16 @@ router.post('/:lessonId/repeat-start', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const existing = await prisma.dailyReport.findUnique({
-      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
     });
     if (!existing) return res.status(400).json({ error: 'Урок ещё не завершён' });
 
     // Проверяем 24ч cooldown по last_repeat_at или completed_at
     const prevProgress = await prisma.lessonProgress.findUnique({
-      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
     });
     const lastActivity = prevProgress?.last_repeat_at ?? existing.completed_at;
     if (lastActivity) {
@@ -416,9 +497,16 @@ router.post('/:lessonId/repeat-start', async (req, res) => {
 
     const now = new Date();
     const progress = await prisma.lessonProgress.upsert({
-      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
       update: { state: 'theory_done', task_started_at: null, last_repeat_at: now, updated_at: now },
-      create: { user_id: userId, lesson_id: lessonId, state: 'theory_done', theory_seen_at: now, last_repeat_at: now },
+      create: {
+        user_id: userId,
+        pet_id: petId,
+        lesson_id: lessonId,
+        state: 'theory_done',
+        theory_seen_at: now,
+        last_repeat_at: now,
+      },
     });
 
     trackEvent('lesson.repeated', { user_id: userId, lesson_id: lessonId });
@@ -429,19 +517,67 @@ router.post('/:lessonId/repeat-start', async (req, res) => {
   }
 });
 
+// Сброс «не получилось» — сразу снова пройти урок (без 24ч cooldown)
+router.post('/:lessonId/retry-after-fail', async (req, res) => {
+  try {
+    const lessonId = parseInt(req.params.lessonId, 10);
+    const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
+
+    const report = await prisma.dailyReport.findUnique({
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
+    });
+    if (!report) {
+      return res.status(400).json({ error: 'Нет завершённого отчёта по этому уроку' });
+    }
+    if (report.success !== 'no') {
+      return res.status(400).json({
+        error: 'Повтор сразу доступен только если в отчёте было «не получилось».',
+      });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.dailyReport.delete({ where: { id: report.id } });
+      await tx.lessonProgress.upsert({
+        where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
+        update: {
+          state: 'theory_done',
+          completed_at: null,
+          task_started_at: null,
+          updated_at: new Date(),
+        },
+        create: {
+          user_id: userId,
+          pet_id: petId,
+          lesson_id: lessonId,
+          state: 'theory_done',
+          theory_seen_at: new Date(),
+        },
+      });
+    });
+
+    trackEvent('lesson.retry_after_fail', { user_id: userId, lesson_id: lessonId });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('❌ Ошибка POST /lessons/:id/retry-after-fail:', err);
+    res.status(500).json({ error: 'Ошибка при сбросе урока' });
+  }
+});
+
 // История повторов урока
 router.get('/:lessonId/history', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
     const [report, progress] = await Promise.all([
       prisma.dailyReport.findUnique({
-        where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+        where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
         select: { completed_at: true, success: true, bones_earned: true },
       }),
       prisma.lessonProgress.findUnique({
-        where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+        where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
         select: { repeats_count: true, last_repeat_at: true },
       }),
     ]);
@@ -461,8 +597,9 @@ router.get('/:lessonId/history', async (req, res) => {
 router.get('/:lessonId/report', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
+    const petId = await getPetIdForUser(req.user.id);
     const report = await prisma.dailyReport.findUnique({
-      where: { user_id_lesson_id: { user_id: req.user.id, lesson_id: lessonId } },
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
     });
     res.json(report ?? null);
   } catch (err) {
@@ -475,6 +612,7 @@ router.post('/:lessonId/report', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
     let { steps_data = [], note = '' } = req.body;
 
     let success = req.body.success;
@@ -490,7 +628,7 @@ router.post('/:lessonId/report', async (req, res) => {
     const rating = success === 'yes' ? 3 : success === 'partial' ? 2 : 1;
 
     const existing = await prisma.dailyReport.findUnique({
-      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
     });
     if (existing) {
       return res.status(409).json({ error: 'Этот урок уже завершён' });
@@ -502,13 +640,23 @@ router.post('/:lessonId/report', async (req, res) => {
     });
     if (!lesson) return res.status(404).json({ error: 'Урок не найден' });
 
+    const lessonParsed = ensureFallbackTreeOnLesson(lessonDto(lesson));
+
+    let fromTier = parseInt(req.body.from_fallback_tier, 10);
+    if (!Number.isFinite(fromTier) || fromTier < 1 || fromTier > 3) fromTier = 1;
+
     const meta = parseLessonMeta(lesson.meta) ?? {};
     const legacySkill = meta.skill || 'focus';
     const atomicSkillKey = meta.skill_key || legacySkill;
     const progressGain = meta.progress_gain ?? 10;
 
-    const profile = await prisma.profile.findUnique({ where: { user_id: userId } });
+    const profile = await prisma.profile.findUnique({
+      where: { user_id: userId },
+      include: { pet: true },
+    });
     if (!profile) return res.status(404).json({ error: 'Профиль не найден' });
+    const petRow = profile.pet;
+    if (!petRow) return res.status(500).json({ error: 'Питомец не привязан к профилю' });
 
     let prefs = {};
     try {
@@ -532,7 +680,7 @@ router.post('/:lessonId/report', async (req, res) => {
 
     const allModuleLessonIds = lesson.module.lessons.map((l) => l.id);
     const doneInModule = await prisma.dailyReport.count({
-      where: { user_id: userId, lesson_id: { in: allModuleLessonIds } },
+      where: { pet_id: petId, lesson_id: { in: allModuleLessonIds } },
     });
     const isModuleComplete = doneInModule + 1 >= allModuleLessonIds.length;
 
@@ -540,7 +688,7 @@ router.post('/:lessonId/report', async (req, res) => {
       (s) => s.value !== null && s.value !== '' && s.value !== false && s.value !== 0
     );
 
-    const streakForBonus = profile.streak ?? 0;
+    const streakForBonus = petRow.streak ?? 0;
 
     const xpEarned = calculateLessonReportXP(
       lesson.xp_reward,
@@ -551,17 +699,18 @@ router.post('/:lessonId/report', async (req, res) => {
     );
 
     const coinsGain = Math.floor(xpEarned / 2);
-    const oldXP = profile.experience ?? 0;
+    const oldXP = petRow.experience ?? 0;
     const newXP = oldXP + xpEarned;
     const oldLevel = getLevelByXP(oldXP);
     const newLevelObj = getLevelByXP(newXP);
 
-    const newSkillsJson = applySkillDelta(profile.skills_json, legacySkill, success, progressGain);
+    const newSkillsJson = applySkillDelta(petRow.skills_json, legacySkill, success, progressGain);
 
-    const report = await prisma.$transaction(async (tx) => {
+    const txResult = await prisma.$transaction(async (tx) => {
       const created = await tx.dailyReport.create({
         data: {
           user_id: userId,
+          pet_id: petId,
           lesson_id: lessonId,
           steps_data: JSON.stringify(steps_data),
           rating,
@@ -572,37 +721,55 @@ router.post('/:lessonId/report', async (req, res) => {
         },
       });
 
-      await tx.profile.update({
-        where: { user_id: userId },
+      const lp = await tx.lessonProgress.findUnique({
+        where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
+      });
+      let attemptsFin = parseAttemptsAtLevel(lp?.attempts_at_level);
+      if (success === 'no') {
+        attemptsFin = mergeNoAttempt(lp?.attempts_at_level, fromTier);
+      }
+      const attemptsStr = JSON.stringify(attemptsFin);
+
+      await tx.pet.update({
+        where: { id: petId },
         data: {
           experience: newXP,
-          coins: (profile.coins ?? 0) + coinsGain,
+          coins: (petRow.coins ?? 0) + coinsGain,
           skills_json: newSkillsJson,
           level: newLevelObj.level,
-          preferences: JSON.stringify(prefs),
         },
       });
 
-      // Обновить LessonProgress → completed
+      await tx.profile.update({
+        where: { user_id: userId },
+        data: { preferences: JSON.stringify(prefs) },
+      });
+
       await tx.lessonProgress.upsert({
-        where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+        where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
         update: {
           state: 'completed',
           completed_at: new Date(),
           updated_at: new Date(),
+          attempts_at_level: attemptsStr,
         },
         create: {
           user_id: userId,
+          pet_id: petId,
           lesson_id: lessonId,
           state: 'completed',
           theory_seen_at: new Date(),
           task_started_at: new Date(),
           completed_at: new Date(),
+          attempts_at_level: attemptsStr,
         },
       });
 
-      return created;
+      return { created, attemptsFin };
     });
+
+    const report = txResult.created;
+    const attemptsAtLevelOut = txResult.attemptsFin;
 
     const newStreak = await updateStreakAfterLessonReport(
       userId,
@@ -615,7 +782,6 @@ router.post('/:lessonId/report', async (req, res) => {
     let bonesResult = { bones_earned: 0 };
     if (success !== 'no') {
       bonesResult = await awardBone(prisma, userId, atomicSkillKey, { streakCount: newStreak ?? 0 });
-      // Обновить bones_earned в отчёте
       await prisma.dailyReport.update({
         where: { id: report.id },
         data: { bones_earned: bonesResult.bones_earned },
@@ -624,12 +790,20 @@ router.post('/:lessonId/report', async (req, res) => {
 
     const newAchievements = await checkAndAwardAchievements(userId);
 
-    trackEvent('lesson.completed', {
-      user_id: userId,
-      lesson_id: lessonId,
-      success,
-      xp_earned: xpEarned,
-    });
+    if (success === 'no') {
+      trackEvent('lesson.failed', {
+        user_id: userId,
+        lesson_id: lessonId,
+        xp_earned: xpEarned,
+      });
+    } else {
+      trackEvent('lesson.completed', {
+        user_id: userId,
+        lesson_id: lessonId,
+        success,
+        xp_earned: xpEarned,
+      });
+    }
     if (success !== 'no' && bonesResult.bones_earned > 0) {
       trackEvent('bone.awarded', {
         user_id: userId,
@@ -637,6 +811,25 @@ router.post('/:lessonId/report', async (req, res) => {
         skill_key: atomicSkillKey,
         bones: bonesResult.bones_earned,
       });
+    }
+
+    let emotional_reward = null;
+    if (success !== 'no') {
+      const [skillRow, petSnap] = await Promise.all([
+        prisma.skill.findUnique({ where: { key: atomicSkillKey } }),
+        prisma.pet.findUnique({
+          where: { id: petId },
+          select: { name: true },
+        }),
+      ]);
+      const curBones = bonesResult.bones_json?.[atomicSkillKey] ?? 0;
+      emotional_reward = {
+        pet_name: petSnap?.name ?? profile.pet_name ?? 'Ваш питомец',
+        atomic_outcome: skillRow?.atomic_outcome ?? null,
+        skill_title: skillRow?.title ?? atomicSkillKey,
+        skill_bones_current: curBones,
+        skill_bones_target: skillRow?.target_bones ?? 5,
+      };
     }
 
     const feedback =
@@ -655,7 +848,7 @@ router.post('/:lessonId/report', async (req, res) => {
       level_up: newLevelObj.level > oldLevel.level,
       streak: newStreak,
       coins_earned: coinsGain,
-      coins_total: (profile.coins ?? 0) + coinsGain,
+      coins_total: (petRow.coins ?? 0) + coinsGain,
       skills: JSON.parse(newSkillsJson),
       skill_key: atomicSkillKey,
       legacy_skill: legacySkill,
@@ -663,15 +856,106 @@ router.post('/:lessonId/report', async (req, res) => {
       achievements_unlocked: newAchievements,
       feedback_message: feedback,
       fallback_tasks: success === 'no' ? meta.fallback_tasks ?? [] : [],
+      fallback_tree: success === 'no' ? lessonParsed.fallback_tree ?? null : null,
+      attempts_at_level: attemptsAtLevelOut,
       adaptive,
       bones_earned: bonesResult.bones_earned,
       bones_total: bonesResult.new_total ?? null,
       bones_stage: bonesResult.new_stage ?? null,
       is_special_bone: bonesResult.is_special ?? false,
+      emotional_reward: emotional_reward,
     });
   } catch (err) {
     console.error('❌ Ошибка POST /lessons/:id/report:', err);
     res.status(500).json({ error: 'Ошибка при сохранении отчёта' });
+  }
+});
+
+router.post('/:lessonId/video', handleTrophyVideoUpload, async (req, res) => {
+  try {
+    const lessonId = parseInt(req.params.lessonId, 10);
+    const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
+    if (!Number.isFinite(lessonId)) {
+      return res.status(400).json({ error: 'Некорректный урок' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'Прикрепите поле video' });
+    }
+
+    const done = await prisma.dailyReport.findUnique({
+      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
+    });
+    if (!done) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch {
+        /* ignore */
+      }
+      return res.status(403).json({ error: 'Сначала завершите урок' });
+    }
+
+    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
+    if (!lesson) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch {
+        /* ignore */
+      }
+      return res.status(404).json({ error: 'Урок не найден' });
+    }
+
+    const meta = parseLessonMeta(lesson.meta) ?? {};
+    const skillKey = meta.skill_key || meta.skill || 'general';
+
+    const skill = await prisma.skill.findUnique({ where: { key: skillKey } });
+    const snapshot = skill?.atomic_outcome ?? null;
+
+    const existing = await prisma.userTrophyVideo.findFirst({
+      where: { user_id: userId, lesson_id: lessonId },
+    });
+    if (existing) {
+      const oldPath = path.join(__dirname, '../../public/user-videos', existing.storage_key);
+      try {
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      } catch {
+        /* ignore */
+      }
+      await prisma.userTrophyVideo.delete({ where: { id: existing.id } });
+    }
+
+    const row = await prisma.userTrophyVideo.create({
+      data: {
+        user_id: userId,
+        lesson_id: lessonId,
+        skill_key: skillKey,
+        storage_key: req.file.filename,
+        mime_type: req.file.mimetype,
+        size_bytes: req.file.size,
+        atomic_outcome_snapshot: snapshot,
+      },
+    });
+
+    res.status(201).json({
+      ok: true,
+      video: {
+        id: row.id,
+        lesson_id: row.lesson_id,
+        skill_key: row.skill_key,
+        atomic_outcome_snapshot: row.atomic_outcome_snapshot,
+        created_at: row.created_at,
+      },
+    });
+  } catch (err) {
+    console.error('❌ Ошибка POST /lessons/:id/video:', err);
+    if (req.file?.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch {
+        /* ignore */
+      }
+    }
+    res.status(500).json({ error: 'Не удалось сохранить видео' });
   }
 });
 

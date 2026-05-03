@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { Box, HStack, Text, VStack, useColorModeValue } from '@chakra-ui/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 const MotionBox = motion(Box);
 
@@ -47,10 +48,51 @@ export default function BoneCounter({ total = 0, bySkill = {}, stage = 'Знак
 
 // Анимация падающей косточки — используется на Итоге урока
 export function BoneDropAnimation({ show, count = 1, isSpecial = false, onDone }) {
+  const reduce = useReducedMotion();
+  const label = `+${count} ${isSpecial ? 'особая косточка' : 'косточка'}`;
+  const prevShow = useRef(show);
+
+  useEffect(() => {
+    if (!reduce || typeof onDone !== 'function') return;
+    if (prevShow.current && !show) {
+      onDone();
+    }
+    prevShow.current = show;
+  }, [show, reduce, onDone]);
+
+  if (reduce) {
+    return show ? (
+      <Box
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        position="fixed"
+        top="30%"
+        left="50%"
+        transform="translateX(-50%)"
+        zIndex={1000}
+        textAlign="center"
+        pointerEvents="none"
+      >
+        <VStack spacing={1}>
+          <Text fontSize="5xl" lineHeight="1" aria-hidden>
+            {isSpecial ? '⭐' : '🦴'}
+          </Text>
+          <Text fontSize="xl" fontWeight="extrabold" color="purple.600">
+            {label}
+          </Text>
+        </VStack>
+      </Box>
+    ) : null;
+  }
+
   return (
     <AnimatePresence onExitComplete={onDone}>
       {show && (
         <MotionBox
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
           position="fixed"
           top="30%"
           left="50%"
@@ -64,9 +106,11 @@ export function BoneDropAnimation({ show, count = 1, isSpecial = false, onDone }
           pointerEvents="none"
         >
           <VStack spacing={1}>
-            <Text fontSize="5xl" lineHeight="1">{isSpecial ? '⭐' : '🦴'}</Text>
+            <Text fontSize="5xl" lineHeight="1" aria-hidden>
+              {isSpecial ? '⭐' : '🦴'}
+            </Text>
             <Text fontSize="xl" fontWeight="extrabold" color="purple.600">
-              +{count} {isSpecial ? 'особая косточка!' : 'косточка'}
+              {label}
             </Text>
           </VStack>
         </MotionBox>

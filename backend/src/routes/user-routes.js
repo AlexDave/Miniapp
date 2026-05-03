@@ -2,6 +2,8 @@ const express = require('express');
 const { prisma } = require('../database/connection');
 const { parseBones } = require('../utils/bones');
 const { trackEvent } = require('../utils/analytics');
+const { isUserProEffective } = require('../utils/tier');
+const { getPetIdForUser } = require('../utils/petContext');
 
 const router = express.Router();
 
@@ -18,8 +20,9 @@ function parsePrefs(raw) {
 router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
+    const petId = await getPetIdForUser(userId);
 
-    const [routes, profile] = await Promise.all([
+    const [routes, profile, pet, userRow] = await Promise.all([
       prisma.route.findMany({
         include: {
           skills: {
@@ -31,10 +34,15 @@ router.get('/', async (req, res) => {
         },
         orderBy: { order_index: 'asc' },
       }),
-      prisma.profile.findUnique({ where: { user_id: userId }, select: { bones_json: true, preferences: true } }),
+      prisma.profile.findUnique({ where: { user_id: userId }, select: { preferences: true } }),
+      prisma.pet.findUnique({ where: { id: petId }, select: { bones_json: true } }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { tier: true, tier_expires_at: true },
+      }),
     ]);
 
-    const bones = parseBones(profile?.bones_json);
+    const bones = parseBones(pet?.bones_json);
     const prefs = parsePrefs(profile?.preferences);
     const selectedRouteKey = prefs.selected_route_key ?? null;
     const routePaused = prefs.route_paused === true;
@@ -65,13 +73,18 @@ router.get('/', async (req, res) => {
         age_min_months: route.age_min_months,
         age_max_months: route.age_max_months,
         order_index:    route.order_index,
+        requires_pro:   route.requires_pro === true,
         skills,
         progress_pct:   progressPct,
         is_selected:    route.key === selectedRouteKey,
       };
     });
 
-    res.json({ routes: result, route_paused: routePaused });
+    res.json({
+      routes: result,
+      route_paused: routePaused,
+      is_pro: isUserProEffective(userRow),
+    });
   } catch (err) {
     console.error('❌ GET /api/routes:', err);
     res.status(500).json({ error: 'Ошибка при получении маршрутов' });
@@ -122,8 +135,21 @@ router.post('/:key/select', async (req, res) => {
     const routeKey = req.params.key;
     const userId = req.user.id;
 
-    const route = await prisma.route.findUnique({ where: { key: routeKey } });
+    const [route, userRow] = await Promise.all([
+      prisma.route.findUnique({ where: { key: routeKey } }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { tier: true, tier_expires_at: true },
+      }),
+    ]);
     if (!route) return res.status(404).json({ error: 'Маршрут не найден' });
+
+    if (route.requires_pro && !isUserProEffective(userRow)) {
+      return res.status(403).json({
+        error: 'Этот маршрут доступен в подписке Pro (Telegram Stars).',
+        code: 'PRO_REQUIRED',
+      });
+    }
 
     const profile = await prisma.profile.findUnique({ where: { user_id: userId }, select: { preferences: true } });
     const prefs = parsePrefs(profile?.preferences);

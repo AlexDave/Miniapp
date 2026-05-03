@@ -14,7 +14,9 @@ export default function OnboardingGate({ children }) {
     );
   }
 
-  if (profile && profile.onboardingCompleted !== true) {
+  const hasRoute = Boolean(profile?.selectedRouteKey);
+
+  if (profile && profile.onboardingCompleted !== true && !hasRoute) {
     return <Navigate to="/onboarding" replace />;
   }
 

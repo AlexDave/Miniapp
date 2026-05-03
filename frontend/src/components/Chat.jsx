@@ -25,7 +25,8 @@ import {
   useToast,
   Spinner
 } from '@chakra-ui/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import ReducedMotionAnimatePresence from '../motion/ReducedMotionAnimatePresence';
 import {
   Send,
   Smile,
@@ -50,6 +51,7 @@ function Chat() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const toast = useToast();
+  const reduceMotion = useReducedMotion();
 
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -360,13 +362,14 @@ function Chat() {
             bg={useColorModeValue('gray.50', 'gray.900')}
           >
             <VStack spacing={4} align="stretch">
-              <AnimatePresence>
+              <ReducedMotionAnimatePresence>
                 {getCurrentContactMessages().map((message) => (
                   <MotionBox
                     key={message.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: reduceMotion ? 0 : 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
+                    exit={{ opacity: 0, y: reduceMotion ? 0 : -20 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.2 }}
                     alignSelf={message.sender === 'me' ? 'flex-end' : 'flex-start'}
                   >
                     <Box
@@ -391,12 +394,13 @@ function Chat() {
                     </Box>
                   </MotionBox>
                 ))}
-              </AnimatePresence>
-              
+              </ReducedMotionAnimatePresence>
+
               {isTyping && (
                 <MotionBox
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 20 }}
                   animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.2 }}
                   alignSelf="flex-start"
                 >
                   <Box

@@ -1,5 +1,5 @@
 import { Box } from '@chakra-ui/react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate, useReducedMotion } from 'framer-motion';
 import { useEffect } from 'react';
 import { MOTION, sec } from '../../motion/tokens';
 
@@ -21,18 +21,19 @@ export default function AnimatedProgressBar({
   height = '8px',
   borderRadius = 'full',
 }) {
+  const reduceMotion = useReducedMotion();
   const mv = useMotionValue(from);
   const widthPct = useTransform(mv, (v) => `${Math.min(100, Math.max(0, v))}%`);
 
   useEffect(() => {
     mv.set(from);
     const controls = animate(mv, Math.min(100, value), {
-      delay,
-      duration: sec(duration),
+      delay: reduceMotion ? 0 : delay,
+      duration: reduceMotion ? 0 : sec(duration),
       ease: MOTION.easing.default,
     });
     return () => controls.stop();
-  }, [value, from, delay, duration, mv]);
+  }, [value, from, delay, duration, mv, reduceMotion]);
 
   return (
     <Box

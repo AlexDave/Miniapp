@@ -12,7 +12,7 @@ export default function HomeHeaderSummary({ variant = 'block' }) {
   const { data: userStats } = useUserStats();
   const { userProfile } = useStore();
 
-  const muted = useColorModeValue('gray.300', 'gray.600');
+  const muted = useColorModeValue('gray.600', 'gray.400');
   const cardBg = useColorModeValue('gray.50', 'gray.900');
   const border = useColorModeValue('gray.100', 'gray.700');
 

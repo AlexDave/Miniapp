@@ -13,7 +13,8 @@ import {
   Button,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import ReducedMotionAnimatePresence from '../../motion/ReducedMotionAnimatePresence';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronDown, Lock, Info } from 'lucide-react';
 import { useSkillTree, useLessonsForSkill } from '../../hooks/useSkillTree';
@@ -34,25 +35,31 @@ const STATUS_ICONS = {
 function CategoryCard({ category, onClick }) {
   const bg = useColorModeValue('white', 'gray.800');
   const border = useColorModeValue('gray.200', 'gray.600');
-  const muted = useColorModeValue('gray.500', 'gray.400');
+  const reduceMotion = useReducedMotion();
   const pct = category.progress_pct ?? 0;
   const isDone = pct >= 100;
 
   return (
     <MotionBox
       as="button"
+      type="button"
       w="100%"
       textAlign="left"
       p={4}
+      minH="44px"
       bg={bg}
       border="1px solid"
       borderColor={isDone ? 'green.300' : border}
       borderRadius="2xl"
       cursor="pointer"
       onClick={onClick}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.97 }}
-      transition={{ duration: 0.18 }}
+      {...(reduceMotion
+        ? {}
+        : {
+            whileHover: { scale: 1.02 },
+            whileTap: { scale: 0.97 },
+            transition: { duration: 0.18 },
+          })}
       aria-label={`Открыть категорию «${category.title}»`}
     >
       <VStack align="stretch" spacing={3}>
@@ -62,12 +69,12 @@ function CategoryCard({ category, onClick }) {
         </HStack>
         <Box>
           <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>{category.title}</Text>
-          <Text fontSize="xs" color={muted} noOfLines={2} mt={0.5}>{category.description}</Text>
+          <Text fontSize="xs" color="mutedFg" noOfLines={2} mt={0.5}>{category.description}</Text>
         </Box>
         <Box>
           <HStack justify="space-between" mb={1}>
-            <Text fontSize="xs" color={muted}>{pct}%</Text>
-            <Text fontSize="xs" color={muted}>{category.skills?.length ?? 0} навыков</Text>
+            <Text fontSize="xs" color="mutedFg">{pct}%</Text>
+            <Text fontSize="xs" color="mutedFg">{category.skills?.length ?? 0} навыков</Text>
           </HStack>
           <Progress
             value={pct}
@@ -156,6 +163,7 @@ function AtomRow({ skill, isExpanded, onToggle }) {
   const bg = useColorModeValue('white', 'gray.800');
   const border = useColorModeValue('gray.200', 'gray.600');
   const muted = useColorModeValue('gray.600', 'gray.400');
+  const reduceMotion = useReducedMotion();
   const detailBg = useColorModeValue('gray.50', 'gray.900');
   const hintBg = useColorModeValue('orange.50', 'orange.900');
   const hintBorder = useColorModeValue('orange.100', 'orange.700');
@@ -207,13 +215,20 @@ function AtomRow({ skill, isExpanded, onToggle }) {
               {bonesLabel}
             </Text>
             <MotionBox
-              animate={{ rotate: isExpanded ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
               display="flex"
               alignItems="center"
+              justifyContent="center"
+              minW="44px"
+              minH="44px"
               color={muted}
+              {...(reduceMotion
+                ? {}
+                : { animate: { rotate: isExpanded ? 180 : 0 }, transition: { duration: 0.2 } })}
             >
-              <ChevronDown size={18} />
+              <ChevronDown
+                size={18}
+                style={{ transform: reduceMotion && isExpanded ? 'rotate(180deg)' : undefined }}
+              />
             </MotionBox>
           </VStack>
         </HStack>
@@ -225,14 +240,14 @@ function AtomRow({ skill, isExpanded, onToggle }) {
         />
       </MotionBox>
 
-      <AnimatePresence initial={false}>
+      <ReducedMotionAnimatePresence initial={false}>
         {isExpanded && (
           <MotionBox
             key="atom-detail"
-            initial={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, height: reduceMotion ? 'auto' : 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.22 }}
+            exit={{ opacity: 0, height: reduceMotion ? 'auto' : 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.22 }}
             overflow="hidden"
           >
             <Box mt={1.5} p={4} bg={detailBg} borderRadius="xl" border="1px dashed" borderColor={border}>
@@ -255,7 +270,7 @@ function AtomRow({ skill, isExpanded, onToggle }) {
             </Box>
           </MotionBox>
         )}
-      </AnimatePresence>
+      </ReducedMotionAnimatePresence>
     </Box>
   );
 }

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "byType": {
+    "barking": { "skill_key": "bound.bark", "label_ru": "лай / вой" },
+    "accident": { "skill_key": "daily.toilet", "label_ru": "туалет" },
+    "escape": { "skill_key": "walk.recall2", "label_ru": "побег / срыв" },
+    "aggression": { "skill_key": "social.people", "label_ru": "агрессия / напор" },
+    "chewing": { "skill_key": "bound.bite", "label_ru": "грызёт / кусает" },
+    "other": { "skill_key": "intro.eye", "label_ru": "другое" }
+  }
+}

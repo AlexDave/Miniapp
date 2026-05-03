@@ -11,8 +11,13 @@ const OUTCOMES = [
   { value: 'no', emoji: '😕', label: 'Не получилось', color: 'red' },
 ];
 
-export default function ReportForm({ onSubmit, isLoading, fallbackTasks = [] }) {
-  const [success, setSuccess] = useState('yes');
+export default function ReportForm({
+  onSubmit,
+  isLoading,
+  fallbackTasks = [],
+  initialSuccess = 'yes',
+}) {
+  const [success, setSuccess] = useState(initialSuccess);
   const [note, setNote] = useState('');
 
   return (
@@ -21,7 +26,7 @@ export default function ReportForm({ onSubmit, isLoading, fallbackTasks = [] }) 
         <Text fontWeight="bold" fontSize="lg" mb={1}>
           Как прошло?
         </Text>
-        <Text fontSize="sm" color="gray.500">
+        <Text fontSize="sm" color="mutedFg">
           Честно — так лучше для прогресса
         </Text>
       </Box>

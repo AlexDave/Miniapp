@@ -16,14 +16,26 @@ function mapProfileData(data) {
     streak: data.streak,
     onboardingCompleted: data.onboardingCompleted,
     dogAgeBucket: data.dogAgeBucket,
+    selectedRouteKey: data.selectedRouteKey ?? null,
+    routePaused: data.routePaused === true,
     learningGoals: data.learningGoals,
     primaryProblem: data.primaryProblem,
     coachTips: data.coachTips,
+    lessonQuietMode: data.lessonQuietMode === true,
+    remindersEnabled: data.remindersEnabled === true,
+    reminderTime: data.reminderTime ?? '19:00',
+    reminderTz: data.reminderTz ?? 'Europe/Moscow',
+    reminderQuietWeekends: data.reminderQuietWeekends === true,
+    reminderBotLinked: data.reminderBotLinked === true,
     // Косточки
     totalBones: data.totalBones ?? 0,
     specialBones: data.specialBones ?? 0,
     stage: data.stage ?? 'Знакомство',
     bones: data.bones ?? {},
+    tier: data.tier ?? 'free',
+    tierExpiresAt: data.tierExpiresAt ?? null,
+    isPro: data.isPro === true,
+    isProPaidPeriod: data.isProPaidPeriod === true,
   };
 }
 

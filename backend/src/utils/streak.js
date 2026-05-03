@@ -1,4 +1,5 @@
 const { prisma } = require('../database/connection');
+const { getPetIdForUser } = require('./petContext');
 
 function isSameDay(d1, d2) {
   return (
@@ -20,15 +21,19 @@ async function updateStreak(userId, now, isPartial = false) {
   const profile = await prisma.profile.findUnique({ where: { user_id: userId } });
   if (!profile) return null;
 
+  const petId = await getPetIdForUser(userId);
+  const pet = await prisma.pet.findUnique({ where: { id: petId } });
+  if (!pet) return null;
+
   const lastReport = await prisma.dailyReport.findFirst({
     where: {
-      user_id: userId,
+      pet_id: petId,
       completed_at: { lt: now },
     },
     orderBy: { completed_at: 'desc' },
   });
 
-  let newStreak = profile.streak;
+  let newStreak = pet.streak;
   const preferences = profile.preferences ? JSON.parse(profile.preferences) : {};
 
   if (!lastReport) {
@@ -38,9 +43,9 @@ async function updateStreak(userId, now, isPartial = false) {
 
     if (isSameDay(last, now)) {
       // уже занимался сегодня — не меняем
-      return profile.streak;
+      return pet.streak;
     } else if (isYesterday(last, now)) {
-      newStreak = isPartial ? profile.streak : profile.streak + 1;
+      newStreak = isPartial ? pet.streak : pet.streak + 1;
     } else {
       // пропуск — проверяем заморозку (1 раз в неделю)
       const lastFreeze = preferences.last_freeze_at ? new Date(preferences.last_freeze_at) : null;
@@ -58,13 +63,13 @@ async function updateStreak(userId, now, isPartial = false) {
           data: { preferences: JSON.stringify(preferences) },
         });
         // стрик сохраняется
-        return profile.streak;
+        return pet.streak;
       }
     }
   }
 
-  await prisma.profile.update({
-    where: { user_id: userId },
+  await prisma.pet.update({
+    where: { id: petId },
     data: { streak: newStreak },
   });
 

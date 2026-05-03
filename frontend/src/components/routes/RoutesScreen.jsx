@@ -7,16 +7,21 @@ import {
   Button,
   Skeleton,
   useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
+import { Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import { useRoutes, useSelectRoute, usePauseRoute, useResumeRoute } from '../../hooks/useRoutes';
 import RouteCard from './RouteCard';
 import RouteProgressMap from './RouteProgressMap';
 
 export default function RoutesScreen() {
+  const toast = useToast();
   const { data, isLoading, isError, error, refetch, isFetching } = useRoutes();
   const routes = data?.routes ?? [];
   const routePaused = data?.route_paused === true;
+  const isPro = data?.is_pro === true;
   const selectRoute = useSelectRoute();
   const pauseRoute = usePauseRoute();
   const resumeRoute = useResumeRoute();
@@ -26,9 +31,27 @@ export default function RoutesScreen() {
   const selectedRoute = routes.find((r) => r.is_selected);
 
   async function handleSelect(routeKey) {
+    const r = routes.find((x) => x.key === routeKey);
+    if (r?.requires_pro && !isPro) {
+      toast({
+        title: 'Нужен Pro',
+        description: 'Оформите подписку в профиле (Telegram Stars), затем выберите маршрут снова.',
+        status: 'info',
+        duration: 5000,
+      });
+      return;
+    }
     setSelectingKey(routeKey);
     try {
       await selectRoute.mutateAsync(routeKey);
+    } catch (e) {
+      if (e?.response?.status === 403) {
+        toast({
+          title: 'Нужен Pro',
+          description: e?.response?.data?.error || 'Маршрут только по подписке.',
+          status: 'warning',
+        });
+      }
     } finally {
       setSelectingKey(null);
     }
@@ -76,6 +99,16 @@ export default function RoutesScreen() {
   return (
     <Box pb={24} px={2}>
       <VStack spacing={5} align="stretch">
+        <Button
+          as={RouterLink}
+          to="/profile"
+          variant="ghost"
+          size="sm"
+          alignSelf="flex-start"
+          leftIcon={<ArrowLeft size={16} />}
+        >
+          Профиль
+        </Button>
         <Box>
           <Text fontSize="lg" fontWeight="bold">Маршруты</Text>
           <Text fontSize="sm" color={muted} mt={1}>
@@ -182,6 +215,7 @@ export default function RoutesScreen() {
                 route={route}
                 isSelected={route.is_selected}
                 isSelecting={selectingKey === route.key}
+                isProUser={isPro}
                 onSelect={() => handleSelect(route.key)}
               />
             </motion.div>
