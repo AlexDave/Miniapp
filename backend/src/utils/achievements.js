@@ -64,6 +64,30 @@ async function checkAndAwardAchievements(userId) {
         satisfied = completedModules.length >= condition.value;
         break;
 
+      case 'course_completed': {
+        const courses = await prisma.course.findMany({
+          where: { is_active: true },
+          include: {
+            modules: {
+              include: {
+                lessons: { where: { is_active: true }, select: { id: true } },
+              },
+            },
+          },
+        });
+        let completedCourses = 0;
+        for (const c of courses) {
+          const ids = c.modules.flatMap((m) => m.lessons.map((l) => l.id));
+          if (ids.length === 0) continue;
+          const n = await prisma.dailyReport.count({
+            where: { user_id: userId, lesson_id: { in: ids } },
+          });
+          if (n >= ids.length) completedCourses += 1;
+        }
+        satisfied = completedCourses >= (condition.value ?? 1);
+        break;
+      }
+
     }
 
     if (satisfied) {

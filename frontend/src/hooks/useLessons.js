@@ -78,8 +78,8 @@ export function useSubmitReport() {
   const queryClient = useQueryClient();
 
   return useMutation(
-    async ({ lessonId, steps_data, rating, note }) => {
-      const { data } = await api.post(`/api/lessons/${lessonId}/report`, { steps_data, rating, note });
+    async ({ lessonId, steps_data, success, note }) => {
+      const { data } = await api.post(`/api/lessons/${lessonId}/report`, { steps_data, success, note });
       return data;
     },
     {

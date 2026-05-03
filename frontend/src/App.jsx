@@ -14,15 +14,14 @@ import {
   SlideFade,
   Portal
 } from '@chakra-ui/react';
-import { 
-  BookOpen, 
-  Target, 
-  MessageCircle, 
-  User, 
+import {
+  Target,
+  User,
   Home,
   Sun,
   Moon,
-  Bell
+  Bell,
+  Brain,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +35,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './components/Dashboard';
 import Notifications from './components/Notifications';
 import LessonView from './components/lesson/LessonView';
+import SkillsScreen from './components/skills/SkillsScreen';
+import TrainScreen from './components/train/TrainScreen';
 
 import theme from './theme';
 import useStore from './store';
@@ -90,6 +91,8 @@ function AppContent() {
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/skills" element={<SkillsScreen />} />
+            <Route path="/train" element={<TrainScreen />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/course/:id" element={<CourseDetail />} />
             <Route path="/lesson/:lessonId" element={<LessonView />} />
@@ -213,11 +216,15 @@ function BottomNavigation() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   const navigationItems = [
-    { path: '/', icon: <Home size={24} />, label: 'Главная' },
-    { path: '/courses', icon: <BookOpen size={24} />, label: 'Курсы' },
-    { path: '/tracks', icon: <Target size={24} />, label: 'Треки' },
-    { path: '/chat', icon: <MessageCircle size={24} />, label: 'Чат' },
-    { path: '/profile', icon: <User size={24} />, label: 'Профиль' }
+    { path: '/', icon: <Home size={24} />, label: 'Главная', match: (p) => p === '/' },
+    { path: '/skills', icon: <Brain size={24} />, label: 'Навыки', match: (p) => p.startsWith('/skills') },
+    {
+      path: '/train',
+      icon: <Target size={24} />,
+      label: 'Тренировка',
+      match: (p) => p.startsWith('/train') || p.startsWith('/lesson/'),
+    },
+    { path: '/profile', icon: <User size={24} />, label: 'Профиль', match: (p) => p.startsWith('/profile') },
   ];
 
   return (
@@ -234,8 +241,8 @@ function BottomNavigation() {
       bg={useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')}
     >
       <Flex justify="space-around" align="center" py={2}>
-        {navigationItems.map(({ path, icon, label }) => {
-          const isActive = location.pathname === path;
+        {navigationItems.map(({ path, icon, label, match }) => {
+          const isActive = match ? match(location.pathname) : location.pathname === path;
           const color = isActive ? 'purple.500' : useColorModeValue('gray.500', 'gray.400');
           
           return (

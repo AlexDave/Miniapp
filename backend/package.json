@@ -21,6 +21,9 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "prisma": {
+    "seed": "node src/seed.js"
+  },
   "dependencies": {
     "@prisma/client": "^5.19.1",
     "cors": "^2.8.5",

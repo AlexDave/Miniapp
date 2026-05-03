@@ -18,6 +18,8 @@ export function useProfile() {
           avatar: data.avatar,
           level: data.level,
           experience: data.experience,
+          coins: data.coins ?? 0,
+          skills: data.skills ?? { focus: 0, recall: 0, sit: 0 },
           totalCourses: data.totalCourses,
           completedCourses: data.completedCourses,
           streak: data.streak,
@@ -38,7 +40,14 @@ export function useUpdateProfile() {
     {
       onSuccess: (data) => {
         queryClient.setQueryData(['profile'], data);
-        updateUserProfile({ petName: data.petName, avatar: data.avatar, level: data.level, experience: data.experience });
+        updateUserProfile({
+          petName: data.petName,
+          avatar: data.avatar,
+          level: data.level,
+          experience: data.experience,
+          coins: data.coins ?? 0,
+          skills: data.skills ?? { focus: 0, recall: 0, sit: 0 },
+        });
       },
     }
   );

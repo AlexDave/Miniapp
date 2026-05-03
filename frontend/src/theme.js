@@ -1,5 +1,7 @@
 import { extendTheme } from '@chakra-ui/react';
 
+/** Motion-токены и варианты: `src/motion/tokens.js`, `src/motion/variants.js` */
+
 const theme = extendTheme({
   config: {
     initialColorMode: 'light',

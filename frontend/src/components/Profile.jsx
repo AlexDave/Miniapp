@@ -227,9 +227,12 @@ function Profile() {
                     />
                   </HStack>
                 )}
-                <HStack spacing={2}>
+                <HStack spacing={2} flexWrap="wrap" justify="center">
                   <LevelBadge level={level} levelName={levelName} />
                   <Text color={textColor} fontSize="sm">· {totalXP} XP</Text>
+                  {stats?.coins != null && stats.coins > 0 && (
+                    <Text color={textColor} fontSize="sm">· 🪙 {stats.coins}</Text>
+                  )}
                   {streak > 0 && <StreakBadge streak={streak} />}
                 </HStack>
               </VStack>
@@ -244,6 +247,34 @@ function Profile() {
                 </HStack>
                 <Progress value={getLevelProgress()} colorScheme="purple" size="lg" borderRadius="full" />
               </Box>
+
+              {stats?.skills && (
+                <Box width="100%" maxW="400px">
+                  <Text fontSize="sm" fontWeight="semibold" color={textColor} mb={2}>
+                    Навыки
+                  </Text>
+                  <VStack spacing={2} align="stretch">
+                    {[
+                      ['focus', 'Фокус'],
+                      ['sit', 'Сидеть'],
+                      ['recall', 'Ко мне'],
+                    ].map(([key, ru]) => (
+                      <Box key={key}>
+                        <HStack justify="space-between" mb={1}>
+                          <Text fontSize="xs" color={textColor}>{ru}</Text>
+                          <Text fontSize="xs">{Math.round(stats.skills[key] ?? 0)}%</Text>
+                        </HStack>
+                        <Progress
+                          value={stats.skills[key] ?? 0}
+                          size="xs"
+                          colorScheme="purple"
+                          borderRadius="full"
+                        />
+                      </Box>
+                    ))}
+                  </VStack>
+                </Box>
+              )}
             </VStack>
           </CardBody>
         </MotionCard>

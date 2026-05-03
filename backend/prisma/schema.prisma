@@ -37,6 +37,8 @@ model Profile {
   avatar      String?
   level       Int      @default(1)
   experience  Int      @default(0)
+  coins       Int      @default(0)
+  skills_json String?  // JSON: { "focus": 0-100, "recall": ..., "sit": ... }
   total_courses Int    @default(0)
   completed_courses Int @default(0)
   streak      Int      @default(0)
@@ -101,6 +103,7 @@ model Lesson {
   theory      String?
   order_index Int      @default(0)
   xp_reward   Int      @default(10)
+  meta        String?  // JSON: day_id, why, reflection, fallback_tasks, skill, feedback...
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
@@ -165,6 +168,7 @@ model DailyReport {
   lesson_id    Int
   steps_data   String   // JSON: [{step_id, value}]
   rating       Int      @default(2)
+  success      String?  // "yes" | "partial" | "no" — итог «получилось?»
   note         String?
   xp_earned    Int      @default(0)
   completed_at DateTime @default(now())

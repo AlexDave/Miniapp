@@ -14,12 +14,21 @@ router.get('/', async (req, res) => {
       return res.status(404).json({ error: 'Профиль не найден' });
     }
 
+    let skills = { focus: 0, recall: 0, sit: 0 };
+    try {
+      skills = profile.skills_json ? { ...skills, ...JSON.parse(profile.skills_json) } : skills;
+    } catch {
+      /* ignore */
+    }
+
     res.json({
       id: profile.id,
       petName: profile.pet_name,
       avatar: profile.avatar,
       level: profile.level,
       experience: profile.experience,
+      coins: profile.coins ?? 0,
+      skills,
       totalCourses: profile.total_courses,
       completedCourses: profile.completed_courses,
       streak: profile.streak,
@@ -44,12 +53,21 @@ router.put('/', async (req, res) => {
       },
     });
 
+    let skills = { focus: 0, recall: 0, sit: 0 };
+    try {
+      skills = profile.skills_json ? { ...skills, ...JSON.parse(profile.skills_json) } : skills;
+    } catch {
+      /* ignore */
+    }
+
     res.json({
       id: profile.id,
       petName: profile.pet_name,
       avatar: profile.avatar,
       level: profile.level,
       experience: profile.experience,
+      coins: profile.coins ?? 0,
+      skills,
       totalCourses: profile.total_courses,
       completedCourses: profile.completed_courses,
       streak: profile.streak,

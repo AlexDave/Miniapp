@@ -1,30 +1,31 @@
 import { useState } from 'react';
 import {
-  VStack, HStack, Box, Text, Button, Textarea,
+  VStack, HStack, Box, Text, Textarea, Button,
 } from '@chakra-ui/react';
+import PressableButton from '../motion/PressableButton';
 import { Send } from 'lucide-react';
 
-const RATINGS = [
-  { value: 1, emoji: '😕', label: 'Плохо', color: 'red' },
-  { value: 2, emoji: '😐', label: 'Нормально', color: 'yellow' },
-  { value: 3, emoji: '😊', label: 'Отлично', color: 'green' },
+const SUCCESS = [
+  { value: 'yes', emoji: '✅', label: 'Да', color: 'green' },
+  { value: 'partial', emoji: '⚠️', label: 'Частично', color: 'orange' },
+  { value: 'no', emoji: '❌', label: 'Нет', color: 'red' },
 ];
 
 export default function ReportForm({ stepsData = [], onSubmit, isLoading }) {
-  const [rating, setRating] = useState(2);
+  const [success, setSuccess] = useState('yes');
   const [note, setNote] = useState('');
 
   return (
     <VStack spacing={5} align="stretch">
       <Box>
-        <Text fontWeight="semibold" mb={3}>Как прошло занятие?</Text>
-        <HStack spacing={3} justify="center">
-          {RATINGS.map((r) => (
+        <Text fontWeight="semibold" mb={3}>Получилось?</Text>
+        <HStack spacing={3} justify="center" flexWrap="wrap">
+          {SUCCESS.map((r) => (
             <Button
               key={r.value}
-              onClick={() => setRating(r.value)}
-              variant={rating === r.value ? 'solid' : 'outline'}
-              colorScheme={rating === r.value ? r.color : 'gray'}
+              onClick={() => setSuccess(r.value)}
+              variant={success === r.value ? 'solid' : 'outline'}
+              colorScheme={success === r.value ? r.color : 'gray'}
               flexDir="column"
               h="auto"
               py={3}
@@ -52,16 +53,18 @@ export default function ReportForm({ stepsData = [], onSubmit, isLoading }) {
         />
       </Box>
 
-      <Button
+      <PressableButton
         colorScheme="green"
         leftIcon={<Send size={18} />}
         size="lg"
-        w="100%"
+        fullWidth
         isLoading={isLoading}
-        onClick={() => onSubmit({ steps_data: stepsData, rating, note })}
+        isDisabled={isLoading}
+        successTap
+        onClick={() => onSubmit({ steps_data: stepsData, success, note })}
       >
         Сохранить и получить XP
-      </Button>
+      </PressableButton>
     </VStack>
   );
 }

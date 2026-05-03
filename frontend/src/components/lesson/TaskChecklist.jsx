@@ -5,6 +5,7 @@ import {
   NumberDecrementStepper, Textarea, Progress,
 } from '@chakra-ui/react';
 import { CheckCircle } from 'lucide-react';
+import PressableButton from '../motion/PressableButton';
 
 const RATINGS = [
   { value: 1, emoji: '😕', label: 'Плохо' },
@@ -138,15 +139,16 @@ export default function TaskChecklist({ task, onComplete }) {
         </Box>
       ))}
 
-      <Button
+      <PressableButton
         colorScheme="green"
         leftIcon={<CheckCircle size={18} />}
         onClick={handleSubmit}
         size="lg"
-        w="100%"
+        fullWidth
+        successTap
       >
         Задание выполнено
-      </Button>
+      </PressableButton>
     </VStack>
   );
 }

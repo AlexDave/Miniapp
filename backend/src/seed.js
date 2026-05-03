@@ -23,6 +23,7 @@ const achievements = [
   { name: 'Данные не врут', description: 'Заполняй отчёт 10 дней подряд', icon: 'BarChart', color: 'teal', condition: JSON.stringify({ type: 'reports_streak', value: 10 }) },
   { name: 'Перфекционист', description: 'Получи оценку «Отлично» 5 раз', icon: 'Award', color: 'yellow', condition: JSON.stringify({ type: 'perfect_reports', value: 5 }) },
   { name: 'Первый модуль', description: 'Завершил первый модуль курса', icon: 'BookOpen', color: 'blue', condition: JSON.stringify({ type: 'modules_complete', value: 1 }) },
+  { name: 'Мастер курса', description: 'Завершил курс от первого до последнего урока', icon: 'GraduationCap', color: 'purple', condition: JSON.stringify({ type: 'course_completed', value: 1 }) },
 ];
 
 // ─── Заполнение БД ────────────────────────────────────────────────────────────
@@ -30,9 +31,9 @@ const achievements = [
 async function main() {
   console.log('🌱 Начало заполнения базы данных...');
 
-  // Деактивируем все старые курсы (тестовые/выдуманные)
-  await prisma.course.updateMany({ data: { is_active: false } });
-  console.log('🔄 Старые курсы деактивированы');
+  // Удаляем все курсы (каскадом модули, уроки, задачи курса и связанный прогресс)
+  const deletedCourses = await prisma.course.deleteMany({});
+  console.log(`🗑 Удалено курсов из БД: ${deletedCourses.count}`);
 
   // Курсы — два реальных
   const createdCourses = {};

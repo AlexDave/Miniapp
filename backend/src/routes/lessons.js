@@ -1,24 +1,53 @@
 const express = require('express');
 const { prisma } = require('../database/connection');
-const { calculateXP, getLevelByXP, getNextLevel } = require('../utils/xp');
-const { updateStreak } = require('../utils/streak');
+const { calculateLessonReportXP, getLevelByXP } = require('../utils/xp');
+const { parseLessonMeta, applySkillDelta, normalizeSkills } = require('../utils/lessonMeta');
+const { updateStreakAfterLessonReport } = require('../utils/streakLesson');
 const { checkAndAwardAchievements } = require('../utils/achievements');
 
 const router = express.Router();
+
+function lessonDto(lesson) {
+  if (!lesson) return null;
+  const out = { ...lesson };
+  if (typeof out.meta === 'string' && out.meta) {
+    try {
+      out.meta = JSON.parse(out.meta);
+    } catch {
+      out.meta = null;
+    }
+  }
+  return out;
+}
+
+function parseCourseContent(contentStr) {
+  if (!contentStr) return {};
+  try {
+    return JSON.parse(contentStr);
+  } catch {
+    return {};
+  }
+}
+
+function skillRequirementsMet(requires, skills) {
+  if (!requires) return true;
+  for (const [k, v] of Object.entries(requires)) {
+    if ((skills[k] ?? 0) < v) return false;
+  }
+  return true;
+}
 
 // Найти первый незавершённый урок пользователя
 router.get('/today', async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Все отчёты пользователя — знаем какие уроки пройдены
     const doneReports = await prisma.dailyReport.findMany({
       where: { user_id: userId },
       select: { lesson_id: true },
     });
     const doneIds = new Set(doneReports.map((r) => r.lesson_id));
 
-    // Берём все уроки из активных модулей активных курсов по порядку
     const lessons = await prisma.lesson.findMany({
       where: { is_active: true, module: { is_active: true, course: { is_active: true } } },
       include: {
@@ -38,19 +67,20 @@ router.get('/today', async (req, res) => {
       return res.json({ lesson: null, message: 'Все уроки завершены!' });
     }
 
-    // Прогресс по модулю
     const moduleLessons = lessons.filter((l) => l.module_id === todayLesson.module_id);
     const moduleDone = moduleLessons.filter((l) => doneIds.has(l.id)).length;
 
+    const tl = lessonDto(todayLesson);
     res.json({
       lesson: {
-        id: todayLesson.id,
-        title: todayLesson.title,
-        description: todayLesson.description,
-        theory: todayLesson.theory,
-        xp_reward: todayLesson.xp_reward,
-        order_index: todayLesson.order_index,
-        daily_task: todayLesson.daily_task,
+        id: tl.id,
+        title: tl.title,
+        description: tl.description,
+        theory: tl.theory,
+        xp_reward: tl.xp_reward,
+        order_index: tl.order_index,
+        meta: tl.meta,
+        daily_task: tl.daily_task,
       },
       module: {
         id: todayLesson.module.id,
@@ -67,7 +97,6 @@ router.get('/today', async (req, res) => {
   }
 });
 
-// Список модулей курса с прогрессом
 router.get('/course/:courseId/modules', async (req, res) => {
   try {
     const courseId = parseInt(req.params.courseId, 10);
@@ -102,16 +131,17 @@ router.get('/course/:courseId/modules', async (req, res) => {
   }
 });
 
-// Уроки модуля с полным контентом и статусом
+// Уроки модуля: skill-tree + гибрид с линейным fallback
 router.get('/module/:moduleId', async (req, res) => {
   try {
     const moduleId = parseInt(req.params.moduleId, 10);
     const userId = req.user.id;
 
-    const [module, doneReports] = await Promise.all([
+    const [module, doneReports, profile] = await Promise.all([
       prisma.module.findUnique({
         where: { id: moduleId },
         include: {
+          course: { select: { content: true } },
           lessons: {
             where: { is_active: true },
             include: {
@@ -126,37 +156,70 @@ router.get('/module/:moduleId', async (req, res) => {
         where: { user_id: userId },
         select: { lesson_id: true },
       }),
+      prisma.profile.findUnique({ where: { user_id: userId } }),
     ]);
 
     if (!module) return res.status(404).json({ error: 'Модуль не найден' });
 
     const doneIds = new Set(doneReports.map((r) => r.lesson_id));
-    let firstUnlocked = false;
+    const skills = normalizeSkills(profile?.skills_json);
+    const { skill_tree: skillTree } = parseCourseContent(module.course?.content);
+    const unlock = skillTree?.unlock ?? [];
 
-    const lessons = module.lessons.map((l) => {
+    const sorted = [...module.lessons];
+
+    function isLessonAccessible(l) {
+      const rules = unlock.filter((u) => u.lesson_order === l.order_index);
+      if (rules.length > 0) {
+        return rules.every((u) => skillRequirementsMet(u.requires, skills));
+      }
+      if (l.order_index <= 1) return true;
+      const prev = sorted.find((x) => x.order_index === l.order_index - 1);
+      return prev ? doneIds.has(prev.id) : false;
+    }
+
+    let seenCurrent = false;
+    const lessons = sorted.map((l) => {
       const isDone = doneIds.has(l.id);
-      const isCurrent = !isDone && !firstUnlocked;
-      if (isCurrent) firstUnlocked = true;
+      const accessible = isLessonAccessible(l);
+
+      let status = 'locked';
+      if (!accessible) status = 'locked';
+      else if (isDone) status = 'completed';
+      else if (!seenCurrent) {
+        status = 'current';
+        seenCurrent = true;
+      } else status = 'available';
+
+      const showContent = isDone || accessible;
+      const dto = lessonDto(l);
+      const skillId = dto.meta?.skill ?? 'focus';
+
       return {
-        id: l.id,
-        title: l.title,
-        description: l.description,
-        xp_reward: l.xp_reward,
-        order_index: l.order_index,
-        status: isDone ? 'completed' : isCurrent ? 'current' : 'locked',
-        steps: isDone || isCurrent ? l.steps : [],
-        daily_task: isDone || isCurrent ? l.daily_task : null,
+        id: dto.id,
+        title: dto.title,
+        description: dto.description,
+        xp_reward: dto.xp_reward,
+        order_index: dto.order_index,
+        meta: dto.meta,
+        status,
+        skill_percent: skills[skillId] ?? 0,
+        steps: showContent ? l.steps : [],
+        daily_task: showContent ? l.daily_task : null,
       };
     });
 
-    res.json({ module: { id: module.id, title: module.title }, lessons });
+    res.json({
+      module: { id: module.id, title: module.title },
+      skills_snapshot: skills,
+      lessons,
+    });
   } catch (err) {
     console.error('❌ Ошибка /lessons/module/:id:', err);
     res.status(500).json({ error: 'Ошибка при получении уроков модуля' });
   }
 });
 
-// Получить конкретный урок (для показа теории и задания)
 router.get('/:lessonId', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
@@ -178,14 +241,13 @@ router.get('/:lessonId', async (req, res) => {
 
     if (!lesson) return res.status(404).json({ error: 'Урок не найден' });
 
-    res.json({ lesson, report: report ?? null });
+    res.json({ lesson: lessonDto(lesson), report: report ?? null });
   } catch (err) {
     console.error('❌ Ошибка /lessons/:id:', err);
     res.status(500).json({ error: 'Ошибка при получении урока' });
   }
 });
 
-// Получить отчёт пользователя за урок
 router.get('/:lessonId/report', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
@@ -199,18 +261,24 @@ router.get('/:lessonId/report', async (req, res) => {
   }
 });
 
-// Сохранить отчёт за урок + начислить XP
 router.post('/:lessonId/report', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
     const userId = req.user.id;
-    const { steps_data = [], rating = 2, note = '' } = req.body;
+    let { steps_data = [], note = '' } = req.body;
 
-    if (rating < 1 || rating > 3) {
-      return res.status(400).json({ error: 'rating должен быть от 1 до 3' });
+    let success = req.body.success;
+    const legacyRating = req.body.rating;
+    if (!success && legacyRating !== undefined && legacyRating !== null) {
+      success = legacyRating >= 3 ? 'yes' : legacyRating === 2 ? 'partial' : 'no';
+    }
+    if (!success) success = 'yes';
+    if (!['yes', 'partial', 'no'].includes(success)) {
+      return res.status(400).json({ error: 'success должен быть yes, partial или no' });
     }
 
-    // Проверить что урок не пройден
+    const rating = success === 'yes' ? 3 : success === 'partial' ? 2 : 1;
+
     const existing = await prisma.dailyReport.findUnique({
       where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
     });
@@ -218,64 +286,127 @@ router.post('/:lessonId/report', async (req, res) => {
       return res.status(409).json({ error: 'Этот урок уже завершён' });
     }
 
-    // Получить урок для xp_reward и проверки модуля
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      include: { module: { include: { lessons: { select: { id: true } } } } },
+      include: { module: { include: { lessons: { select: { id: true } }, course: { select: { id: true } } } } },
     });
     if (!lesson) return res.status(404).json({ error: 'Урок не найден' });
 
-    // Обновить стрик
-    const now = new Date();
-    const newStreak = await updateStreak(userId, now, false);
+    const meta = parseLessonMeta(lesson.meta) ?? {};
+    const skillKey = meta.skill || 'focus';
+    const progressGain = meta.progress_gain ?? 10;
 
-    // Проверить завершение модуля
+    const profile = await prisma.profile.findUnique({ where: { user_id: userId } });
+    if (!profile) return res.status(404).json({ error: 'Профиль не найден' });
+
+    let prefs = {};
+    try {
+      prefs = profile.preferences ? JSON.parse(profile.preferences) : {};
+    } catch {
+      prefs = {};
+    }
+    prefs.lesson_attempts = prefs.lesson_attempts || {};
+    const aid = String(lessonId);
+    prefs.lesson_attempts[aid] = prefs.lesson_attempts[aid] || { fail: 0, yes: 0 };
+    if (success === 'no') prefs.lesson_attempts[aid].fail += 1;
+    if (success === 'yes') prefs.lesson_attempts[aid].yes += 1;
+
+    const attempts = prefs.lesson_attempts[aid];
+    const adaptive =
+      attempts.fail >= 2 && attempts.yes < 2
+        ? { easier: true, hint: 'Попробуй упрощённый вариант из fallback_tasks урока.' }
+        : attempts.yes >= 3
+          ? { harder: true, hint: 'Можно добавить отвлечения или увеличить время выдержки.' }
+          : {};
+
     const allModuleLessonIds = lesson.module.lessons.map((l) => l.id);
     const doneInModule = await prisma.dailyReport.count({
       where: { user_id: userId, lesson_id: { in: allModuleLessonIds } },
     });
     const isModuleComplete = doneInModule + 1 >= allModuleLessonIds.length;
 
-    // Считаем XP
-    const hasData = steps_data.some((s) => s.value !== null && s.value !== '' && s.value !== false && s.value !== 0);
-    const profile = await prisma.profile.findUnique({ where: { user_id: userId } });
-    const xpEarned = calculateXP(rating, hasData, newStreak ?? profile?.streak ?? 0, isModuleComplete);
+    const hasData = steps_data.some(
+      (s) => s.value !== null && s.value !== '' && s.value !== false && s.value !== 0
+    );
 
-    // Создать отчёт и обновить XP в транзакции
-    const oldXP = profile?.experience ?? 0;
+    const streakForBonus = profile.streak ?? 0;
+
+    const xpEarned = calculateLessonReportXP(
+      lesson.xp_reward,
+      success,
+      hasData,
+      streakForBonus,
+      isModuleComplete
+    );
+
+    const coinsGain = Math.floor(xpEarned / 2);
+    const oldXP = profile.experience ?? 0;
     const newXP = oldXP + xpEarned;
     const oldLevel = getLevelByXP(oldXP);
-    const newLevel = getLevelByXP(newXP);
+    const newLevelObj = getLevelByXP(newXP);
 
-    const [report] = await prisma.$transaction([
-      prisma.dailyReport.create({
+    const newSkillsJson = applySkillDelta(profile.skills_json, skillKey, success, progressGain);
+
+    const report = await prisma.$transaction(async (tx) => {
+      const created = await tx.dailyReport.create({
         data: {
           user_id: userId,
           lesson_id: lessonId,
           steps_data: JSON.stringify(steps_data),
           rating,
+          success,
           note: note || null,
           xp_earned: xpEarned,
         },
-      }),
-      prisma.profile.update({
-        where: { user_id: userId },
-        data: { experience: newXP },
-      }),
-    ]);
+      });
 
-    // Проверить достижения асинхронно
+      await tx.profile.update({
+        where: { user_id: userId },
+        data: {
+          experience: newXP,
+          coins: (profile.coins ?? 0) + coinsGain,
+          skills_json: newSkillsJson,
+          level: newLevelObj.level,
+          preferences: JSON.stringify(prefs),
+        },
+      });
+
+      return created;
+    });
+
+    const newStreak = await updateStreakAfterLessonReport(
+      userId,
+      report.completed_at,
+      success,
+      report.id
+    );
+
     const newAchievements = await checkAndAwardAchievements(userId);
 
+    const feedback =
+      success === 'yes'
+        ? meta.success_message
+        : success === 'partial'
+          ? meta.partial_message
+          : meta.fail_message;
+
     res.status(201).json({
+      outcome: success,
       report,
       xp_earned: xpEarned,
       total_xp: newXP,
-      level: newLevel,
-      level_up: newLevel.level > oldLevel.level,
-      streak: newStreak ?? profile?.streak ?? 0,
+      level: newLevelObj,
+      level_up: newLevelObj.level > oldLevel.level,
+      streak: newStreak,
+      coins_earned: coinsGain,
+      coins_total: (profile.coins ?? 0) + coinsGain,
+      skills: JSON.parse(newSkillsJson),
+      skill_key: skillKey,
       module_complete: isModuleComplete,
       achievements_unlocked: newAchievements,
+      feedback_message: feedback,
+      fallback_tasks: success === 'no' ? meta.fallback_tasks ?? [] : [],
+      adaptive,
     });
   } catch (err) {
     console.error('❌ Ошибка POST /lessons/:id/report:', err);

@@ -11,6 +11,8 @@ const useStore = create(
         avatar: null,
         level: 1,
         experience: 0,
+        coins: 0,
+        skills: { focus: 0, recall: 0, sit: 0 },
         totalCourses: 0,
         completedCourses: 0,
         streak: 0,

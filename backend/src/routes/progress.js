@@ -114,6 +114,16 @@ router.get('/stats', async (req, res) => {
     const level = getLevelByXP(totalXP);
     const nextLevel = getNextLevel(totalXP);
 
+    const skills = profile?.skills_json
+      ? (() => {
+          try {
+            return JSON.parse(profile.skills_json);
+          } catch {
+            return {};
+          }
+        })()
+      : {};
+
     res.json({
       total_xp: totalXP,
       level: level.level,
@@ -121,9 +131,18 @@ router.get('/stats', async (req, res) => {
       next_level_xp: nextLevel?.min ?? null,
       xp_to_next: nextLevel ? nextLevel.min - totalXP : 0,
       streak: profile?.streak ?? 0,
+      coins: profile?.coins ?? 0,
+      skills,
       reports_count: reportsCount,
       modules_done: modulesData.length,
       tracks_done: completedTracks,
+      kpi: {
+        streak_length: profile?.streak ?? 0,
+        reports_total: reportsCount,
+        tracks_completed: completedTracks,
+        hint:
+          'Для D1/D7 retention и avg session time добавьте таблицу событий или внешнюю аналитику.',
+      },
     });
   } catch (err) {
     console.error('❌ Ошибка /stats:', err);

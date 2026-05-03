@@ -13,6 +13,12 @@ vi.mock('../hooks/useTracks', () => ({
 vi.mock('../hooks/useProfile', () => ({
   useProfile: vi.fn(),
 }));
+vi.mock('../hooks/useProgress', () => ({
+  useUserStats: vi.fn(),
+}));
+vi.mock('../hooks/useLessons', () => ({
+  useTodayLesson: vi.fn(),
+}));
 vi.mock('../store', () => ({
   default: vi.fn(),
 }));
@@ -20,6 +26,8 @@ vi.mock('../store', () => ({
 import { useCourses } from '../hooks/useCourses';
 import { useTracks } from '../hooks/useTracks';
 import { useProfile } from '../hooks/useProfile';
+import { useUserStats } from '../hooks/useProgress';
+import { useTodayLesson } from '../hooks/useLessons';
 import useStore from '../store';
 import Dashboard from '../components/Dashboard';
 
@@ -41,6 +49,18 @@ function Wrapper({ children }) {
 beforeEach(() => {
   useStore.mockReturnValue({ userProfile: defaultProfile });
   useProfile.mockReturnValue({});
+  useUserStats.mockReturnValue({
+    data: {
+      total_xp: 120,
+      level: 2,
+      streak: 3,
+      skills: { focus: 40, sit: 20, recall: 10 },
+      xp_to_next: 80,
+      next_level_xp: 200,
+      level_name: 'Практик',
+    },
+  });
+  useTodayLesson.mockReturnValue({ data: null, isLoading: false });
 });
 
 describe('Dashboard', () => {

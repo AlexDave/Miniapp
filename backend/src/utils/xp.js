@@ -39,4 +39,25 @@ function calculateXP(rating, hasData, streakCount, isModuleComplete) {
   return total;
 }
 
-module.exports = { XP_REWARDS, LEVELS, getLevelByXP, getNextLevel, calculateXP };
+/** XP за урок с учётом «получилось»: база из xp_reward урока, при partial — 50% суммы. */
+function calculateLessonReportXP(lessonXpReward, success, hasData, streakForBonus, isModuleComplete) {
+  if (success === 'no') return 0;
+  const rating = success === 'yes' ? 3 : 2;
+  let total = Math.max(XP_REWARDS.LESSON_COMPLETE, lessonXpReward || 0);
+  if (hasData) total += XP_REWARDS.REPORT_WITH_DATA;
+  if (rating === 3) total += XP_REWARDS.PERFECT_RATING;
+  if (streakForBonus >= 7) total += XP_REWARDS.STREAK_7;
+  else if (streakForBonus >= 3) total += XP_REWARDS.STREAK_3;
+  if (isModuleComplete) total += XP_REWARDS.MODULE_COMPLETE;
+  if (success === 'partial') total = Math.floor(total * 0.5);
+  return total;
+}
+
+module.exports = {
+  XP_REWARDS,
+  LEVELS,
+  getLevelByXP,
+  getNextLevel,
+  calculateXP,
+  calculateLessonReportXP,
+};

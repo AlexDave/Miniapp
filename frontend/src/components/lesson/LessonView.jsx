@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Box, VStack, HStack, Text, Button, Badge, Divider,
   Spinner, Center, Alert, AlertIcon, Stepper, Step,
@@ -13,6 +14,7 @@ import TaskChecklist from './TaskChecklist';
 import ReportForm from './ReportForm';
 import XPAnimation from '../gamification/XPAnimation';
 import TheoryStep from './TheoryStep';
+import { MOTION, sec } from '../../motion/tokens';
 
 const STEPS = [
   { title: 'Теория', icon: BookOpen },
@@ -49,6 +51,19 @@ export default function LessonView() {
 
   const { lesson, report } = data;
 
+  let lessonMeta = {};
+  if (lesson.meta) {
+    if (typeof lesson.meta === 'string') {
+      try {
+        lessonMeta = JSON.parse(lesson.meta);
+      } catch {
+        lessonMeta = {};
+      }
+    } else {
+      lessonMeta = lesson.meta;
+    }
+  }
+
   // Если урок уже пройден
   if (report) {
     return (
@@ -67,12 +82,12 @@ export default function LessonView() {
     );
   }
 
-  async function handleReportSubmit({ steps_data, rating, note }) {
+  async function handleReportSubmit({ steps_data, success, note }) {
     try {
       const result = await submitReport.mutateAsync({
         lessonId: parseInt(lessonId, 10),
         steps_data: [...taskStepsData, ...steps_data],
-        rating,
+        success,
         note,
       });
       setXpResult(result);
@@ -87,7 +102,16 @@ export default function LessonView() {
   }
 
   if (xpResult) {
-    return <XPAnimation result={xpResult} onContinue={() => navigate('/')} />;
+    return (
+      <XPAnimation
+        result={xpResult}
+        onContinue={() => navigate('/train')}
+        onRetry={() => {
+          setXpResult(null);
+          setActiveStep(1);
+        }}
+      />
+    );
   }
 
   return (
@@ -122,10 +146,29 @@ export default function LessonView() {
 
       <Divider />
 
-      <Box px={4} pt={4}>
+      <Box px={4} pt={4} overflow="hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeStep}
+            initial={{ opacity: 0, x: 22 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -18 }}
+            transition={{ duration: sec(MOTION.duration.normal), ease: MOTION.easing.default }}
+            style={{ width: '100%' }}
+          >
         {/* Шаг 1: Теория */}
         {activeStep === 0 && (
           <VStack spacing={4} align="stretch">
+            {lessonMeta.why && (
+              <Box p={4} bg="cyan.50" borderRadius="xl" border="1px solid" borderColor="cyan.100">
+                <Text fontSize="xs" fontWeight="semibold" color="cyan.800" mb={1}>
+                  Зачем это
+                </Text>
+                <Text fontSize="sm" color="cyan.900">
+                  {lessonMeta.why}
+                </Text>
+              </Box>
+            )}
             {lesson.steps?.map((step) => (
               <TheoryStep key={step.id} step={step} />
             ))}
@@ -190,6 +233,8 @@ export default function LessonView() {
             isLoading={submitReport.isLoading}
           />
         )}
+          </motion.div>
+        </AnimatePresence>
       </Box>
     </Box>
   );
