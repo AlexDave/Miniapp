@@ -5,14 +5,6 @@ const ATOMIC_OUTCOMES = require('../data/skill-atomic-outcomes.json');
 
 const prisma = new PrismaClient();
 
-// ─── Треки (ежедневные привычки) ──────────────────────────────────────────────
-
-const tracks = [
-  { title: 'Ежедневные команды', description: 'Повторяйте базовые команды каждый день по 5–10 минут. Регулярность — ключ к успеху.', category: 'Базовые навыки', difficulty: 'Начинающий', duration_days: 21, is_active: true },
-  { title: 'Прогулка без рывков', description: 'Метод «стоп-и-жди» — каждый раз когда поводок натягивается. 14 дней практики.', category: 'Поведение на прогулке', difficulty: 'Начинающий', duration_days: 14, is_active: true },
-  { title: 'Социализация', description: 'Каждый день — одно новое место, человек или звук. 30 дней постепенной адаптации.', category: 'Поведение', difficulty: 'Средний', duration_days: 30, is_active: true },
-];
-
 // ─── Достижения ───────────────────────────────────────────────────────────────
 
 const achievements = [
@@ -113,17 +105,6 @@ async function main() {
     }
   }
   console.log(`✅ Модули и уроки созданы: ${totalLessons} уроков`);
-
-  // Треки
-  for (const track of tracks) {
-    const existing = await prisma.track.findFirst({ where: { title: track.title } });
-    if (existing) {
-      await prisma.track.update({ where: { id: existing.id }, data: track });
-    } else {
-      await prisma.track.create({ data: track });
-    }
-  }
-  console.log(`✅ Треков: ${tracks.length}`);
 
   // Категории и атомы навыков
   for (const cat of SKILL_CATEGORIES) {

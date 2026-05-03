@@ -1,235 +1,124 @@
-# DogCourse - Приложение для обучения собак
+# DogCourse — Telegram Mini App для дрессировки собак
 
-## 🐕 Описание
+Учебное мини-приложение под Telegram WebApp: персональный маршрут навыков, ежедневный hands-free-урок с собакой, журнал поведения и видео-полка трофеев.
 
-DogCourse - это современное веб-приложение для обучения владельцев собак. Приложение предоставляет курсы, треки обучения, систему достижений и чат для общения с экспертами.
+## Что внутри
 
-## ✨ Функциональность
+### Учебный цикл
+- **Маршрут** — `Route`/`RouteSkill`, выбирается на онбординге по возрасту и проблеме.
+- **Навыки** — 6 категорий × ~18 атомов (`SkillCategory` → `Skill`), у каждого `target_bones` и `atomic_outcome`.
+- **Урок** — фазы Зачем → Как → Делаем → Итог. Прогресс гейтится state-машиной `LessonProgress` (`not_started → theory_done → completed`).
+- **«Не получилось»** — `fallback_tree` с уровнями L1/L2/L3 + FAQ.
 
-### 🎓 Обучение
-- **Курсы** - структурированные программы обучения
-- **Треки** - ежедневные задания и цели
-- **Задачи** - конкретные упражнения и уроки
-- **Прогресс** - отслеживание результатов обучения
+### Геймификация
+- **Косточки** — `awardBone()` за уроки, особая косточка каждые 7 дней стрика, 5 стадий по сумме.
+- **Полка трофеев** — `UserTrophyVideo` с подписанными URL после каждого урока.
+- **Достижения** — авто-выдача через `utils/achievements.js`.
 
-### 🏆 Геймификация
-- **Достижения** — награды и «полка трофеев» в профиле
-- **Косточки и стадии** — прогресс по атомарным навыкам
-- **Серии** — дни подряд
-- **Маршруты** — персональный путь по навыкам
+### Удержание
+- **Telegram-бот напоминания** — `node-cron` (тик каждые 10 минут с окном ±14 мин), привязка чата через deep-link `t.me/<bot>?start=bind_*`, пер-юзерные TZ и тихие выходные.
+- **Журнал поведения** — `BehaviorEvent` + `data/behavior-suggestions.json` для маппинга «инцидент → атом».
 
-### 👤 Профиль
-- **Профиль питомца** - информация о собаке
-- **Статистика** - детальная аналитика обучения
-- **Настройки** - персонализация приложения
-- **Аватар** - загрузка фото питомца
+### Платежи и Pro
+- **Telegram Stars** — `Payment`, `User.tier`/`tier_expires_at`, gating маршрутов через `Route.requires_pro`. Soft-grace 3 дня после expiry.
+- Эндпоинт `POST /api/payments/stars-invoice`, webhook `pre_checkout_query` + `successful_payment`.
 
-### 💬 Коммуникация
-- **Чат** - общение с экспертами
-- **Уведомления** - важные события и напоминания
-- **Поддержка** - помощь пользователям
+### Аналитика
+- `AnalyticsEvent` пишется через `utils/analytics.js` (мирно дублируется в pino-лог).
+- Админ-дашборд: `GET /api/admin/dashboard` (HTML+Chart.js), `funnel`, `cohort` (D1/D7/D30). Авторизация: `X-Admin-Key` или `Authorization: Bearer <ADMIN_API_KEY>`.
 
-## 🛠️ Технологии
+### Семейный режим
+- `Pet`/`PetMember`/`PetInviteToken` — несколько хозяев → один питомец, общий прогресс.
+- Приглашение по `t.me/<bot>?start=pet_*`, активность питомца в Dashboard.
 
-### Frontend
-- React 18
-- Vite
-- Chakra UI
-- Framer Motion
-- Zustand (управление состоянием)
-- React Router
-- Axios
+## Стек
 
-### Backend
-- Node.js, Express.js
-- Prisma ORM (SQLite в dev, PostgreSQL возможен в prod)
-- Аутентификация: **Telegram WebApp** `initData` (HMAC), в dev — фиктивный пользователь (`DEV_TELEGRAM_ID`)
-- Логи: **pino**; события продуктов пишутся в лог с полем `analytics: true`
-- Админ-воронка: `GET /api/admin/funnel` + заголовок `X-Admin-Key` (см. `ADMIN_API_KEY` в `.env.example`)
+| Слой | Технологии |
+|------|-----------|
+| Frontend | React 18, Vite, Chakra UI, Framer Motion, Zustand, React Query, react-router |
+| Backend | Node.js, Express, Prisma ORM 5 (SQLite в dev, PostgreSQL прод-ready), pino |
+| Auth | Telegram WebApp `initData` + HMAC-SHA256 (`x-telegram-init-data` header). Dev-режим — фейк-юзер, если `BOT_TOKEN` пуст. |
+| Тесты | Vitest + Testing Library (frontend), Jest + Supertest (backend) |
+| CI | GitHub Actions: backend syntax + frontend build + Lighthouse CI |
 
-## 🚀 Быстрый старт
+## Быстрый старт
 
-### 1. Клонирование репозитория
 ```bash
-git clone <repository-url>
-cd minapp
+# 1. Установка зависимостей
+npm run install:all
+
+# 2. Backend env
+cp backend/.env.example backend/.env
+# отредактируйте BOT_TOKEN или используйте DEV_TELEGRAM_ID для локалки
+
+# 3. Миграции и сид
+cd backend && npx prisma migrate deploy && npm run db:seed && cd ..
+
+# 4. Запуск backend + frontend
+npm run dev
 ```
 
-### 2. Настройка Backend
+После старта frontend на http://localhost:5173 (Vite proxy на `:5000/api`), backend на http://localhost:5000.
+
+## Структура
+
+```
+backend/
+  prisma/schema.prisma          # 20+ моделей, миграции в prisma/migrations/
+  src/routes/                   # 16 роутов: lessons, skills, profile, payments, ...
+  src/utils/                    # bones, xp, analytics, telegramSend, reminderTz, ...
+  src/jobs/reminderCron.js      # cron-таск напоминаний
+  data/atomic-lessons.json      # источник 22+ атомарных уроков
+  data/behavior-suggestions.json
+frontend/
+  src/components/               # lesson/, skills/, routes/, behavior/, profile/, dashboard/
+  src/hooks/                    # use{Lessons,SkillTree,Profile,Routes,Behavior,...}
+  src/motion/                   # ReducedMotionAnimatePresence + tokens
+  src/__tests__/                # Vitest + Testing Library
+docs/
+  illustration-brief.md         # ТЗ для иллюстраций уроков
+PLAN.md                         # Roadmap всех 26 спринтов с чеклистами
+```
+
+## Ключевые эндпоинты
+
+- `GET /api/lessons/today` — урок дня (или `null`).
+- `GET/POST /api/lessons/:id` — детали + state-машина.
+- `POST /api/lessons/:id/theory-seen` `/start-task` `/repeat-start` `/retry-after-fail`.
+- `POST /api/lessons/:id/report` — отчёт, в ответе `bones_earned`, `bonesResult`, `fallbackTree` при провале.
+- `POST /api/lessons/:id/video` — multipart-аплоад трофей-видео.
+- `GET /api/skills/tree`, `GET /api/skills/:key/lessons`.
+- `GET /api/routes`, `POST /api/routes/:key/select`.
+- `GET/PUT /api/user/profile`, `GET /api/user/profile/bones`, `GET /api/user/profile/reminder-bind-link`.
+- `POST /api/behavior/log`, `GET /api/behavior`.
+- `POST /api/pets/:id/invite`, `POST /api/pets/join/:token`, `GET /api/pets/mine`, `GET /api/pets/activity`.
+- `POST /api/payments/stars-invoice`, webhook `POST /api/telegram/webhook`.
+- `GET /api/admin/{dashboard,funnel,cohort}`.
+
+Полный перечень — в `backend/src/routes/`.
+
+## Разработка
 
 ```bash
+# Backend
 cd backend
-npm install
+npm run dev               # nodemon
+npm run db:studio         # Prisma Studio
+npm run db:reset          # сбросить и пересеять
+npm test                  # Jest + Supertest
 
-# Скопируйте .env.example → .env и задайте BOT_TOKEN (или используйте DEV_* для локалки)
-
-# Миграции и сид
-npx prisma migrate deploy
-npm run seed   # или node src/seed.js — см. package.json
-
-# Запуск API
-npm run dev
-```
-
-### 3. Настройка Frontend
-
-```bash
+# Frontend
 cd frontend
-npm install
 npm run dev
-```
-
-## 📊 База данных
-
-### Полная схема данных включает:
-
-#### Основные сущности
-- **Пользователи** - профили владельцев собак
-- **Курсы** - программы обучения с задачами
-- **Треки** - ежедневные цели и задания
-- **Достижения** - система наград
-- **Уведомления** - система оповещений
-
-#### Связующие таблицы
-- **Прогресс по курсам** - отслеживание обучения
-- **Прогресс по задачам** - выполнение упражнений
-- **Прогресс по трекам** - ежедневные цели
-- **Достижения пользователей** - полученные награды
-- **Сообщения чата** - история общения
-
-### Контент
-Курсы и уроки собираются из [`backend/data/atomic-lessons.json`](backend/data/atomic-lessons.json) через [`backend/src/seed-content.js`](backend/src/seed-content.js). Дерево навыков — [`backend/src/seed-skills.js`](backend/src/seed-skills.js).
-
-## 📁 Структура проекта
-
-```
-minapp/
-├── backend/                 # Backend API
-│   ├── prisma/             # Схема базы данных
-│   ├── src/
-│   │   ├── routes/         # API маршруты
-│   │   ├── middleware/     # Промежуточное ПО
-│   │   ├── seed.js         # Инициализация БД
-│   │   └── server.js       # Сервер
-│   └── package.json
-├── frontend/               # Frontend приложение
-│   ├── src/
-│   │   ├── components/     # React компоненты
-│   │   ├── store/          # Zustand store
-│   │   ├── hooks/          # Кастомные хуки
-│   │   └── App.jsx         # Главный компонент
-│   └── package.json
-└── README.md
-```
-
-## 🔧 Команды разработки
-
-### Backend
-```bash
-cd backend
-
-# Установка зависимостей
-npm install
-
-# Инициализация БД
-npm run db:setup
-
-# Запуск в режиме разработки
-npm run dev
-
-# Просмотр БД в браузере
-npm run db:studio
-
-# Сброс БД
-npm run db:reset
-```
-
-### Frontend
-```bash
-cd frontend
-
-# Установка зависимостей
-npm install
-
-# Запуск в режиме разработки
-npm run dev
-
-# Сборка для продакшена
+npm test                  # Vitest
 npm run build
+npm run lhci              # Lighthouse CI локально
 ```
 
-## 📱 Компоненты приложения
+## Roadmap
 
-### Dashboard
-- Обзор прогресса обучения
-- Статистика и достижения
-- Быстрый доступ к курсам
+Все спринты живут в [PLAN.md](PLAN.md). Текущий статус: спринты 1–26 закрыты, у нескольких остались технические хвосты (миграции, контент, OpenAPI).
 
-### Courses
-- Каталог курсов с фильтрацией
-- Детальная информация о курсах
-- Прогресс-бары и рейтинги
+## Лицензия
 
-### Tracks
-- Ежедневные задания
-- Таймеры обратного отсчета
-- Система выполнения задач
-
-### Profile
-- Профиль питомца
-- Достижения и статистика
-- Настройки приложения
-
-### Chat
-- Общение с экспертами
-- История сообщений
-- Поддержка вложений
-
-## 🎯 API Endpoints
-
-См. роуты в `backend/src/routes/` и [`PLAN.md`](PLAN.md). Примеры:
-- `GET /api/courses`, `GET /api/lessons/today`, `GET /api/skills/tree`
-- `GET /api/user/profile`, `GET /api/routes`
-- `GET /health` — без авторизации
-
-## 🐛 Решение проблем
-
-### Ошибка подключения к БД
-1. Проверьте `DATABASE_URL` в `.env` (для SQLite — путь к файлу существует и доступен на запись).
-
-### Ошибка миграции
-```bash
-cd backend
-npm run db:reset
-npm run db:setup
-```
-
-### Ошибка Prisma
-```bash
-cd backend
-npm run db:generate
-```
-
-## 📝 Планы развития
-
-- [ ] Система аутентификации
-- [ ] Мобильное приложение
-- [ ] Видео-уроки
-- [ ] Социальные функции
-- [ ] Интеграция с календарем
-- [ ] Экспорт данных
-
-## 🤝 Вклад в проект
-
-1. Форкните репозиторий
-2. Создайте ветку для новой функции
-3. Внесите изменения
-4. Создайте Pull Request
-
-## 📄 Лицензия
-
-MIT License
-
-## 📞 Поддержка
-
-При возникновении проблем создайте Issue в репозитории или обратитесь к документации в папке backend/README.md
+MIT.
