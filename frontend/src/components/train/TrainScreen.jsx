@@ -83,7 +83,7 @@ export default function TrainScreen() {
               Загляни завтра — серия и навыки ждут.
             </Text>
             <Text as={RouterLink} to="/courses" fontSize="sm" color="purple.500">
-              Другие курсы →
+              Библиотека →
             </Text>
           </VStack>
         </MotionBox>

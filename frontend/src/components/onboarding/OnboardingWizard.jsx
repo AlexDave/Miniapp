@@ -47,6 +47,9 @@ export default function OnboardingWizard() {
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.100', 'gray.700');
   const routeBorder = useColorModeValue('gray.200', 'gray.600');
+  const routeChosenBg = useColorModeValue('purple.50', 'purple.900');
+  const routeCheckIcon = useColorModeValue('#805AD5', '#D6BCFA');
+  const routeHoverBorder = useColorModeValue('purple.300', 'purple.500');
 
   const [step, setStep] = useState(1);
   const [petName, setPetName] = useState('');
@@ -157,7 +160,7 @@ export default function OnboardingWizard() {
             <VStack align="stretch" spacing={4}>
               <Heading size="md">Сколько лет вашему питомцу?</Heading>
               <Text fontSize="sm" color={muted}>
-                Так мы подберём курс по возрасту.
+                Так мы подберём программу по возрасту.
               </Text>
               <Select value={dogAge} onChange={(e) => setDogAge(e.target.value)} size="lg">
                 {DOG_AGE_OPTIONS.map((o) => (
@@ -230,20 +233,22 @@ export default function OnboardingWizard() {
                       borderRadius="xl"
                       border="2px solid"
                       borderColor={isChosen ? 'purple.400' : routeBorder}
-                      bg={isChosen ? 'purple.50' : 'transparent'}
+                      bg={isChosen ? routeChosenBg : 'transparent'}
                       onClick={() => setSelectedRouteKey(isChosen ? null : r.key)}
                       transition="all 0.15s"
-                      _hover={{ borderColor: 'purple.300' }}
+                      _hover={{ borderColor: routeHoverBorder }}
                     >
                       <HStack spacing={3} justify="space-between">
                         <HStack spacing={3}>
                           <Text fontSize="xl" aria-hidden>{r.icon}</Text>
                           <Box>
-                            <Text fontWeight="semibold" fontSize="sm">{r.title}</Text>
+                            <Text fontWeight="semibold" fontSize="sm" _dark={{ color: 'gray.100' }}>
+                              {r.title}
+                            </Text>
                             <Text fontSize="xs" color={muted}>{r.description}</Text>
                           </Box>
                         </HStack>
-                        {isChosen && <CheckCircle size={18} color="#805AD5" />}
+                        {isChosen && <CheckCircle size={18} color={routeCheckIcon} />}
                       </HStack>
                     </Box>
                   );

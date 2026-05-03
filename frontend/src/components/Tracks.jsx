@@ -228,9 +228,9 @@ function Tracks() {
               <CardBody textAlign="center">
                 <Icon as={Target} w={12} h={12} color="gray.400" mb={4} />
                 <Text fontSize="lg" fontWeight="semibold" color="gray.500" mb={2}>Нет активных треков</Text>
-                <Text color={textColor} mb={4}>Добавьте задания из курсов, чтобы начать обучение</Text>
+                <Text color={textColor} mb={4}>Добавьте задания из библиотеки, чтобы начать обучение</Text>
                 <Button colorScheme="purple" leftIcon={<Plus size={16} />} onClick={() => (window.location.href = '/courses')}>
-                  Перейти к курсам
+                  Перейти в библиотеку
                 </Button>
               </CardBody>
             </MotionCard>

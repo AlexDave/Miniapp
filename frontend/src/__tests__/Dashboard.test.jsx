@@ -4,12 +4,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 
-vi.mock('../hooks/useCourses', () => ({
-  useCourses: vi.fn(),
-}));
-vi.mock('../hooks/useTracks', () => ({
-  useTracks: vi.fn(),
-}));
 vi.mock('../hooks/useProfile', () => ({
   useProfile: vi.fn(),
 }));
@@ -19,22 +13,22 @@ vi.mock('../hooks/useProgress', () => ({
 vi.mock('../hooks/useLessons', () => ({
   useTodayLesson: vi.fn(),
 }));
+vi.mock('../hooks/useCoachTips', () => ({
+  useDismissCoachTip: vi.fn(),
+}));
 vi.mock('../store', () => ({
   default: vi.fn(),
 }));
 
-import { useCourses } from '../hooks/useCourses';
-import { useTracks } from '../hooks/useTracks';
 import { useProfile } from '../hooks/useProfile';
 import { useUserStats } from '../hooks/useProgress';
 import { useTodayLesson } from '../hooks/useLessons';
+import { useDismissCoachTip } from '../hooks/useCoachTips';
 import useStore from '../store';
 import Dashboard from '../components/Dashboard';
 
 const defaultProfile = {
   petName: 'Buddy',
-  level: 2,
-  experience: 150,
   streak: 3,
 };
 
@@ -48,81 +42,34 @@ function Wrapper({ children }) {
 
 beforeEach(() => {
   useStore.mockReturnValue({ userProfile: defaultProfile });
-  useProfile.mockReturnValue({});
+  useProfile.mockReturnValue({
+    data: {
+      onboardingCompleted: false,
+      totalBones: 5,
+      bones: {},
+      stage: 'Знакомство',
+    },
+  });
   useUserStats.mockReturnValue({
     data: {
-      total_xp: 120,
-      level: 2,
       streak: 3,
-      skills: { focus: 40, sit: 20, recall: 10 },
-      xp_to_next: 80,
-      next_level_xp: 200,
-      level_name: 'Практик',
     },
   });
   useTodayLesson.mockReturnValue({ data: null, isLoading: false });
+  useDismissCoachTip.mockReturnValue({ mutate: vi.fn(), isLoading: false });
 });
 
 describe('Dashboard', () => {
-  test('показывает спиннер пока данные загружаются', () => {
-    useCourses.mockReturnValue({ data: [], isLoading: true });
-    useTracks.mockReturnValue({ data: [], isLoading: true });
-
+  test('ссылка на каталог ведёт в библиотеку', () => {
     render(<Dashboard />, { wrapper: Wrapper });
 
-    const spinners = document.querySelectorAll('.chakra-spinner');
-    expect(spinners.length).toBeGreaterThan(0);
+    const link = screen.getByRole('link', { name: /Библиотека/i });
+    expect(link).toHaveAttribute('href', '/courses');
   });
 
-  test('отображает приветствие с именем питомца', () => {
-    useCourses.mockReturnValue({ data: [], isLoading: false });
-    useTracks.mockReturnValue({ data: [], isLoading: false });
-
+  test('показывает сегодняшний шаг или заглушку', () => {
     render(<Dashboard />, { wrapper: Wrapper });
 
-    expect(screen.getByText(/Buddy/)).toBeInTheDocument();
-  });
-
-  test('отображает статистику курсов и треков', () => {
-    const courses = [
-      { id: 1, title: 'Курс 1', description: 'Описание', difficulty: 'easy', rating: 4.5 },
-      { id: 2, title: 'Курс 2', description: 'Описание', difficulty: 'medium', rating: 0 },
-    ];
-    const tracks = [
-      { id: 1, track_id: 10, is_completed: false },
-      { id: 2, track_id: 11, is_completed: true },
-    ];
-
-    useCourses.mockReturnValue({ data: courses, isLoading: false });
-    useTracks.mockReturnValue({ data: tracks, isLoading: false });
-
-    render(<Dashboard />, { wrapper: Wrapper });
-
-    expect(screen.getByText('2')).toBeInTheDocument(); // totalCourses
-    expect(screen.getByText('Всего курсов')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument(); // activeTracks
-    expect(screen.getByText('Активных треков')).toBeInTheDocument();
-  });
-
-  test('отображает серию обучения из профиля', () => {
-    useCourses.mockReturnValue({ data: [], isLoading: false });
-    useTracks.mockReturnValue({ data: [], isLoading: false });
-
-    render(<Dashboard />, { wrapper: Wrapper });
-
-    expect(screen.getByText(/3.*дней подряд/i)).toBeInTheDocument();
-  });
-
-  test('отображает карточки курсов', () => {
-    const courses = [
-      { id: 1, title: 'Послушание', description: 'Базовые команды', difficulty: 'easy', rating: 4.5 },
-    ];
-    useCourses.mockReturnValue({ data: courses, isLoading: false });
-    useTracks.mockReturnValue({ data: [], isLoading: false });
-
-    render(<Dashboard />, { wrapper: Wrapper });
-
-    expect(screen.getByText('Послушание')).toBeInTheDocument();
-    expect(screen.getByText('Базовые команды')).toBeInTheDocument();
+    expect(screen.getByText(/Сегодня всё сделано/i)).toBeInTheDocument();
   });
 });

@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
+    "dev:frontend": "wait-on -t 60000 http-get://127.0.0.1:5000/health && cd frontend && npm run dev",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "db:seed": "cd backend && npm run db:seed",
     "build": "cd frontend && npm run build",
     "start": "cd backend && npm start",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -23,7 +24,8 @@
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "wait-on": "^9.0.5"
   },
   "engines": {
     "node": ">=16.0.0",

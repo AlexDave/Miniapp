@@ -11,7 +11,7 @@ const OUTCOMES = [
   { value: 'no', emoji: '😕', label: 'Не получилось', color: 'red' },
 ];
 
-export default function ReportForm({ onSubmit, isLoading }) {
+export default function ReportForm({ onSubmit, isLoading, fallbackTasks = [] }) {
   const [success, setSuccess] = useState('yes');
   const [note, setNote] = useState('');
 
@@ -25,6 +25,20 @@ export default function ReportForm({ onSubmit, isLoading }) {
           Честно — так лучше для прогресса
         </Text>
       </Box>
+
+      {success === 'no' && fallbackTasks.length > 0 && (
+        <Box px={3} py={3} bg="purple.50" borderRadius="xl" borderWidth="1px" borderColor="purple.100" textAlign="left">
+          <Text fontSize="xs" fontWeight="bold" color="purple.700" mb={2}>
+            Если не вышло — это не провал
+          </Text>
+          <Text fontSize="sm" color="gray.600" mb={2}>
+            После отправки мы подскажем упрощённые шаги из урока. Загляни в итог или попробуй:
+          </Text>
+          {fallbackTasks.slice(0, 4).map((t, i) => (
+            <Text key={i} fontSize="sm" color="gray.700">• {t}</Text>
+          ))}
+        </Box>
+      )}
 
       <HStack spacing={3} justify="center" flexWrap="wrap">
         {OUTCOMES.map((r) => (

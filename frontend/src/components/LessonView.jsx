@@ -113,7 +113,7 @@ function LessonView() {
 
           <VStack spacing={3} w="full" maxW="400px">
             <Button colorScheme="purple" w="full" onClick={() => navigate(-1)}>
-              Вернуться к курсу
+              Назад
             </Button>
             <Button variant="ghost" w="full" onClick={() => navigate('/')}>
               На главную

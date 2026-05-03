@@ -110,8 +110,8 @@ router.get('/:key/lessons', async (req, res) => {
     const filtered = lessons.filter((l) => {
       try {
         const meta = l.meta ? (typeof l.meta === 'string' ? JSON.parse(l.meta) : l.meta) : {};
+        if (meta.skill_key && meta.skill_key === skillKey) return true;
         const sk = meta.skill ?? 'focus';
-        // Маппинг старых ключей → новые
         const keyMap = { focus: 'intro.eye', sit: 'control.sit', recall: 'walk.recall' };
         const mappedKey = keyMap[sk] ?? sk;
         return mappedKey === skillKey || sk === skillKey;

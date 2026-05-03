@@ -24,8 +24,10 @@ export default function TaskStepFlow({ task, onComplete }) {
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('purple.100', 'gray.600');
   /** Плотная заливка, чтобы текст задания не просвечивал и «Отлично» читался на фоне */
-  const fillAccent = useColorModeValue('purple.200', 'purple.600');
-  const okGreen = useColorModeValue('green.700', 'green.200');
+  const fillAccent = useColorModeValue('purple.200', 'purple.800');
+  /** Тёмная тема: светло-зелёный на фиолетовом «плавает» — белый + лёгкая тень читаются стабильнее */
+  const burstLabelColor = useColorModeValue('green.700', 'white');
+  const burstLabelShadow = useColorModeValue('none', '0 2px 10px rgba(0,0,0,0.45)');
 
   const finish = useCallback(() => {
     const rows = steps.map((s) => ({ step_id: s.id, value: true }));
@@ -144,8 +146,9 @@ export default function TaskStepFlow({ task, onComplete }) {
                     <Text
                       fontSize="2xl"
                       fontWeight="extrabold"
-                      color={okGreen}
+                      color={burstLabelColor}
                       letterSpacing="tight"
+                      sx={{ textShadow: burstLabelShadow }}
                     >
                       Отлично
                     </Text>

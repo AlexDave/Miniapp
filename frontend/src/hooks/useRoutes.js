@@ -6,7 +6,13 @@ export function useRoutes() {
     ['routes'],
     async () => {
       const { data } = await apiClient.get('/api/routes');
-      return data;
+      if (Array.isArray(data)) {
+        return { routes: data, route_paused: false };
+      }
+      return {
+        routes: Array.isArray(data?.routes) ? data.routes : [],
+        route_paused: data?.route_paused === true,
+      };
     },
     { staleTime: 1000 * 60 * 2 }
   );
@@ -17,6 +23,38 @@ export function useSelectRoute() {
   return useMutation(
     async (routeKey) => {
       const { data } = await apiClient.post(`/api/routes/${routeKey}/select`);
+      return data;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['routes']);
+        queryClient.invalidateQueries(['profile']);
+      },
+    }
+  );
+}
+
+export function usePauseRoute() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async () => {
+      const { data } = await apiClient.post('/api/routes/pause');
+      return data;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['routes']);
+        queryClient.invalidateQueries(['profile']);
+      },
+    }
+  );
+}
+
+export function useResumeRoute() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async () => {
+      const { data } = await apiClient.post('/api/routes/resume');
       return data;
     },
     {

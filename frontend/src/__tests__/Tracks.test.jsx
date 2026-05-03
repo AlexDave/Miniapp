@@ -5,14 +5,16 @@ import { vi, describe, test, expect, beforeEach } from 'vitest';
 
 vi.mock('../hooks/useTracks', () => ({
   useTracks: vi.fn(),
+  useTracksCatalog: vi.fn(),
   useCompleteTrack: vi.fn(),
   useDeleteTrack: vi.fn(),
+  useAddTrack: vi.fn(),
 }));
 vi.mock('../store', () => ({
   default: vi.fn(),
 }));
 
-import { useTracks, useCompleteTrack, useDeleteTrack } from '../hooks/useTracks';
+import { useTracks, useTracksCatalog, useCompleteTrack, useDeleteTrack, useAddTrack } from '../hooks/useTracks';
 import useStore from '../store';
 import Tracks from '../components/Tracks';
 
@@ -25,6 +27,8 @@ const mockMutation = { mutateAsync: vi.fn(), isLoading: false, variables: null }
 beforeEach(() => {
   vi.clearAllMocks();
   useStore.mockReturnValue({ addNotification: vi.fn() });
+  useTracksCatalog.mockReturnValue({ data: [], isLoading: false, isError: false });
+  useAddTrack.mockReturnValue(mockMutation);
   useCompleteTrack.mockReturnValue(mockMutation);
   useDeleteTrack.mockReturnValue(mockMutation);
 });
@@ -53,7 +57,7 @@ describe('Tracks', () => {
     render(<Tracks />, { wrapper: Wrapper });
 
     expect(screen.getByText('Нет активных треков')).toBeInTheDocument();
-    expect(screen.getByText(/Добавьте задания из курсов/)).toBeInTheDocument();
+    expect(screen.getByText(/Добавьте задания из библиотеки/)).toBeInTheDocument();
   });
 
   test('отображает активные треки', () => {

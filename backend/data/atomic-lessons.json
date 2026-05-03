@@ -1,0 +1,790 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-03T11:44:36.076Z",
+  "source": "migrated_from_gpt_coures.json",
+  "defaults": {
+    "user": {
+      "xp": 0,
+      "level": 1,
+      "streak": 0,
+      "coins": 0,
+      "skills": {
+        "focus": 0,
+        "recall": 0,
+        "sit": 0
+      }
+    }
+  },
+  "courses": [
+    {
+      "id": "basic_obedience",
+      "title": "Базовое послушание",
+      "description": "Основные команды и контакт с собакой",
+      "duration_days": 14,
+      "difficulty": "easy"
+    },
+    {
+      "id": "puppy_adaptation",
+      "title": "Щенок и адаптация",
+      "description": "Привыкание к дому и базовое поведение",
+      "duration_days": 10,
+      "difficulty": "easy"
+    }
+  ],
+  "lessons": [
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 1,
+      "title": "Контакт с собакой",
+      "goal": "Собака смотрит на тебя",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Позови собаку по имени",
+        "Дождись взгляда",
+        "Дай лакомство"
+      ],
+      "task_checkboxes": [
+        "Позови собаку по имени",
+        "Дождись взгляда",
+        "Дай лакомство"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "intro.eye",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 10,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_1"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 2,
+      "title": "Маркер 'да'",
+      "goal": "Связать маркер с наградой",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Скажи 'да'",
+        "Сразу дай лакомство",
+        "Повтори 10 раз"
+      ],
+      "task_checkboxes": [
+        "Скажи 'да'",
+        "Сразу дай лакомство",
+        "Повтори 10 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "intro.eye",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 10,
+      "badge": "Понимаем друг друга",
+      "combo": false,
+      "source_day_id": "day_basic_obedience_2"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 3,
+      "title": "Команда 'Ко мне'",
+      "goal": "Собака подходит",
+      "why": "Укрепляет безопасность и управляемость вне дома.",
+      "how_steps": [
+        "Позови собаку",
+        "Отойди назад",
+        "Награди за подход"
+      ],
+      "task_checkboxes": [
+        "Позови собаку",
+        "Отойди назад",
+        "Награди за подход"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "walk.recall",
+      "legacy_skill": "recall",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 10,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_3"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 4,
+      "title": "Сидеть",
+      "goal": "Собака садится по команде",
+      "why": "Базовые позиции для других упражнений.",
+      "how_steps": [
+        "Наведи лакомством вверх",
+        "Дождись посадки",
+        "Дай награду"
+      ],
+      "task_checkboxes": [
+        "Наведи лакомством вверх",
+        "Дождись посадки",
+        "Дай награду"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "control.sit",
+      "legacy_skill": "sit",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 15,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_4"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 5,
+      "title": "Повтор команд",
+      "goal": "Закрепление",
+      "why": "Базовые позиции для других упражнений.",
+      "how_steps": [
+        "Сидеть",
+        "Ко мне",
+        "Контакт"
+      ],
+      "task_checkboxes": [
+        "Сидеть",
+        "Ко мне",
+        "Контакт"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "control.sit",
+      "legacy_skill": "sit",
+      "video_url": null,
+      "time_minutes": 7,
+      "xp": 15,
+      "badge": null,
+      "combo": true,
+      "source_day_id": "day_basic_obedience_5"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 6,
+      "title": "Лежать",
+      "goal": "Собака ложится",
+      "why": "Базовые позиции для других упражнений.",
+      "how_steps": [
+        "Опусти лакомство вниз",
+        "Дождись укладки",
+        "Награди"
+      ],
+      "task_checkboxes": [
+        "Опусти лакомство вниз",
+        "Дождись укладки",
+        "Награди"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "control.down",
+      "legacy_skill": "sit",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 15,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_6"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 7,
+      "title": "Мини-тест",
+      "goal": "Проверка навыков",
+      "why": "Базовые позиции для других упражнений.",
+      "how_steps": [
+        "Случайные команды",
+        "Повтори 5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Случайные команды",
+        "Повтори 5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "control.sit",
+      "legacy_skill": "sit",
+      "video_url": null,
+      "time_minutes": 7,
+      "xp": 20,
+      "badge": "Неделя 1",
+      "combo": false,
+      "source_day_id": "day_basic_obedience_7"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 8,
+      "title": "Повтор с отвлечениями",
+      "goal": "Фокус при шуме",
+      "why": "Базовые позиции для других упражнений.",
+      "how_steps": [
+        "Команды рядом с шумом",
+        "Награда за концентрацию",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Команды рядом с шумом",
+        "Награда за концентрацию",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "control.sit",
+      "legacy_skill": "sit",
+      "video_url": null,
+      "time_minutes": 7,
+      "xp": 15,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_8"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 9,
+      "title": "Выдержка",
+      "goal": "Собака ждёт 3 секунды",
+      "why": "Базовые позиции для других упражнений.",
+      "how_steps": [
+        "Скажи 'сидеть'",
+        "Подожди 3 секунды",
+        "Награди"
+      ],
+      "task_checkboxes": [
+        "Скажи 'сидеть'",
+        "Подожди 3 секунды",
+        "Награди"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "control.wait",
+      "legacy_skill": "sit",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 15,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_9"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 10,
+      "title": "Ко мне на улице",
+      "goal": "Команда вне дома",
+      "why": "Укрепляет безопасность и управляемость вне дома.",
+      "how_steps": [
+        "Позови собаку на улице",
+        "Награди за подход",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Позови собаку на улице",
+        "Награди за подход",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "walk.recall",
+      "legacy_skill": "recall",
+      "video_url": null,
+      "time_minutes": 7,
+      "xp": 20,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_10"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 11,
+      "title": "Комбо команд",
+      "goal": "Связка действий",
+      "why": "Базовые позиции для других упражнений.",
+      "how_steps": [
+        "Сидеть → лежать → ко мне",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Сидеть → лежать → ко мне",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "control.sit",
+      "legacy_skill": "sit",
+      "video_url": null,
+      "time_minutes": 7,
+      "xp": 20,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_11"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 12,
+      "title": "Длительная выдержка",
+      "goal": "5 секунд ожидания",
+      "why": "Базовые позиции для других упражнений.",
+      "how_steps": [
+        "Сидеть",
+        "Ждать 5 секунд",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Сидеть",
+        "Ждать 5 секунд",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "control.wait",
+      "legacy_skill": "sit",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 20,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_12"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 13,
+      "title": "Свободная практика",
+      "goal": "Закрепление",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Повтори все команды",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Повтори все команды",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "intro.eye",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 10,
+      "xp": 20,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_basic_obedience_13"
+    },
+    {
+      "course_id": "basic_obedience",
+      "course_title": "Базовое послушание",
+      "day": 14,
+      "title": "Финальный тест",
+      "goal": "Проверка курса",
+      "why": "Базовые позиции для других упражнений.",
+      "how_steps": [
+        "Все команды подряд",
+        "Без подсказок",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Все команды подряд",
+        "Без подсказок",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "control.sit",
+      "legacy_skill": "sit",
+      "video_url": null,
+      "time_minutes": 10,
+      "xp": 30,
+      "badge": "Базовое послушание завершено",
+      "combo": false,
+      "source_day_id": "day_basic_obedience_14"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 1,
+      "title": "Имя",
+      "goal": "Щенок реагирует",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Скажи имя",
+        "Награди за реакцию",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Скажи имя",
+        "Награди за реакцию",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "intro.name",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 10,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_1"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 2,
+      "title": "Туалет",
+      "goal": "Фиксация поведения",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Следи за щенком",
+        "Хвали за правильное место",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Следи за щенком",
+        "Хвали за правильное место",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "daily.toilet",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 10,
+      "xp": 10,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_2"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 3,
+      "title": "Без укусов",
+      "goal": "Контроль игры",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Останови игру при укусе",
+        "Переключи на игрушку",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Останови игру при укусе",
+        "Переключи на игрушку",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "bound.bite",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 10,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_3"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 4,
+      "title": "Спокойствие",
+      "goal": "Умение отдыхать",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Игнорируй гиперактивность",
+        "Поощряй спокойствие",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Игнорируй гиперактивность",
+        "Поощряй спокойствие",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "daily.sleep",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 10,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_4"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 5,
+      "title": "Одиночество",
+      "goal": "1-5 минут одному",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Оставь щенка",
+        "Вернись спокойно",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Оставь щенка",
+        "Вернись спокойно",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "self.alone",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 15,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_5"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 6,
+      "title": "Поводок",
+      "goal": "Привыкание",
+      "why": "Укрепляет безопасность и управляемость вне дома.",
+      "how_steps": [
+        "Надень поводок",
+        "Дай походить дома",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Надень поводок",
+        "Дай походить дома",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "walk.loose",
+      "legacy_skill": "recall",
+      "video_url": null,
+      "time_minutes": 5,
+      "xp": 10,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_6"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 7,
+      "title": "Прогулка",
+      "goal": "Первый выход",
+      "why": "Укрепляет безопасность и управляемость вне дома.",
+      "how_steps": [
+        "Короткая прогулка",
+        "Похвала за спокойствие",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Короткая прогулка",
+        "Похвала за спокойствие",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "walk.loose",
+      "legacy_skill": "recall",
+      "video_url": null,
+      "time_minutes": 10,
+      "xp": 15,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_7"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 8,
+      "title": "Социализация",
+      "goal": "Новые стимулы",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Познакомь с новым звуком",
+        "Награди за спокойствие",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Познакомь с новым звуком",
+        "Награди за спокойствие",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "social.sounds",
+      "legacy_skill": "recall",
+      "video_url": null,
+      "time_minutes": 10,
+      "xp": 15,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_8"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 9,
+      "title": "Повтор",
+      "goal": "Закрепление",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Повтори все навыки",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Повтори все навыки",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "intro.eye",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 10,
+      "xp": 20,
+      "badge": null,
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_9"
+    },
+    {
+      "course_id": "puppy_adaptation",
+      "course_title": "Щенок и адаптация",
+      "day": 10,
+      "title": "Финал",
+      "goal": "Адаптированный щенок",
+      "why": "Формирует контакт и предсказуемость поведения.",
+      "how_steps": [
+        "Комбинируй навыки",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "task_checkboxes": [
+        "Комбинируй навыки",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз",
+        "Повтори спокойно 3–5 раз"
+      ],
+      "fallback_tasks": [
+        "Сделай упражнение в тихой комнате",
+        "Сократи сессию до 2–3 минут"
+      ],
+      "skill_key": "intro.eye",
+      "legacy_skill": "focus",
+      "video_url": null,
+      "time_minutes": 10,
+      "xp": 25,
+      "badge": "Щенок освоился",
+      "combo": false,
+      "source_day_id": "day_puppy_adaptation_10"
+    }
+  ]
+}

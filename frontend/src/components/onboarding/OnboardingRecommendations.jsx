@@ -84,7 +84,7 @@ export default function OnboardingRecommendations() {
             Мы подобрали для вас
           </Heading>
           <Text fontSize="sm" color={textColor}>
-            Курс под возраст собаки; остальные — ниже.
+            Программа под возраст собаки; остальные — ниже.
           </Text>
         </Box>
 
@@ -117,7 +117,7 @@ export default function OnboardingRecommendations() {
                 borderRadius="xl"
                 rightIcon={<ArrowRight size={18} />}
               >
-                Начать с этого курса
+                Начать с этой программы
               </Button>
             </CardBody>
           </MotionCard>
@@ -159,7 +159,7 @@ export default function OnboardingRecommendations() {
         {other.length > 0 && (
           <Box>
             <Text fontWeight="semibold" mb={3}>
-              Другие курсы
+              Другие из библиотеки
             </Text>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
               {other.map((course) => (

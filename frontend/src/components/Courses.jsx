@@ -95,7 +95,7 @@ function Courses() {
       } catch (err) {
         toast({
           title: 'Ошибка загрузки',
-          description: err.message || 'Не удалось загрузить курсы',
+          description: err.message || 'Не удалось загрузить библиотеку',
           status: 'error',
           duration: 5000,
           isClosable: true,
@@ -172,7 +172,7 @@ function Courses() {
     return (
       <VStack spacing={4} align="center" justify="center" height="100vh">
         <Spinner size="xl" color="purple.500" thickness="4px" />
-        <Text fontSize="lg" color={textColor}>Загрузка курсов...</Text>
+        <Text fontSize="lg" color={textColor}>Загрузка библиотеки...</Text>
       </VStack>
     );
   }
@@ -204,10 +204,10 @@ function Courses() {
         {/* Header */}
         <Box>
           <Heading size="lg" color="purple.600" mb={2}>
-            Курсы обучения
+            Библиотека
           </Heading>
           <Text color={textColor}>
-            Выберите курс для обучения вашего питомца
+            Выберите программу для обучения вашего питомца
           </Text>
         </Box>
 
@@ -260,7 +260,7 @@ function Courses() {
                   <Icon as={Search} color="gray.400" />
                 </InputLeftElement>
                 <Input
-                  placeholder="Поиск курсов..."
+                  placeholder="Поиск в библиотеке..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   bg={useColorModeValue('gray.50', 'gray.700')}
@@ -299,7 +299,7 @@ function Courses() {
         {/* Results Count */}
         <HStack justify="space-between">
           <Text color={textColor}>
-            Найдено {filteredCourses.length} курсов
+            Найдено {filteredCourses.length} программ
           </Text>
           {(searchTerm || selectedCategory !== 'all' || selectedDifficulty !== 'all') && (
             <Button
@@ -323,7 +323,7 @@ function Courses() {
             <Box textAlign="center">
               <Icon as={BookOpen} w={12} h={12} color="gray.400" mb={4} />
               <Text fontSize="xl" fontWeight="bold" color="gray.500" mb={2}>
-                Курсы не найдены
+                Ничего не найдено
               </Text>
               <Text color={textColor}>
                 Попробуйте изменить параметры поиска
@@ -460,7 +460,7 @@ function Courses() {
                       leftIcon={<Play size={16} />}
                       _hover={{ bg: 'purple.50' }}
                     >
-                      {course.isCompleted ? 'Повторить курс' : 'Начать обучение'}
+                      {course.isCompleted ? 'Повторить программу' : 'Начать обучение'}
                     </Button>
                   </VStack>
                 </CardBody>

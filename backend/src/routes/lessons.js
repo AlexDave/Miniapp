@@ -5,6 +5,7 @@ const { parseLessonMeta, applySkillDelta, normalizeSkills } = require('../utils/
 const { updateStreakAfterLessonReport } = require('../utils/streakLesson');
 const { checkAndAwardAchievements } = require('../utils/achievements');
 const { awardBone } = require('../utils/bones');
+const { trackEvent } = require('../utils/analytics');
 
 const router = express.Router();
 
@@ -351,6 +352,7 @@ router.post('/:lessonId/theory-seen', async (req, res) => {
       },
     });
 
+    trackEvent('lesson.theory_seen', { user_id: userId, lesson_id: lessonId });
     res.json({ state: progress.state, theory_seen_at: progress.theory_seen_at });
   } catch (err) {
     console.error('❌ Ошибка POST /lessons/:id/theory-seen:', err);
@@ -419,6 +421,7 @@ router.post('/:lessonId/repeat-start', async (req, res) => {
       create: { user_id: userId, lesson_id: lessonId, state: 'theory_done', theory_seen_at: now, last_repeat_at: now },
     });
 
+    trackEvent('lesson.repeated', { user_id: userId, lesson_id: lessonId });
     res.json({ state: progress.state, message: 'Повтор начат' });
   } catch (err) {
     console.error('❌ Ошибка POST /lessons/:id/repeat-start:', err);
@@ -500,7 +503,8 @@ router.post('/:lessonId/report', async (req, res) => {
     if (!lesson) return res.status(404).json({ error: 'Урок не найден' });
 
     const meta = parseLessonMeta(lesson.meta) ?? {};
-    const skillKey = meta.skill || 'focus';
+    const legacySkill = meta.skill || 'focus';
+    const atomicSkillKey = meta.skill_key || legacySkill;
     const progressGain = meta.progress_gain ?? 10;
 
     const profile = await prisma.profile.findUnique({ where: { user_id: userId } });
@@ -552,7 +556,7 @@ router.post('/:lessonId/report', async (req, res) => {
     const oldLevel = getLevelByXP(oldXP);
     const newLevelObj = getLevelByXP(newXP);
 
-    const newSkillsJson = applySkillDelta(profile.skills_json, skillKey, success, progressGain);
+    const newSkillsJson = applySkillDelta(profile.skills_json, legacySkill, success, progressGain);
 
     const report = await prisma.$transaction(async (tx) => {
       const created = await tx.dailyReport.create({
@@ -610,7 +614,7 @@ router.post('/:lessonId/report', async (req, res) => {
     // Начислить косточку если не «нет»
     let bonesResult = { bones_earned: 0 };
     if (success !== 'no') {
-      bonesResult = await awardBone(prisma, userId, skillKey, { streakCount: newStreak ?? 0 });
+      bonesResult = await awardBone(prisma, userId, atomicSkillKey, { streakCount: newStreak ?? 0 });
       // Обновить bones_earned в отчёте
       await prisma.dailyReport.update({
         where: { id: report.id },
@@ -619,6 +623,21 @@ router.post('/:lessonId/report', async (req, res) => {
     }
 
     const newAchievements = await checkAndAwardAchievements(userId);
+
+    trackEvent('lesson.completed', {
+      user_id: userId,
+      lesson_id: lessonId,
+      success,
+      xp_earned: xpEarned,
+    });
+    if (success !== 'no' && bonesResult.bones_earned > 0) {
+      trackEvent('bone.awarded', {
+        user_id: userId,
+        lesson_id: lessonId,
+        skill_key: atomicSkillKey,
+        bones: bonesResult.bones_earned,
+      });
+    }
 
     const feedback =
       success === 'yes'
@@ -638,7 +657,8 @@ router.post('/:lessonId/report', async (req, res) => {
       coins_earned: coinsGain,
       coins_total: (profile.coins ?? 0) + coinsGain,
       skills: JSON.parse(newSkillsJson),
-      skill_key: skillKey,
+      skill_key: atomicSkillKey,
+      legacy_skill: legacySkill,
       module_complete: isModuleComplete,
       achievements_unlocked: newAchievements,
       feedback_message: feedback,

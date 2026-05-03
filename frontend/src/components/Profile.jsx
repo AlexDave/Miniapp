@@ -68,6 +68,7 @@ import SkillMap from './progress/SkillMap';
 import ActivityHeatmap from './progress/ActivityHeatmap';
 import StreakBadge from './gamification/StreakBadge';
 import BoneCounter from './gamification/BoneCounter';
+import TrophyShelf from './profile/TrophyShelf';
 
 const MotionCard = motion(Card);
 
@@ -228,6 +229,10 @@ function Profile() {
               {/* Копилка косточек */}
               <Box width="100%" maxW="400px">
                 <BoneCounter total={totalBones} bySkill={bonesBySkill} stage={bonesStage} />
+              </Box>
+
+              <Box width="100%" maxW="440px" alignSelf="stretch">
+                <TrophyShelf achievements={achievements} />
               </Box>
 
               {stats?.skills && (
@@ -423,7 +428,7 @@ function Profile() {
                   <Icon as={Crown} w={5} h={5} />
                   <Text fontWeight="semibold">Премиум пакет</Text>
                 </HStack>
-                <Text fontSize="lg" fontWeight="bold">Доступ ко всем курсам</Text>
+                <Text fontSize="lg" fontWeight="bold">Доступ ко всей библиотеке</Text>
                 <Text fontSize="sm" opacity={0.9}>
                   Неограниченный доступ к материалам и персональному тренеру
                 </Text>
@@ -447,7 +452,7 @@ function Profile() {
               <Text>Получите доступ к:</Text>
               <List spacing={2}>
                 {[
-                  [BookOpen, 'Все курсы обучения'],
+                  [BookOpen, 'Вся библиотека'],
                   [Target, 'Персональные треки'],
                   [MessageCircle, 'Персональный тренер'],
                   [Gift, 'Эксклюзивные материалы'],

@@ -13,10 +13,10 @@ DogCourse - это современное веб-приложение для о�
 - **Прогресс** - отслеживание результатов обучения
 
 ### 🏆 Геймификация
-- **Достижения** - система наград и бейджей
-- **Уровни** - прогрессия пользователя
-- **Опыт** - накопление очков опыта
-- **Серии** - отслеживание дней подряд
+- **Достижения** — награды и «полка трофеев» в профиле
+- **Косточки и стадии** — прогресс по атомарным навыкам
+- **Серии** — дни подряд
+- **Маршруты** — персональный путь по навыкам
 
 ### 👤 Профиль
 - **Профиль питомца** - информация о собаке
@@ -41,11 +41,11 @@ DogCourse - это современное веб-приложение для о�
 - Axios
 
 ### Backend
-- Node.js
-- Express.js
-- Prisma ORM
-- PostgreSQL
-- JWT аутентификация
+- Node.js, Express.js
+- Prisma ORM (SQLite в dev, PostgreSQL возможен в prod)
+- Аутентификация: **Telegram WebApp** `initData` (HMAC), в dev — фиктивный пользователь (`DEV_TELEGRAM_ID`)
+- Логи: **pino**; события продуктов пишутся в лог с полем `analytics: true`
+- Админ-воронка: `GET /api/admin/funnel` + заголовок `X-Admin-Key` (см. `ADMIN_API_KEY` в `.env.example`)
 
 ## 🚀 Быстрый старт
 
@@ -61,15 +61,13 @@ cd minapp
 cd backend
 npm install
 
-# Создайте файл .env
-echo "DATABASE_URL=\"postgresql://username:password@localhost:5432/dogcourse\"" > .env
-echo "JWT_SECRET=\"your-secret-key\"" >> .env
-echo "PORT=3001" >> .env
+# Скопируйте .env.example → .env и задайте BOT_TOKEN (или используйте DEV_* для локалки)
 
-# Инициализация базы данных
-npm run db:setup
+# Миграции и сид
+npx prisma migrate deploy
+npm run seed   # или node src/seed.js — см. package.json
 
-# Запуск сервера
+# Запуск API
 npm run dev
 ```
 
@@ -99,14 +97,8 @@ npm run dev
 - **Достижения пользователей** - полученные награды
 - **Сообщения чата** - история общения
 
-### Тестовые данные
-Скрипт инициализации создает:
-- 3 тестовых пользователя с профилями
-- 4 курса с задачами (Дрессировка, Здоровье, Поведение, Спорт)
-- 4 трека обучения (30 дней, Неделя, Месяц, Спорт)
-- 8 достижений с условиями получения
-- Случайный прогресс обучения
-- История сообщений в чате
+### Контент
+Курсы и уроки собираются из [`backend/data/atomic-lessons.json`](backend/data/atomic-lessons.json) через [`backend/src/seed-content.js`](backend/src/seed-content.js). Дерево навыков — [`backend/src/seed-skills.js`](backend/src/seed-skills.js).
 
 ## 📁 Структура проекта
 
@@ -195,23 +187,15 @@ npm run build
 
 ## 🎯 API Endpoints
 
-### Основные
-- `GET /api/courses` - все курсы
-- `GET /api/tracks` - все треки
-- `GET /api/achievements` - все достижения
-
-### Пользовательские
-- `GET /api/user/progress` - прогресс пользователя
-- `GET /api/user/courses` - курсы пользователя
-- `GET /api/user/tracks` - треки пользователя
-- `GET /api/user/achievements` - достижения пользователя
+См. роуты в `backend/src/routes/` и [`PLAN.md`](PLAN.md). Примеры:
+- `GET /api/courses`, `GET /api/lessons/today`, `GET /api/skills/tree`
+- `GET /api/user/profile`, `GET /api/routes`
+- `GET /health` — без авторизации
 
 ## 🐛 Решение проблем
 
 ### Ошибка подключения к БД
-1. Проверьте DATABASE_URL в .env
-2. Убедитесь, что PostgreSQL запущен
-3. Создайте базу данных dogcourse
+1. Проверьте `DATABASE_URL` в `.env` (для SQLite — путь к файлу существует и доступен на запись).
 
 ### Ошибка миграции
 ```bash

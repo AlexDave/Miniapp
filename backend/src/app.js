@@ -1,6 +1,17 @@
 const express = require('express');
 const { logger, corsMiddleware, authMiddleware } = require('./middleware');
-const { coursesRoutes, tracksRoutes, profileRoutes, achievementsRoutes, systemRoutes, lessonsRoutes, progressRoutes, skillsRoutes, userRoutesRoutes } = require('./routes');
+const {
+  coursesRoutes,
+  tracksRoutes,
+  profileRoutes,
+  achievementsRoutes,
+  systemRoutes,
+  lessonsRoutes,
+  progressRoutes,
+  skillsRoutes,
+  userRoutesRoutes,
+  adminRoutes,
+} = require('./routes');
 
 const app = express();
 
@@ -10,6 +21,9 @@ app.use(corsMiddleware);
 
 // Системные маршруты без аутентификации
 app.use('/', systemRoutes);
+
+// Админ (ключ X-Admin-Key), до общего auth Telegram
+app.use('/api/admin', adminRoutes);
 
 // API маршруты — требуют аутентификации
 app.use('/api', authMiddleware);

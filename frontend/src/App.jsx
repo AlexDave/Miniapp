@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import {
   BrowserRouter as Router,
@@ -7,53 +7,62 @@ import {
   useNavigate,
   useLocation,
 } from 'react-router-dom';
-import { 
-  ChakraProvider, 
-  Box, 
-  Flex, 
-  IconButton, 
-  VStack, 
+import {
+  ChakraProvider,
+  Box,
+  Flex,
+  VStack,
   Text,
+  Spinner,
   useColorMode,
   useColorModeValue,
   Container,
   SlideFade,
-  Portal
+  Portal,
 } from '@chakra-ui/react';
 import {
   Target,
   User,
   Home,
-  Sun,
-  Moon,
-  Bell,
   Brain,
-  PawPrint,
   Map,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import Courses from './components/Courses';
-import CourseDetail from './components/CourseDetail';
-import Tracks from './components/Tracks';
-import RoutesScreen from './components/routes/RoutesScreen';
-import Chat from './components/Chat';
-import Profile from './components/Profile';
 import ErrorBoundary from './components/ErrorBoundary';
-import Dashboard from './components/Dashboard';
+import SiteHeader from './components/layout/SiteHeader';
 import Notifications from './components/Notifications';
-import LessonView from './components/lesson/LessonView';
-import SkillsScreen from './components/skills/SkillsScreen';
-import TrainScreen from './components/train/TrainScreen';
 import OnboardingWizard from './components/onboarding/OnboardingWizard';
-import OnboardingRecommendations from './components/onboarding/OnboardingRecommendations';
 import OnboardingGate from './components/onboarding/OnboardingGate';
+
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Courses = lazy(() => import('./components/Courses'));
+const CourseDetail = lazy(() => import('./components/CourseDetail'));
+const Tracks = lazy(() => import('./components/Tracks'));
+const RoutesScreen = lazy(() => import('./components/routes/RoutesScreen'));
+const Chat = lazy(() => import('./components/Chat'));
+const Profile = lazy(() => import('./components/Profile'));
+const LessonView = lazy(() => import('./components/lesson/LessonView'));
+const SkillsScreen = lazy(() => import('./components/skills/SkillsScreen'));
+const TrainScreen = lazy(() => import('./components/train/TrainScreen'));
+const OnboardingRecommendations = lazy(() => import('./components/onboarding/OnboardingRecommendations'));
 
 import theme from './theme';
 import useStore from './store';
 
 const MotionBox = motion(Box);
+
+function PageSpinner() {
+  return (
+    <Flex justify="center" align="center" minH="50vh" py={12}>
+      <VStack spacing={3}>
+        <Spinner size="lg" color="purple.500" thickness="4px" />
+        <Text fontSize="sm" color="gray.500">Загрузка…</Text>
+      </VStack>
+    </Flex>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,11 +108,12 @@ function AppContent() {
 
   return (
     <Flex direction="column" minHeight="100vh" bg={bg}>
-      {!hideAppChrome && <Header toggleColorMode={toggleColorMode} colorMode={colorMode} />}
+      {!hideAppChrome && <SiteHeader toggleColorMode={toggleColorMode} colorMode={colorMode} />}
 
       <Container maxW="container.xl" flex="1" px={4} py={6}>
         <AnimatePresence mode="wait">
-          <Routes>
+          <Suspense fallback={<PageSpinner />}>
+            <Routes>
             <Route path="/onboarding" element={<OnboardingWizard />} />
             <Route path="/onboarding/recommendations" element={<OnboardingRecommendations />} />
             <Route
@@ -186,7 +196,8 @@ function AppContent() {
                 </OnboardingGate>
               }
             />
-          </Routes>
+            </Routes>
+          </Suspense>
         </AnimatePresence>
       </Container>
 
@@ -205,86 +216,6 @@ function AppContent() {
         }}
       />
     </Flex>
-  );
-}
-
-function Header({ toggleColorMode, colorMode }) {
-  const { notifications } = useStore();
-  const bg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const iconColor = useColorModeValue('gray.600', 'gray.300');
-
-  return (
-    <Box
-      as="header"
-      borderBottom="1px solid"
-      borderColor={borderColor}
-      position="sticky"
-      top={0}
-      zIndex={20}
-      backdropFilter="blur(10px)"
-      bg={useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')}
-    >
-      <Container maxW="container.xl" px={4}>
-        <Flex justify="space-between" align="center" py={4}>
-          <Flex align="center" gap={3}>
-            <Flex
-              w={8}
-              h={8}
-              bg="purple.500"
-              borderRadius="full"
-              align="center"
-              justify="center"
-              flexShrink={0}
-              aria-hidden
-            >
-              <PawPrint size={20} color="white" strokeWidth={2} aria-hidden />
-            </Flex>
-            <Text fontSize="xl" fontWeight="bold" color="purple.600">
-              DogCourse
-            </Text>
-          </Flex>
-
-          <Flex align="center" gap={2}>
-            <IconButton
-              icon={<Bell size={20} />}
-              variant="ghost"
-              color={iconColor}
-              position="relative"
-              onClick={() => useStore.getState().toggleSidebar()}
-              aria-label="Notifications"
-            >
-              {notifications.length > 0 && (
-                <Box
-                  position="absolute"
-                  top={1}
-                  right={1}
-                  w={3}
-                  h={3}
-                  bg="red.500"
-                  borderRadius="full"
-                  fontSize="xs"
-                  color="white"
-                  display="flex"
-                  align="center"
-                  justify="center"
-                >
-                  {notifications.length}
-                </Box>
-              )}
-            </IconButton>
-            
-            <IconButton
-              icon={colorMode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-              variant="ghost"
-              color={iconColor}
-              onClick={toggleColorMode}
-              aria-label="Toggle color mode"
-            />
-          </Flex>
-        </Flex>
-      </Container>
-    </Box>
   );
 }
 
@@ -307,7 +238,7 @@ function BottomNavigation() {
       label: 'Тренировка',
       match: (p) => p.startsWith('/train') || p.startsWith('/lesson/'),
     },
-    { path: '/routes', icon: <Map size={24} />, label: 'Маршрут', match: (p) => p.startsWith('/routes') },
+    { path: '/routes', icon: <Map size={24} />, label: 'Маршруты', match: (p) => p.startsWith('/routes') },
     { path: '/profile', icon: <User size={24} />, label: 'Профиль', match: (p) => p.startsWith('/profile') },
   ];
 

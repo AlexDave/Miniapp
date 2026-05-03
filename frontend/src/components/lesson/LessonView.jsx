@@ -22,6 +22,7 @@ import TaskChecklist from './TaskChecklist';
 import TaskStepFlow from './TaskStepFlow';
 import ReportForm from './ReportForm';
 import TheoryStep from './TheoryStep';
+import BoneCelebrate from '../gamification/BoneCelebrate';
 import { MOTION, sec } from '../../motion/tokens';
 import { mergeDailyTaskStepsData } from '../../utils/lessonSteps';
 
@@ -35,7 +36,7 @@ function WhyScreen({ why, onNext }) {
         <Text fontSize="sm" fontWeight="bold" color="purple.600" mb={2} textTransform="uppercase" letterSpacing="wide">
           Зачем это тренировать
         </Text>
-        <Text fontSize="md" lineHeight="1.7" color="gray.700" _dark={{ color: 'gray.200' }}>
+        <Text fontSize="md" lineHeight="1.7" color="gray.700">
           {why || 'Это упражнение формирует у собаки полезный навык.'}
         </Text>
       </Box>
@@ -202,7 +203,15 @@ export default function LessonView() {
   }
 
   const { lesson } = data;
-  const lessonMeta = typeof lesson.meta === 'object' ? (lesson.meta ?? {}) : {};
+  let lessonMeta = {};
+  if (lesson.meta) {
+    if (typeof lesson.meta === 'object') lessonMeta = lesson.meta;
+    else try {
+      lessonMeta = JSON.parse(lesson.meta);
+    } catch {
+      lessonMeta = {};
+    }
+  }
   const daily = lesson.daily_task;
   const titleShort = lesson.title?.replace(/^День\s+\d+:\s*/i, '').trim() ?? lesson.title;
   const theorySteps = lesson.steps ?? [];
@@ -211,7 +220,7 @@ export default function LessonView() {
   if (phase === -1 && !bonesResult) {
     return (
       <Box pb={24}>
-        <HStack px={4} py={3} borderBottom="1px solid" borderColor="gray.100" _dark={{ borderColor: 'gray.700' }}>
+        <HStack px={4} py={3} borderBottom="1px solid" borderColor="gray.100">
           <Button variant="ghost" size="sm" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
             Назад
           </Button>
@@ -248,7 +257,9 @@ export default function LessonView() {
         <VStack spacing={6} py={10} align="center" textAlign="center">
           {isSuccess ? (
             <>
-              <Text fontSize="5xl">🦴</Text>
+              <BoneCelebrate>
+                <Text fontSize="5xl" display="block">🦴</Text>
+              </BoneCelebrate>
               <Text fontWeight="bold" fontSize="xl">
                 {bonesResult.bones_earned > 0 ? `+${bonesResult.bones_earned} косточка в копилку!` : 'Выполнено!'}
               </Text>
@@ -324,7 +335,7 @@ export default function LessonView() {
 
   return (
     <Box pb={24}>
-      <HStack px={4} py={3} borderBottom="1px solid" borderColor="gray.100" _dark={{ borderColor: 'gray.700' }}>
+      <HStack px={4} py={3} borderBottom="1px solid" borderColor="gray.100">
         <IconButton
           aria-label="Назад"
           icon={<ArrowLeft size={18} />}
@@ -395,7 +406,11 @@ export default function LessonView() {
 
             {phase === 3 && (
               <Box pt={2} pb={8}>
-                <ReportForm onSubmit={handleReportSubmit} isLoading={submitReport.isLoading} />
+                <ReportForm
+                  fallbackTasks={Array.isArray(lessonMeta.fallback_tasks) ? lessonMeta.fallback_tasks : []}
+                  onSubmit={handleReportSubmit}
+                  isLoading={submitReport.isLoading}
+                />
               </Box>
             )}
           </motion.div>

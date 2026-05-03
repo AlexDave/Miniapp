@@ -86,7 +86,7 @@ function CourseDetail() {
         const response = await apiClient.get(`/api/courses/${id}`);
         setCourse(response.data);
       } catch (err) {
-        setError('Ошибка при загрузке курса');
+        setError('Не удалось загрузить программу');
       } finally {
         setLoading(false);
       }
@@ -165,7 +165,7 @@ function CourseDetail() {
 
   const handleLike = () => {
     toast({
-      title: 'Курс добавлен в избранное!',
+      title: 'Добавлено в избранное!',
       status: 'success',
       duration: 2000,
       isClosable: true,
@@ -176,7 +176,7 @@ function CourseDetail() {
     return (
       <VStack spacing={4} align="center" justify="center" height="100vh">
         <Spinner size="xl" color="purple.500" thickness="4px" />
-        <Text fontSize="lg" color={textColor}>Загрузка курса...</Text>
+        <Text fontSize="lg" color={textColor}>Загрузка...</Text>
       </VStack>
     );
   }
@@ -196,7 +196,7 @@ function CourseDetail() {
           variant="outline"
           onClick={() => navigate('/courses')}
         >
-          Вернуться к курсам
+          Вернуться в библиотеку
         </Button>
       </VStack>
     );
@@ -213,7 +213,7 @@ function CourseDetail() {
               onClick={() => navigate('/courses')}
               colorScheme="purple"
               variant="ghost"
-              aria-label="Назад к курсам"
+              aria-label="Назад в библиотеку"
             />
             <VStack align="start" spacing={1}>
               <Heading size="lg" color="purple.600">
@@ -350,9 +350,9 @@ function CourseDetail() {
               >
                 <CardBody>
                   <VStack align="start" spacing={4}>
-                    <Heading size="md" color="purple.600">Описание курса</Heading>
+                    <Heading size="md" color="purple.600">О программе</Heading>
                     <Text color={textColor} lineHeight="1.6">
-                      {course?.description || 'Описание курса отсутствует'}
+                      {course?.description || 'Описание отсутствует'}
                     </Text>
                   </VStack>
                 </CardBody>
@@ -429,7 +429,7 @@ function CourseDetail() {
                         ))}
                       </VStack>
                     ) : (
-                      <Text color={textColor} fontSize="sm">Уроки для этого курса появятся скоро</Text>
+                      <Text color={textColor} fontSize="sm">Уроки появятся скоро</Text>
                     )}
                   </VStack>
                 </CardBody>
@@ -451,7 +451,7 @@ function CourseDetail() {
               >
                 <CardBody>
                   <VStack spacing={4}>
-                    <Heading size="sm" color="purple.600">Статистика курса</Heading>
+                    <Heading size="sm" color="purple.600">Статистика</Heading>
                     
                     <VStack spacing={3} width="100%">
                       <HStack justify="space-between" width="100%">

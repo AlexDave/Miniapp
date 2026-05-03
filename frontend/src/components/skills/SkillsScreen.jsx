@@ -1,22 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
   HStack,
+  Flex,
   SimpleGrid,
   Text,
   Progress,
   Badge,
   IconButton,
   Skeleton,
+  Button,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronDown, Lock, Info } from 'lucide-react';
 import { useSkillTree, useLessonsForSkill } from '../../hooks/useSkillTree';
 
 const MotionBox = motion(Box);
+
+/** Высота `SiteHeader` (примерно), чтобы вложенный sticky не залезал под глобальный хедер */
+const CATEGORY_STICKY_TOP = '3.75rem';
 
 const STATUS_ICONS = {
   completed: '✅',
@@ -161,7 +166,7 @@ function AtomRow({ skill, isExpanded, onToggle }) {
   const bonesLabel = `${skill.bones_earned ?? 0} / ${skill.target_bones ?? 5} 🦴`;
 
   return (
-    <Box>
+    <Box w="100%">
       <MotionBox
         p={3.5}
         bg={bg}
@@ -175,25 +180,32 @@ function AtomRow({ skill, isExpanded, onToggle }) {
         aria-label={`Навык «${skill.title}»`}
         onClick={onToggle}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
         transition={{ duration: 0.15 }}
+        _hover={{ boxShadow: 'sm' }}
       >
-        <HStack justify="space-between" mb={2}>
+        <HStack justify="space-between" align="flex-start" spacing={3} mb={2}>
           <Box flex="1" minW={0}>
-            <HStack spacing={2}>
-              <Text fontWeight="semibold" fontSize="sm">{skill.title}</Text>
-              {isDone && <Badge colorScheme="green" variant="subtle" fontSize="xs">Готово</Badge>}
+            <Flex flexWrap="wrap" gap={2} align="center" mb={0.5}>
+              <Text fontWeight="semibold" fontSize="sm" flex="1" minW="120px" noOfLines={2}>
+                {skill.title}
+              </Text>
+              {isDone && (
+                <Badge colorScheme="green" variant="subtle" fontSize="xs" flexShrink={0}>
+                  Готово
+                </Badge>
+              )}
               {skill.unlock_hint && !isDone && (
-                <Badge colorScheme="orange" variant="subtle" fontSize="xs">
+                <Badge colorScheme="orange" variant="subtle" fontSize="xs" flexShrink={0}>
                   <HStack spacing={1}><Lock size={9} /><span>Рекомендация</span></HStack>
                 </Badge>
               )}
-            </HStack>
-            <Text fontSize="xs" color={muted} noOfLines={1} mt={0.5}>{skill.description}</Text>
+            </Flex>
+            <Text fontSize="xs" color={muted} noOfLines={2}>{skill.description}</Text>
           </Box>
-          <HStack spacing={2} flexShrink={0}>
-            <Text fontSize="xs" color={muted}>{bonesLabel}</Text>
+          <VStack spacing={1} flexShrink={0} align="flex-end" pt={0.5}>
+            <Text fontSize="xs" color={muted} textAlign="right" whiteSpace="nowrap">
+              {bonesLabel}
+            </Text>
             <MotionBox
               animate={{ rotate: isExpanded ? 180 : 0 }}
               transition={{ duration: 0.2 }}
@@ -203,7 +215,7 @@ function AtomRow({ skill, isExpanded, onToggle }) {
             >
               <ChevronDown size={18} />
             </MotionBox>
-          </HStack>
+          </VStack>
         </HStack>
         <Progress
           value={pct}
@@ -250,36 +262,57 @@ function AtomRow({ skill, isExpanded, onToggle }) {
 
 // ─── Category detail view ─────────────────────────────────────────────────────
 
-function CategoryDetail({ category, onBack }) {
+function CategoryDetail({ category, onBack, initialExpandedSkillKey }) {
   const [expandedKey, setExpandedKey] = useState(null);
   const muted = useColorModeValue('gray.600', 'gray.400');
   const headerBg = useColorModeValue('white', 'gray.800');
 
+  useEffect(() => {
+    if (!initialExpandedSkillKey) return;
+    if (category.skills?.some((s) => s.key === initialExpandedSkillKey)) {
+      setExpandedKey(initialExpandedSkillKey);
+    }
+  }, [category.key, initialExpandedSkillKey]);
+
   const toggle = (key) => setExpandedKey((prev) => (prev === key ? null : key));
+
+  const headerBorder = useColorModeValue('gray.100', 'gray.700');
 
   return (
     <Box pb={24}>
       <Box
         position="sticky"
-        top={0}
-        zIndex={10}
+        top={CATEGORY_STICKY_TOP}
+        zIndex={11}
         bg={headerBg}
         pb={3}
         pt={1}
+        mx={-2}
+        px={2}
+        borderBottom="1px solid"
+        borderColor={headerBorder}
       >
-        <HStack spacing={3}>
+        <HStack spacing={3} align="flex-start">
           <IconButton
             icon={<ChevronLeft size={20} />}
             variant="ghost"
             size="sm"
             aria-label="Назад к категориям"
             onClick={onBack}
+            flexShrink={0}
+            mt={0.5}
           />
-          <HStack spacing={2}>
-            <Text fontSize="xl" aria-hidden>{category.icon ?? '🐾'}</Text>
-            <Box>
-              <Text fontWeight="bold" fontSize="md">{category.title}</Text>
-              <Text fontSize="xs" color={muted}>{category.description}</Text>
+          <HStack spacing={2} align="flex-start" minW={0} flex={1}>
+            <Text fontSize="xl" aria-hidden lineHeight="short" pt={0.5}>
+              {category.icon ?? '🐾'}
+            </Text>
+            <Box minW={0} flex={1}>
+              <Text fontWeight="bold" fontSize="md" noOfLines={2}>
+                {category.title}
+              </Text>
+              <Text fontSize="xs" color={muted} noOfLines={3} mt={0.5}>
+                {category.description}
+              </Text>
             </Box>
           </HStack>
         </HStack>
@@ -320,9 +353,31 @@ function CategoryDetail({ category, onBack }) {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function SkillsScreen() {
-  const { data: tree, isLoading } = useSkillTree();
+  const { data: tree, isLoading, isError, error, refetch, isFetching } = useSkillTree();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState(null);
+  const [deepLinkSkill, setDeepLinkSkill] = useState(null);
   const muted = useColorModeValue('gray.600', 'gray.400');
+
+  useEffect(() => {
+    if (!tree?.length) return;
+    const skill = searchParams.get('skill');
+    if (!skill) {
+      setDeepLinkSkill(null);
+      return;
+    }
+    const cat = tree.find((c) => c.skills?.some((s) => s.key === skill));
+    if (cat) {
+      setActiveCategory(cat.key);
+      setDeepLinkSkill(skill);
+    }
+  }, [tree, searchParams]);
+
+  function handleCategoryBack() {
+    setActiveCategory(null);
+    setDeepLinkSkill(null);
+    setSearchParams({}, { replace: true });
+  }
 
   if (isLoading) {
     return (
@@ -338,12 +393,44 @@ export default function SkillsScreen() {
 
   const categories = tree ?? [];
 
+  if (isError) {
+    const msg =
+      error?.response?.data?.error ||
+      error?.message ||
+      'Не удалось загрузить навыки';
+    return (
+      <Box pb={24} px={2}>
+        <VStack spacing={4} py={10} align="stretch">
+          <Text fontSize="lg" fontWeight="bold">Навыки</Text>
+          <Box textAlign="center" py={6} px={2}>
+            <Text color="red.500" fontSize="sm" mb={3}>
+              {msg}
+            </Text>
+            <Button
+              size="sm"
+              colorScheme="purple"
+              onClick={() => refetch()}
+              isLoading={isFetching}
+            >
+              Повторить
+            </Button>
+          </Box>
+        </VStack>
+      </Box>
+    );
+  }
+
   if (activeCategory) {
     const cat = categories.find((c) => c.key === activeCategory);
     if (cat) {
       return (
         <Box px={2} py={2}>
-          <CategoryDetail category={cat} onBack={() => setActiveCategory(null)} />
+          <CategoryDetail
+            key={cat.key}
+            category={cat}
+            onBack={handleCategoryBack}
+            initialExpandedSkillKey={deepLinkSkill}
+          />
         </Box>
       );
     }
@@ -376,9 +463,16 @@ export default function SkillsScreen() {
         </SimpleGrid>
 
         {categories.length === 0 && (
-          <Box textAlign="center" py={12}>
+          <Box textAlign="center" py={12} px={2}>
             <Text fontSize="3xl" mb={3}>🐾</Text>
-            <Text color={muted}>Дерево навыков загружается...</Text>
+            <Text color={muted} fontSize="sm" mb={2}>
+              Каталог навыков пуст.
+            </Text>
+            {import.meta.env.DEV && (
+              <Text fontSize="xs" color={muted}>
+                В каталоге нет категорий — выполните в папке backend: npm run db:seed
+              </Text>
+            )}
           </Box>
         )}
       </VStack>
