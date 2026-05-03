@@ -105,3 +105,59 @@ export function useSubmitReport() {
     }
   );
 }
+
+export function useMarkTheorySeen() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async (lessonId) => {
+      const { data } = await api.post(`/api/lessons/${lessonId}/theory-seen`);
+      return data;
+    },
+    {
+      onSuccess: (_, lessonId) => {
+        queryClient.invalidateQueries(['lesson', lessonId]);
+      },
+    }
+  );
+}
+
+export function useStartTask() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async (lessonId) => {
+      const { data } = await api.post(`/api/lessons/${lessonId}/start-task`);
+      return data;
+    },
+    {
+      onSuccess: (_, lessonId) => {
+        queryClient.invalidateQueries(['lesson', lessonId]);
+      },
+    }
+  );
+}
+
+export function useRepeatLesson() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    async (lessonId) => {
+      const { data } = await api.post(`/api/lessons/${lessonId}/repeat-start`);
+      return data;
+    },
+    {
+      onSuccess: (_, lessonId) => {
+        queryClient.invalidateQueries(['lesson', lessonId]);
+      },
+    }
+  );
+}
+
+export function useLessonHistory(lessonId) {
+  return useQuery(
+    ['lesson-history', lessonId],
+    async () => {
+      const { data } = await api.get(`/api/lessons/${lessonId}/history`);
+      return data;
+    },
+    { enabled: !!lessonId }
+  );
+}

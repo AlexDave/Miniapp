@@ -20,6 +20,7 @@ import TodayLesson from './lesson/TodayLesson';
 import { useUserStats } from '../hooks/useProgress';
 import { useDismissCoachTip } from '../hooks/useCoachTips';
 import { formatPrimaryProblem } from '../constants/onboarding';
+import BoneCounter from './gamification/BoneCounter';
 
 const MotionBox = motion(Box);
 
@@ -41,19 +42,10 @@ function Dashboard() {
     return 'Добрый вечер';
   };
 
-  const prevLevelXP = userStats?.level
-    ? [0, 0, 100, 300, 700][userStats.level - 1] ?? 0
-    : 0;
-  const nextXp = userStats?.next_level_xp ?? null;
-  const xpBarPct =
-    nextXp && userStats?.total_xp != null
-      ? Math.min(
-          100,
-          ((userStats.total_xp - prevLevelXP) / Math.max(nextXp - prevLevelXP, 1)) * 100
-        )
-      : 0;
-
   const streak = userStats?.streak ?? userProfile.streak ?? 0;
+  const totalBones = profile?.totalBones ?? 0;
+  const bonesStage = profile?.stage ?? 'Знакомство';
+  const bonesBySkill = profile?.bones ?? {};
 
   const showDashboardCoach =
     profile?.onboardingCompleted === true && profile?.coachTips?.dashboard !== true;
@@ -98,50 +90,24 @@ function Dashboard() {
             </Alert>
           )}
 
-          <Box
-            px={3}
-            py={3}
-            borderRadius="xl"
-            bg={compactBg}
-            border="1px solid"
-            borderColor={compactBorder}
-          >
-            <HStack justify="space-between" align="center" spacing={3} flexWrap="wrap" mb={2}>
-              <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
-                {userStats?.level_name
-                  ? `Ур. ${userStats.level} · ${userStats.level_name}`
-                  : `Уровень ${userProfile.level}`}
-              </Text>
-              <HStack spacing={2} flexShrink={0}>
-                <Text fontSize="sm" color="purple.600" fontWeight="bold">
-                  {userStats?.total_xp ?? userProfile.experience} XP
-                </Text>
-                {streak > 0 && (
-                  <Badge colorScheme="orange" px={2} py={0.5} borderRadius="full" fontSize="xs">
-                    {streak}🔥
-                  </Badge>
-                )}
-              </HStack>
-            </HStack>
-            <Progress value={xpBarPct} colorScheme="purple" size="xs" borderRadius="full" />
-            <Text fontSize="xs" color={muted} mt={1.5}>
-              {userStats?.xp_to_next != null
-                ? `${userStats.xp_to_next} XP до следующего уровня`
-                : 'Максимальный уровень'}
-            </Text>
-          </Box>
+          <HStack justify="space-between" align="center">
+            <BoneCounter total={totalBones} bySkill={bonesBySkill} stage={bonesStage} />
+            {streak > 0 && (
+              <Badge colorScheme="orange" px={3} py={1} borderRadius="full" fontSize="sm">
+                {streak} дн. подряд 🔥
+              </Badge>
+            )}
+          </HStack>
 
           <TodayLesson />
 
           <HStack spacing={4} px={0.5} fontSize="xs" color={muted}>
             <Text as={Link} to="/courses" color="purple.500" fontWeight="medium">
-              Все курсы →
+              Библиотека →
             </Text>
-            <Text as="span" color={muted}>
-              ·
-            </Text>
-            <Text as={Link} to="/tracks" color="purple.500" fontWeight="medium">
-              Треки →
+            <Text as="span" color={muted}>·</Text>
+            <Text as={Link} to="/skills" color="purple.500" fontWeight="medium">
+              Навыки →
             </Text>
           </HStack>
         </VStack>

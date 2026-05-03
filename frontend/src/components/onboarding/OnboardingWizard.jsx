@@ -12,10 +12,12 @@ import {
   WrapItem,
   Checkbox,
   Select,
+  HStack,
   useToast,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { CheckCircle } from 'lucide-react';
 import { useMutation, useQueryClient } from 'react-query';
 import { apiClient } from '../../hooks/useApi';
 import config from '../../config';
@@ -27,7 +29,15 @@ import {
 
 const MotionBox = motion(Box);
 
-const STEPS = 4;
+const STEPS = 5;
+
+// Static route options shown before the API is needed — matches seed data
+const ROUTE_OPTIONS = [
+  { key: 'puppy-basics',   icon: '🐶', title: 'Щенок с нуля',          description: 'Имя, туалет, первые команды — с нуля до 6 мес.' },
+  { key: 'city-dog',       icon: '🏙️', title: 'Городская собака',      description: 'Социализация, прогулки без рывков, надёжный подзыв' },
+  { key: 'foundations',    icon: '✋', title: 'Основы послушания',      description: 'Сидеть, лежать, ждать — фундамент управляемости' },
+  { key: 'calm-home',      icon: '🏠', title: 'Спокойный дома',         description: 'Лай, одиночество, режим — собака без тревоги' },
+];
 
 export default function OnboardingWizard() {
   const navigate = useNavigate();
@@ -36,12 +46,14 @@ export default function OnboardingWizard() {
   const muted = useColorModeValue('gray.600', 'gray.400');
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.100', 'gray.700');
+  const routeBorder = useColorModeValue('gray.200', 'gray.600');
 
   const [step, setStep] = useState(1);
   const [petName, setPetName] = useState('');
   const [dogAge, setDogAge] = useState('under6mo');
   const [goals, setGoals] = useState([]);
   const [primaryProblem, setPrimaryProblem] = useState('');
+  const [selectedRouteKey, setSelectedRouteKey] = useState(null);
 
   const saveMutation = useMutation(
     async () => {
@@ -53,13 +65,21 @@ export default function OnboardingWizard() {
           dog_age_bucket: dogAge,
           learning_goals,
           primary_problem: primaryProblem || null,
+          selected_route_key: selectedRouteKey || null,
         },
       });
+      // If route selected, call select endpoint too
+      if (selectedRouteKey) {
+        try {
+          await apiClient.post(`/api/routes/${selectedRouteKey}/select`);
+        } catch { /* non-blocking */ }
+      }
       return data;
     },
     {
       onSuccess: (data) => {
         queryClient.setQueryData(['profile'], data);
+        queryClient.invalidateQueries(['routes']);
         navigate('/onboarding/recommendations', { replace: true });
       },
       onError: () => {
@@ -80,7 +100,7 @@ export default function OnboardingWizard() {
         ? !!dogAge
         : step === 3
           ? goals.length > 0
-          : true;
+          : true; // steps 4 and 5 are optional
 
   function toggleGoal(id) {
     setGoals((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -189,6 +209,49 @@ export default function OnboardingWizard() {
                   </option>
                 ))}
               </Select>
+            </VStack>
+          )}
+
+          {step === 5 && (
+            <VStack align="stretch" spacing={4}>
+              <Heading size="md">Выберите маршрут</Heading>
+              <Text fontSize="sm" color={muted}>
+                Персональный путь по навыкам. Можно сменить позже.
+              </Text>
+              <VStack spacing={2} align="stretch">
+                {ROUTE_OPTIONS.map((r) => {
+                  const isChosen = selectedRouteKey === r.key;
+                  return (
+                    <Box
+                      key={r.key}
+                      as="button"
+                      textAlign="left"
+                      p={3.5}
+                      borderRadius="xl"
+                      border="2px solid"
+                      borderColor={isChosen ? 'purple.400' : routeBorder}
+                      bg={isChosen ? 'purple.50' : 'transparent'}
+                      onClick={() => setSelectedRouteKey(isChosen ? null : r.key)}
+                      transition="all 0.15s"
+                      _hover={{ borderColor: 'purple.300' }}
+                    >
+                      <HStack spacing={3} justify="space-between">
+                        <HStack spacing={3}>
+                          <Text fontSize="xl" aria-hidden>{r.icon}</Text>
+                          <Box>
+                            <Text fontWeight="semibold" fontSize="sm">{r.title}</Text>
+                            <Text fontSize="xs" color={muted}>{r.description}</Text>
+                          </Box>
+                        </HStack>
+                        {isChosen && <CheckCircle size={18} color="#805AD5" />}
+                      </HStack>
+                    </Box>
+                  );
+                })}
+              </VStack>
+              {!selectedRouteKey && (
+                <Text fontSize="xs" color={muted} textAlign="center">Можно пропустить и выбрать позже</Text>
+              )}
             </VStack>
           )}
         </MotionBox>

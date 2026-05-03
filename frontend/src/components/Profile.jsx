@@ -66,8 +66,8 @@ import { useAchievements } from '../hooks/useAchievements';
 import { useUserStats } from '../hooks/useProgress';
 import SkillMap from './progress/SkillMap';
 import ActivityHeatmap from './progress/ActivityHeatmap';
-import LevelBadge from './gamification/LevelBadge';
 import StreakBadge from './gamification/StreakBadge';
+import BoneCounter from './gamification/BoneCounter';
 
 const MotionCard = motion(Card);
 
@@ -120,20 +120,10 @@ function Profile() {
     setIsEditingName(false);
   };
 
-  const getLevelProgress = () => {
-    if (stats?.next_level_xp != null) {
-      const prevLevelXP = [0, 0, 100, 300, 700][stats.level - 1] ?? 0;
-      const range = stats.next_level_xp - prevLevelXP;
-      return range > 0 ? ((stats.total_xp - prevLevelXP) / range) * 100 : 100;
-    }
-    const expForNextLevel = userProfile.level * 100;
-    return ((userProfile.experience % expForNextLevel) / expForNextLevel) * 100;
-  };
-
-  const totalXP = stats?.total_xp ?? userProfile.experience;
-  const level = stats?.level ?? userProfile.level;
-  const levelName = stats?.level_name;
   const streak = stats?.streak ?? userProfile.streak;
+  const totalBones = userProfile.totalBones ?? 0;
+  const bonesStage = userProfile.stage ?? 'Знакомство';
+  const bonesBySkill = userProfile.bones ?? {};
 
   const earnedCount = achievements.filter((a) => a.earned).length;
 
@@ -228,24 +218,16 @@ function Profile() {
                   </HStack>
                 )}
                 <HStack spacing={2} flexWrap="wrap" justify="center">
-                  <LevelBadge level={level} levelName={levelName} />
-                  <Text color={textColor} fontSize="sm">· {totalXP} XP</Text>
-                  {stats?.coins != null && stats.coins > 0 && (
-                    <Text color={textColor} fontSize="sm">· 🪙 {stats.coins}</Text>
-                  )}
+                  <Badge colorScheme="purple" px={3} py={1} borderRadius="full" fontSize="sm">
+                    {bonesStage}
+                  </Badge>
                   {streak > 0 && <StreakBadge streak={streak} />}
                 </HStack>
               </VStack>
 
-              {/* Level Progress */}
+              {/* Копилка косточек */}
               <Box width="100%" maxW="400px">
-                <HStack justify="space-between" mb={2}>
-                  <Text fontSize="sm" color={textColor}>До следующего уровня</Text>
-                  <Text fontSize="sm" color="purple.600" fontWeight="semibold">
-                    {Math.round(getLevelProgress())}%
-                  </Text>
-                </HStack>
-                <Progress value={getLevelProgress()} colorScheme="purple" size="lg" borderRadius="full" />
+                <BoneCounter total={totalBones} bySkill={bonesBySkill} stage={bonesStage} />
               </Box>
 
               {stats?.skills && (

@@ -1,4 +1,4 @@
-import { Box, Text, HStack } from '@chakra-ui/react';
+import { Box, Text, HStack, Image, AspectRatio } from '@chakra-ui/react';
 import { Lightbulb, Info, AlertCircle } from 'lucide-react';
 
 const STEP_STYLES = {
@@ -32,7 +32,41 @@ const STEP_STYLES = {
     label: 'Схема',
     labelColor: 'gray.600',
   },
+  image: {
+    bg: 'transparent',
+    border: 'none',
+    borderColor: 'transparent',
+    icon: null,
+  },
 };
+
+function StepImage({ imageUrl, altText, role }) {
+  if (!imageUrl) return null;
+
+  if (role === 'hero') {
+    return (
+      <AspectRatio ratio={16 / 9} borderRadius="lg" overflow="hidden" mb={2}>
+        <Image src={imageUrl} alt={altText ?? ''} objectFit="cover" loading="lazy" />
+      </AspectRatio>
+    );
+  }
+
+  return (
+    <Box borderRadius="lg" overflow="hidden" mb={2}>
+      <Image
+        src={imageUrl}
+        alt={altText ?? ''}
+        w="100%"
+        maxH="220px"
+        objectFit="contain"
+        loading="lazy"
+      />
+      {altText && role === 'caption' && (
+        <Text fontSize="xs" color="gray.500" textAlign="center" mt={1}>{altText}</Text>
+      )}
+    </Box>
+  );
+}
 
 function DiagramContent({ content }) {
   try {
@@ -81,6 +115,18 @@ function DiagramContent({ content }) {
 
 export default function TheoryStep({ step }) {
   const style = STEP_STYLES[step.type] ?? STEP_STYLES.text;
+  const isImageOnly = step.type === 'image';
+
+  if (isImageOnly) {
+    return (
+      <Box>
+        <StepImage imageUrl={step.image_url} altText={step.alt_text} role={step.image_role ?? 'hero'} />
+        {step.content && (
+          <Text fontSize="sm" color="gray.600" textAlign="center" lineHeight="1.6">{step.content}</Text>
+        )}
+      </Box>
+    );
+  }
 
   return (
     <Box p={3} bg={style.bg} border={style.border} borderColor={style.borderColor} borderRadius="lg">
@@ -92,10 +138,18 @@ export default function TheoryStep({ step }) {
           </Text>
         </HStack>
       )}
+      {step.image_url && step.image_role === 'hero' && (
+        <StepImage imageUrl={step.image_url} altText={step.alt_text} role="hero" />
+      )}
       {step.type === 'diagram' ? (
         <DiagramContent content={step.content} />
       ) : (
         <Text fontSize="sm" lineHeight="1.6">{step.content}</Text>
+      )}
+      {step.image_url && step.image_role !== 'hero' && (
+        <Box mt={2}>
+          <StepImage imageUrl={step.image_url} altText={step.alt_text} role={step.image_role ?? 'inline'} />
+        </Box>
       )}
     </Box>
   );

@@ -1,20 +1,27 @@
-import { Badge, HStack, Text } from '@chakra-ui/react';
+import { Badge } from '@chakra-ui/react';
 
-const LEVEL_COLORS = ['', 'gray', 'blue', 'purple', 'orange', 'yellow'];
+const STAGE_COLORS = {
+  'Знакомство': 'gray',
+  'Базовые навыки': 'blue',
+  'Уверенный': 'purple',
+  'Самостоятельный': 'orange',
+  'Партнёр': 'yellow',
+};
 
-export default function LevelBadge({ level, levelName, size = 'sm' }) {
+// Оставляем компонент рабочим для обратной совместимости,
+// но теперь он показывает стадию, а не уровень
+export default function LevelBadge({ level, levelName, stage, size = 'sm' }) {
+  const displayStage = stage ?? levelName ?? `Уровень ${level}`;
+  const color = STAGE_COLORS[displayStage] ?? 'purple';
   return (
     <Badge
-      colorScheme={LEVEL_COLORS[level] ?? 'gray'}
+      colorScheme={color}
       px={2}
       py={0.5}
       borderRadius="full"
       fontSize={size === 'sm' ? 'xs' : 'sm'}
     >
-      <HStack spacing={1}>
-        <Text>Ур. {level}</Text>
-        {levelName && <Text>· {levelName}</Text>}
-      </HStack>
+      {displayStage}
     </Badge>
   );
 }

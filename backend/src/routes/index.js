@@ -5,6 +5,8 @@ const achievementsRoutes = require('./achievements');
 const systemRoutes = require('./system');
 const lessonsRoutes = require('./lessons');
 const progressRoutes = require('./progress');
+const skillsRoutes = require('./skills');
+const userRoutesRoutes = require('./user-routes');
 
 module.exports = {
   coursesRoutes,
@@ -14,4 +16,6 @@ module.exports = {
   systemRoutes,
   lessonsRoutes,
   progressRoutes,
+  skillsRoutes,
+  userRoutesRoutes,
 };

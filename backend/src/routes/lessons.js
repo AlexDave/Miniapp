@@ -4,6 +4,7 @@ const { calculateLessonReportXP, getLevelByXP } = require('../utils/xp');
 const { parseLessonMeta, applySkillDelta, normalizeSkills } = require('../utils/lessonMeta');
 const { updateStreakAfterLessonReport } = require('../utils/streakLesson');
 const { checkAndAwardAchievements } = require('../utils/achievements');
+const { awardBone } = require('../utils/bones');
 
 const router = express.Router();
 
@@ -291,7 +292,7 @@ router.get('/:lessonId', async (req, res) => {
     const lessonId = parseInt(req.params.lessonId, 10);
     const userId = req.user.id;
 
-    const [lesson, report] = await Promise.all([
+    const [lesson, report, progress] = await Promise.all([
       prisma.lesson.findUnique({
         where: { id: lessonId },
         include: {
@@ -303,14 +304,154 @@ router.get('/:lessonId', async (req, res) => {
       prisma.dailyReport.findUnique({
         where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
       }),
+      prisma.lessonProgress.findUnique({
+        where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      }),
     ]);
 
     if (!lesson) return res.status(404).json({ error: 'Урок не найден' });
 
-    res.json({ lesson: lessonDto(lesson), report: report ?? null });
+    res.json({
+      lesson: lessonDto(lesson),
+      report: report ?? null,
+      progress: progress
+        ? {
+            state:          progress.state,
+            theory_seen_at: progress.theory_seen_at,
+            repeats_count:  progress.repeats_count,
+            last_repeat_at: progress.last_repeat_at,
+          }
+        : { state: 'not_started', theory_seen_at: null, repeats_count: 0, last_repeat_at: null },
+    });
   } catch (err) {
     console.error('❌ Ошибка /lessons/:id:', err);
     res.status(500).json({ error: 'Ошибка при получении урока' });
+  }
+});
+
+// Отметить теорию пройденной
+router.post('/:lessonId/theory-seen', async (req, res) => {
+  try {
+    const lessonId = parseInt(req.params.lessonId, 10);
+    const userId = req.user.id;
+    const now = new Date();
+
+    const progress = await prisma.lessonProgress.upsert({
+      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      update: {
+        state: 'theory_done',
+        theory_seen_at: now,
+        updated_at: now,
+      },
+      create: {
+        user_id: userId,
+        lesson_id: lessonId,
+        state: 'theory_done',
+        theory_seen_at: now,
+      },
+    });
+
+    res.json({ state: progress.state, theory_seen_at: progress.theory_seen_at });
+  } catch (err) {
+    console.error('❌ Ошибка POST /lessons/:id/theory-seen:', err);
+    res.status(500).json({ error: 'Ошибка при сохранении прогресса теории' });
+  }
+});
+
+// Начать задание (требует пройденной теории)
+router.post('/:lessonId/start-task', async (req, res) => {
+  try {
+    const lessonId = parseInt(req.params.lessonId, 10);
+    const userId = req.user.id;
+
+    const progress = await prisma.lessonProgress.findUnique({
+      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+    });
+
+    if (!progress || !progress.theory_seen_at) {
+      return res.status(403).json({ error: 'Сначала нужно изучить теорию' });
+    }
+
+    const updated = await prisma.lessonProgress.update({
+      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      data: { task_started_at: new Date(), updated_at: new Date() },
+    });
+
+    res.json({ state: updated.state, task_started_at: updated.task_started_at });
+  } catch (err) {
+    console.error('❌ Ошибка POST /lessons/:id/start-task:', err);
+    res.status(500).json({ error: 'Ошибка при запуске задания' });
+  }
+});
+
+// Начать повтор завершённого урока (возврат в theory_done, 24ч cooldown)
+router.post('/:lessonId/repeat-start', async (req, res) => {
+  try {
+    const lessonId = parseInt(req.params.lessonId, 10);
+    const userId = req.user.id;
+
+    const existing = await prisma.dailyReport.findUnique({
+      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+    });
+    if (!existing) return res.status(400).json({ error: 'Урок ещё не завершён' });
+
+    // Проверяем 24ч cooldown по last_repeat_at или completed_at
+    const prevProgress = await prisma.lessonProgress.findUnique({
+      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+    });
+    const lastActivity = prevProgress?.last_repeat_at ?? existing.completed_at;
+    if (lastActivity) {
+      const hoursSince = (Date.now() - new Date(lastActivity).getTime()) / 3_600_000;
+      if (hoursSince < 24) {
+        const hoursLeft = Math.ceil(24 - hoursSince);
+        return res.status(429).json({
+          error: 'Cooldown активен',
+          hours_left: hoursLeft,
+          message: `Повтор доступен через ${hoursLeft} ч.`,
+        });
+      }
+    }
+
+    const now = new Date();
+    const progress = await prisma.lessonProgress.upsert({
+      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      update: { state: 'theory_done', task_started_at: null, last_repeat_at: now, updated_at: now },
+      create: { user_id: userId, lesson_id: lessonId, state: 'theory_done', theory_seen_at: now, last_repeat_at: now },
+    });
+
+    res.json({ state: progress.state, message: 'Повтор начат' });
+  } catch (err) {
+    console.error('❌ Ошибка POST /lessons/:id/repeat-start:', err);
+    res.status(500).json({ error: 'Ошибка при запуске повтора' });
+  }
+});
+
+// История повторов урока
+router.get('/:lessonId/history', async (req, res) => {
+  try {
+    const lessonId = parseInt(req.params.lessonId, 10);
+    const userId = req.user.id;
+
+    const [report, progress] = await Promise.all([
+      prisma.dailyReport.findUnique({
+        where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+        select: { completed_at: true, success: true, bones_earned: true },
+      }),
+      prisma.lessonProgress.findUnique({
+        where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+        select: { repeats_count: true, last_repeat_at: true },
+      }),
+    ]);
+
+    res.json({
+      completed: !!report,
+      completed_at: report?.completed_at ?? null,
+      repeats_count: progress?.repeats_count ?? 0,
+      last_repeat_at: progress?.last_repeat_at ?? null,
+    });
+  } catch (err) {
+    console.error('❌ Ошибка GET /lessons/:id/history:', err);
+    res.status(500).json({ error: 'Ошибка при получении истории' });
   }
 });
 
@@ -423,6 +564,7 @@ router.post('/:lessonId/report', async (req, res) => {
           success,
           note: note || null,
           xp_earned: xpEarned,
+          bones_earned: 0,
         },
       });
 
@@ -437,6 +579,24 @@ router.post('/:lessonId/report', async (req, res) => {
         },
       });
 
+      // Обновить LessonProgress → completed
+      await tx.lessonProgress.upsert({
+        where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+        update: {
+          state: 'completed',
+          completed_at: new Date(),
+          updated_at: new Date(),
+        },
+        create: {
+          user_id: userId,
+          lesson_id: lessonId,
+          state: 'completed',
+          theory_seen_at: new Date(),
+          task_started_at: new Date(),
+          completed_at: new Date(),
+        },
+      });
+
       return created;
     });
 
@@ -446,6 +606,17 @@ router.post('/:lessonId/report', async (req, res) => {
       success,
       report.id
     );
+
+    // Начислить косточку если не «нет»
+    let bonesResult = { bones_earned: 0 };
+    if (success !== 'no') {
+      bonesResult = await awardBone(prisma, userId, skillKey, { streakCount: newStreak ?? 0 });
+      // Обновить bones_earned в отчёте
+      await prisma.dailyReport.update({
+        where: { id: report.id },
+        data: { bones_earned: bonesResult.bones_earned },
+      });
+    }
 
     const newAchievements = await checkAndAwardAchievements(userId);
 
@@ -473,6 +644,10 @@ router.post('/:lessonId/report', async (req, res) => {
       feedback_message: feedback,
       fallback_tasks: success === 'no' ? meta.fallback_tasks ?? [] : [],
       adaptive,
+      bones_earned: bonesResult.bones_earned,
+      bones_total: bonesResult.new_total ?? null,
+      bones_stage: bonesResult.new_stage ?? null,
+      is_special_bone: bonesResult.is_special ?? false,
     });
   } catch (err) {
     console.error('❌ Ошибка POST /lessons/:id/report:', err);

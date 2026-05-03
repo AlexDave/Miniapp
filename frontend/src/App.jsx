@@ -29,6 +29,7 @@ import {
   Bell,
   Brain,
   PawPrint,
+  Map,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Courses from './components/Courses';
 import CourseDetail from './components/CourseDetail';
 import Tracks from './components/Tracks';
+import RoutesScreen from './components/routes/RoutesScreen';
 import Chat from './components/Chat';
 import Profile from './components/Profile';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -149,6 +151,14 @@ function AppContent() {
               element={
                 <OnboardingGate>
                   <LessonView />
+                </OnboardingGate>
+              }
+            />
+            <Route
+              path="/routes"
+              element={
+                <OnboardingGate>
+                  <RoutesScreen />
                 </OnboardingGate>
               }
             />
@@ -293,6 +303,7 @@ function BottomNavigation() {
       label: 'Тренировка',
       match: (p) => p.startsWith('/train') || p.startsWith('/lesson/'),
     },
+    { path: '/routes', icon: <Map size={24} />, label: 'Маршрут', match: (p) => p.startsWith('/routes') },
     { path: '/profile', icon: <User size={24} />, label: 'Профиль', match: (p) => p.startsWith('/profile') },
   ];
 

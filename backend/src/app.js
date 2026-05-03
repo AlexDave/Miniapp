@@ -1,6 +1,6 @@
 const express = require('express');
 const { logger, corsMiddleware, authMiddleware } = require('./middleware');
-const { coursesRoutes, tracksRoutes, profileRoutes, achievementsRoutes, systemRoutes, lessonsRoutes, progressRoutes } = require('./routes');
+const { coursesRoutes, tracksRoutes, profileRoutes, achievementsRoutes, systemRoutes, lessonsRoutes, progressRoutes, skillsRoutes, userRoutesRoutes } = require('./routes');
 
 const app = express();
 
@@ -18,6 +18,8 @@ app.use('/api/user/tracks', tracksRoutes);
 app.use('/api/user/profile', profileRoutes);
 app.use('/api/user/achievements', achievementsRoutes);
 app.use('/api/lessons', lessonsRoutes);
+app.use('/api/skills', skillsRoutes);
+app.use('/api/routes', userRoutesRoutes);
 app.use('/api/user', progressRoutes);
 
 // 404 для неизвестных маршрутов

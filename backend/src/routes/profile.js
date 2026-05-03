@@ -2,6 +2,7 @@ const express = require('express');
 const { prisma } = require('../database/connection');
 const logger = require('../utils/logger');
 const { parsePreferences, mergePreferences, preferencesToPublic } = require('../utils/profilePreferences');
+const { parseBones } = require('../utils/bones');
 
 const router = express.Router();
 
@@ -28,6 +29,11 @@ function buildProfileResponse(profile) {
     completedCourses: profile.completed_courses,
     streak: profile.streak,
     bio: profile.bio,
+    // Косточки
+    totalBones: profile.total_bones ?? 0,
+    specialBones: profile.special_bones ?? 0,
+    stage: profile.stage ?? 'Знакомство',
+    bones: parseBones(profile.bones_json),
     ...publicPrefs,
   };
 }
@@ -83,6 +89,27 @@ router.put('/', async (req, res) => {
   } catch (err) {
     logger.error({ err }, 'Ошибка при обновлении профиля');
     res.status(500).json({ error: 'Ошибка при обновлении профиля' });
+  }
+});
+
+// Косточки пользователя по навыкам
+router.get('/bones', async (req, res) => {
+  try {
+    const profile = await prisma.profile.findUnique({
+      where: { user_id: req.user.id },
+      select: { bones_json: true, total_bones: true, special_bones: true, stage: true },
+    });
+    if (!profile) return res.status(404).json({ error: 'Профиль не найден' });
+
+    res.json({
+      by_skill:      parseBones(profile.bones_json),
+      total:         profile.total_bones ?? 0,
+      special:       profile.special_bones ?? 0,
+      stage:         profile.stage ?? 'Знакомство',
+    });
+  } catch (err) {
+    logger.error({ err }, 'Ошибка при получении косточек');
+    res.status(500).json({ error: 'Ошибка при получении косточек' });
   }
 });
 

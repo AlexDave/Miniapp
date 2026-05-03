@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { courses, modulesData } = require('./seed-content');
+const { SKILL_CATEGORIES, SKILLS } = require('./seed-skills');
 
 const prisma = new PrismaClient();
 
@@ -122,6 +123,94 @@ async function main() {
     }
   }
   console.log(`✅ Треков: ${tracks.length}`);
+
+  // Категории и атомы навыков
+  for (const cat of SKILL_CATEGORIES) {
+    const existing = await prisma.skillCategory.findUnique({ where: { key: cat.key } });
+    if (existing) {
+      await prisma.skillCategory.update({ where: { key: cat.key }, data: cat });
+    } else {
+      await prisma.skillCategory.create({ data: cat });
+    }
+  }
+  for (const skill of SKILLS) {
+    const existing = await prisma.skill.findUnique({ where: { key: skill.key } });
+    if (existing) {
+      await prisma.skill.update({ where: { key: skill.key }, data: skill });
+    } else {
+      await prisma.skill.create({ data: skill });
+    }
+  }
+  console.log(`✅ Категорий навыков: ${SKILL_CATEGORIES.length}, атомов: ${SKILLS.length}`);
+
+  // Маршруты
+  const ROUTES = [
+    {
+      key: 'puppy-basics',
+      title: 'Щенок с нуля',
+      description: 'Первые 3 месяца: имя, туалет, контакт и базовая команда',
+      icon: '🐶',
+      target_problem: 'new_puppy',
+      age_min_months: 0,
+      age_max_months: 6,
+      order_index: 0,
+      skills: ['intro.name', 'intro.eye', 'daily.toilet', 'daily.sleep', 'control.sit', 'walk.recall'],
+    },
+    {
+      key: 'city-dog',
+      title: 'Городская собака',
+      description: 'Социализация, прогулки без рывков, безопасный подзыв',
+      icon: '🏙️',
+      target_problem: 'pulling',
+      age_min_months: 4,
+      age_max_months: null,
+      order_index: 1,
+      skills: ['social.people', 'social.sounds', 'walk.loose', 'walk.heel', 'walk.recall', 'walk.recall2', 'walk.drop'],
+    },
+    {
+      key: 'foundations',
+      title: 'Основы послушания',
+      description: 'Сидеть, лежать, ждать — фундамент управляемости',
+      icon: '✋',
+      target_problem: 'no_commands',
+      age_min_months: 3,
+      age_max_months: null,
+      order_index: 2,
+      skills: ['intro.eye', 'control.sit', 'control.down', 'control.wait', 'control.place', 'bound.no'],
+    },
+    {
+      key: 'calm-home',
+      title: 'Спокойный дома',
+      description: 'Одиночество, лай, режим — собака без тревоги',
+      icon: '🏠',
+      target_problem: 'separation_anxiety',
+      age_min_months: 4,
+      age_max_months: null,
+      order_index: 3,
+      skills: ['daily.sleep', 'bound.bark', 'bound.bite', 'self.alone', 'self.tired'],
+    },
+  ];
+
+  for (const route of ROUTES) {
+    const { skills: skillKeys, ...routeFields } = route;
+    let savedRoute = await prisma.route.findUnique({ where: { key: routeFields.key } });
+    if (savedRoute) {
+      await prisma.route.update({ where: { key: routeFields.key }, data: routeFields });
+    } else {
+      savedRoute = await prisma.route.create({ data: routeFields });
+    }
+    // Пересоздаём привязки навыков
+    await prisma.routeSkill.deleteMany({ where: { route_id: savedRoute.id } });
+    await prisma.routeSkill.createMany({
+      data: skillKeys.map((sk, i) => ({
+        route_id: savedRoute.id,
+        skill_key: sk,
+        order_index: i,
+        is_required: true,
+      })),
+    });
+  }
+  console.log(`✅ Маршрутов: ${ROUTES.length}`);
 
   // Достижения
   for (const achievement of achievements) {
