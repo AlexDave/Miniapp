@@ -109,7 +109,7 @@ const useStore = create(
       },
     }),
     {
-      name: 'dog-course-storage',
+      name: 'dog-course-storage-v2',
       partialize: (state) => ({
         userProfile: state.userProfile,
         theme: state.theme,

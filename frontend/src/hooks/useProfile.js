@@ -23,6 +23,11 @@ export function useProfile() {
           totalCourses: data.totalCourses,
           completedCourses: data.completedCourses,
           streak: data.streak,
+          onboardingCompleted: data.onboardingCompleted,
+          dogAgeBucket: data.dogAgeBucket,
+          learningGoals: data.learningGoals,
+          primaryProblem: data.primaryProblem,
+          coachTips: data.coachTips,
         });
       },
     }
@@ -47,6 +52,14 @@ export function useUpdateProfile() {
           experience: data.experience,
           coins: data.coins ?? 0,
           skills: data.skills ?? { focus: 0, recall: 0, sit: 0 },
+          totalCourses: data.totalCourses,
+          completedCourses: data.completedCourses,
+          streak: data.streak,
+          onboardingCompleted: data.onboardingCompleted,
+          dogAgeBucket: data.dogAgeBucket,
+          learningGoals: data.learningGoals,
+          primaryProblem: data.primaryProblem,
+          coachTips: data.coachTips,
         });
       },
     }

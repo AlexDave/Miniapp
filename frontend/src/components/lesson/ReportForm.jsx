@@ -5,39 +5,48 @@ import {
 import PressableButton from '../motion/PressableButton';
 import { Send } from 'lucide-react';
 
-const SUCCESS = [
-  { value: 'yes', emoji: '✅', label: 'Да', color: 'green' },
-  { value: 'partial', emoji: '⚠️', label: 'Частично', color: 'orange' },
-  { value: 'no', emoji: '❌', label: 'Нет', color: 'red' },
+const OUTCOMES = [
+  { value: 'yes', emoji: '😄', label: 'Отлично', color: 'green' },
+  { value: 'partial', emoji: '😐', label: 'Норм', color: 'orange' },
+  { value: 'no', emoji: '😕', label: 'Не получилось', color: 'red' },
 ];
 
-export default function ReportForm({ stepsData = [], onSubmit, isLoading }) {
+export default function ReportForm({ onSubmit, isLoading }) {
   const [success, setSuccess] = useState('yes');
   const [note, setNote] = useState('');
 
   return (
-    <VStack spacing={5} align="stretch">
-      <Box>
-        <Text fontWeight="semibold" mb={3}>Получилось?</Text>
-        <HStack spacing={3} justify="center" flexWrap="wrap">
-          {SUCCESS.map((r) => (
-            <Button
-              key={r.value}
-              onClick={() => setSuccess(r.value)}
-              variant={success === r.value ? 'solid' : 'outline'}
-              colorScheme={success === r.value ? r.color : 'gray'}
-              flexDir="column"
-              h="auto"
-              py={3}
-              px={5}
-              borderRadius="xl"
-            >
-              <Text fontSize="2xl">{r.emoji}</Text>
-              <Text fontSize="xs" mt={1}>{r.label}</Text>
-            </Button>
-          ))}
-        </HStack>
+    <VStack spacing={6} align="stretch">
+      <Box textAlign="center">
+        <Text fontWeight="bold" fontSize="lg" mb={1}>
+          Как прошло?
+        </Text>
+        <Text fontSize="sm" color="gray.500">
+          Честно — так лучше для прогресса
+        </Text>
       </Box>
+
+      <HStack spacing={3} justify="center" flexWrap="wrap">
+        {OUTCOMES.map((r) => (
+          <Button
+            key={r.value}
+            onClick={() => setSuccess(r.value)}
+            variant={success === r.value ? 'solid' : 'outline'}
+            colorScheme={success === r.value ? r.color : 'gray'}
+            flexDir="column"
+            h="auto"
+            py={4}
+            px={6}
+            borderRadius="2xl"
+            minW="100px"
+          >
+            <Text fontSize="3xl">{r.emoji}</Text>
+            <Text fontSize="sm" mt={1} fontWeight="medium">
+              {r.label}
+            </Text>
+          </Button>
+        ))}
+      </HStack>
 
       <Box>
         <Text fontSize="sm" color="gray.600" mb={2}>
@@ -46,8 +55,8 @@ export default function ReportForm({ stepsData = [], onSubmit, isLoading }) {
         <Textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Что получилось? Что нет? Чего не хватило..."
-          rows={3}
+          placeholder="Лакомство? Отвлечения?"
+          rows={2}
           resize="none"
           fontSize="sm"
         />
@@ -61,9 +70,9 @@ export default function ReportForm({ stepsData = [], onSubmit, isLoading }) {
         isLoading={isLoading}
         isDisabled={isLoading}
         successTap
-        onClick={() => onSubmit({ steps_data: stepsData, success, note })}
+        onClick={() => onSubmit({ success, note })}
       >
-        Сохранить и получить XP
+        Завершить тренировку
       </PressableButton>
     </VStack>
   );

@@ -1,6 +1,12 @@
 import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useNavigate,
+  useLocation,
+} from 'react-router-dom';
 import { 
   ChakraProvider, 
   Box, 
@@ -22,6 +28,7 @@ import {
   Moon,
   Bell,
   Brain,
+  PawPrint,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,6 +44,9 @@ import Notifications from './components/Notifications';
 import LessonView from './components/lesson/LessonView';
 import SkillsScreen from './components/skills/SkillsScreen';
 import TrainScreen from './components/train/TrainScreen';
+import OnboardingWizard from './components/onboarding/OnboardingWizard';
+import OnboardingRecommendations from './components/onboarding/OnboardingRecommendations';
+import OnboardingGate from './components/onboarding/OnboardingGate';
 
 import theme from './theme';
 import useStore from './store';
@@ -76,34 +86,101 @@ function App() {
 }
 
 function AppContent() {
+  const location = useLocation();
   const { colorMode, toggleColorMode } = useColorMode();
   const { notifications } = useStore();
   const bg = useColorModeValue('gray.50', 'gray.900');
   const toastBg = useColorModeValue('#fff', '#2D3748');
   const toastColor = useColorModeValue('#1A202C', '#E2E8F0');
   const toastBorder = useColorModeValue('#E2E8F0', '#4A5568');
+  const hideAppChrome = location.pathname.startsWith('/onboarding');
 
   return (
     <Flex direction="column" minHeight="100vh" bg={bg}>
-      <Header toggleColorMode={toggleColorMode} colorMode={colorMode} />
+      {!hideAppChrome && <Header toggleColorMode={toggleColorMode} colorMode={colorMode} />}
 
       <Container maxW="container.xl" flex="1" px={4} py={6}>
         <AnimatePresence mode="wait">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/skills" element={<SkillsScreen />} />
-            <Route path="/train" element={<TrainScreen />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/course/:id" element={<CourseDetail />} />
-            <Route path="/lesson/:lessonId" element={<LessonView />} />
-            <Route path="/tracks" element={<Tracks />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/onboarding" element={<OnboardingWizard />} />
+            <Route path="/onboarding/recommendations" element={<OnboardingRecommendations />} />
+            <Route
+              path="/"
+              element={
+                <OnboardingGate>
+                  <Dashboard />
+                </OnboardingGate>
+              }
+            />
+            <Route
+              path="/skills"
+              element={
+                <OnboardingGate>
+                  <SkillsScreen />
+                </OnboardingGate>
+              }
+            />
+            <Route
+              path="/train"
+              element={
+                <OnboardingGate>
+                  <TrainScreen />
+                </OnboardingGate>
+              }
+            />
+            <Route
+              path="/courses"
+              element={
+                <OnboardingGate>
+                  <Courses />
+                </OnboardingGate>
+              }
+            />
+            <Route
+              path="/course/:id"
+              element={
+                <OnboardingGate>
+                  <CourseDetail />
+                </OnboardingGate>
+              }
+            />
+            <Route
+              path="/lesson/:lessonId"
+              element={
+                <OnboardingGate>
+                  <LessonView />
+                </OnboardingGate>
+              }
+            />
+            <Route
+              path="/tracks"
+              element={
+                <OnboardingGate>
+                  <Tracks />
+                </OnboardingGate>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <OnboardingGate>
+                  <Chat />
+                </OnboardingGate>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <OnboardingGate>
+                  <Profile />
+                </OnboardingGate>
+              }
+            />
           </Routes>
         </AnimatePresence>
       </Container>
 
-      <BottomNavigation />
+      {!hideAppChrome && <BottomNavigation />}
       <Notifications />
 
       <Toaster
@@ -141,26 +218,18 @@ function Header({ toggleColorMode, colorMode }) {
       <Container maxW="container.xl" px={4}>
         <Flex justify="space-between" align="center" py={4}>
           <Flex align="center" gap={3}>
-            <Box
-              as="img"
-              src="/dog-logo.png"
-              alt="Dog Course"
+            <Flex
               w={8}
               h={8}
-              fallback={
-                <Box
-                  w={8}
-                  h={8}
-                  bg="purple.500"
-                  borderRadius="full"
-                  display="flex"
-                  align="center"
-                  justify="center"
-                >
-                  <Text color="white" fontSize="sm" fontWeight="bold">🐕</Text>
-                </Box>
-              }
-            />
+              bg="purple.500"
+              borderRadius="full"
+              align="center"
+              justify="center"
+              flexShrink={0}
+              aria-hidden
+            >
+              <PawPrint size={20} color="white" strokeWidth={2} aria-hidden />
+            </Flex>
             <Text fontSize="xl" fontWeight="bold" color="purple.600">
               DogCourse
             </Text>

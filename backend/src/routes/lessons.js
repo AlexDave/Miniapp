@@ -220,6 +220,72 @@ router.get('/module/:moduleId', async (req, res) => {
   }
 });
 
+router.get('/by-skill/:skillKey', async (req, res) => {
+  try {
+    const skillKey = req.params.skillKey;
+    if (!['focus', 'sit', 'recall'].includes(skillKey)) {
+      return res.status(400).json({ error: 'unknown skill' });
+    }
+    const userId = req.user.id;
+
+    const [lessons, doneReports] = await Promise.all([
+      prisma.lesson.findMany({
+        where: { is_active: true, module: { is_active: true, course: { is_active: true } } },
+        include: {
+          module: {
+            select: {
+              id: true,
+              title: true,
+              order_index: true,
+              course: { select: { id: true, title: true } },
+            },
+          },
+        },
+        orderBy: [
+          { module: { course: { id: 'asc' } } },
+          { module: { order_index: 'asc' } },
+          { order_index: 'asc' },
+        ],
+      }),
+      prisma.dailyReport.findMany({
+        where: { user_id: userId },
+        select: { lesson_id: true },
+      }),
+    ]);
+
+    const doneIds = new Set(doneReports.map((r) => r.lesson_id));
+    let firstUndoneSeen = false;
+
+    const items = lessons
+      .map((l) => ({ ...l, _meta: parseLessonMeta(l.meta) ?? {} }))
+      .filter((l) => (l._meta.skill ?? 'focus') === skillKey)
+      .map((l) => {
+        const isDone = doneIds.has(l.id);
+        let status = 'available';
+        if (isDone) {
+          status = 'completed';
+        } else if (!firstUndoneSeen) {
+          status = 'current';
+          firstUndoneSeen = true;
+        }
+        return {
+          id: l.id,
+          title: l.title,
+          order_index: l.order_index,
+          xp_reward: l.xp_reward,
+          status,
+          course: l.module.course,
+          module: { id: l.module.id, title: l.module.title },
+        };
+      });
+
+    res.json({ skill: skillKey, lessons: items });
+  } catch (err) {
+    console.error('❌ Ошибка /lessons/by-skill/:skillKey:', err);
+    res.status(500).json({ error: 'Ошибка при получении уроков по навыку' });
+  }
+});
+
 router.get('/:lessonId', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);

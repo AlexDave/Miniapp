@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Box, 
@@ -39,6 +39,8 @@ import {
 import { useApi } from '../hooks/useApi.js';
 import config from '../config.jsx';
 import useStore from '../store';
+import { useProfile } from '../hooks/useProfile';
+import { partitionCoursesByAge } from '../constants/onboarding';
 
 const MotionCard = motion(Card);
 
@@ -50,7 +52,13 @@ function Courses() {
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const { loading, error, get } = useApi();
   const { courseProgress, addNotification } = useStore();
+  const { data: profile } = useProfile();
   const toast = useToast();
+
+  const forYou = useMemo(() => {
+    if (!profile?.dogAgeBucket || !courses.length) return null;
+    return partitionCoursesByAge(courses, profile.dogAgeBucket);
+  }, [courses, profile?.dogAgeBucket]);
 
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -202,6 +210,45 @@ function Courses() {
             Выберите курс для обучения вашего питомца
           </Text>
         </Box>
+
+        {forYou && forYou.primary.length > 0 && (
+          <Box>
+            <Heading size="sm" color="purple.600" mb={2}>
+              Подобрано для вас
+            </Heading>
+            <Text fontSize="sm" color={textColor} mb={4}>
+              По возрасту собаки — категория «{forYou.primaryCategory}».
+            </Text>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mb={2}>
+              {forYou.primary.slice(0, 4).map((course) => (
+                <MotionCard
+                  key={`you-${course.id}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  as={Link}
+                  to={`/course/${course.id}`}
+                  bg={bg}
+                  border="2px solid"
+                  borderColor="purple.200"
+                  cursor="pointer"
+                  overflow="hidden"
+                >
+                  <CardBody p={5}>
+                    <Badge colorScheme="purple" mb={2}>
+                      Совпадение по возрасту
+                    </Badge>
+                    <Text fontSize="md" fontWeight="bold" color="purple.700" noOfLines={2} mb={2}>
+                      {course.title}
+                    </Text>
+                    <Text fontSize="sm" color={textColor} noOfLines={2}>
+                      {course.description}
+                    </Text>
+                  </CardBody>
+                </MotionCard>
+              ))}
+            </SimpleGrid>
+          </Box>
+        )}
 
         {/* Search and Filters */}
         <Card bg={bg} border="1px solid" borderColor={borderColor}>

@@ -74,6 +74,17 @@ export function useModuleLessons(moduleId) {
   );
 }
 
+export function useLessonsBySkill(skillKey) {
+  return useQuery(
+    ['lessons-by-skill', skillKey],
+    async () => {
+      const { data } = await api.get(`/api/lessons/by-skill/${skillKey}`);
+      return data;
+    },
+    { enabled: !!skillKey, staleTime: 1000 * 60 }
+  );
+}
+
 export function useSubmitReport() {
   const queryClient = useQueryClient();
 

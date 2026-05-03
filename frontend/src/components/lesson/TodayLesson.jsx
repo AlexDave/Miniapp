@@ -1,4 +1,13 @@
-import { Box, VStack, HStack, Text, Button, Progress, Skeleton, Badge } from '@chakra-ui/react';
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Button,
+  Progress,
+  Skeleton,
+  useColorModeValue,
+} from '@chakra-ui/react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Play, CheckCircle } from 'lucide-react';
 import { useTodayLesson } from '../../hooks/useLessons';
@@ -12,27 +21,30 @@ export default function TodayLesson() {
   const navigate = useNavigate();
   const { data, isLoading } = useTodayLesson();
 
+  const doneBg = useColorModeValue('green.50', 'rgba(34, 84, 61, 0.35)');
+  const doneBorder = useColorModeValue('green.200', 'green.600');
+  const doneTitle = useColorModeValue('green.800', 'green.100');
+  const doneBody = useColorModeValue('green.700', 'green.200');
+  const lessonBg = useColorModeValue('white', 'gray.800');
+  const lessonBorder = useColorModeValue('purple.100', 'purple.500');
+  const metaColor = useColorModeValue('gray.500', 'gray.400');
+  const doneIconColor = useColorModeValue('green.600', 'green.300');
+
   if (isLoading) {
     return <Skeleton h="140px" borderRadius="xl" />;
   }
 
   if (!data?.lesson) {
     return (
-      <Box
-        p={5}
-        bg="green.50"
-        border="1px solid"
-        borderColor="green.200"
-        borderRadius="xl"
-      >
+      <Box p={5} bg={doneBg} border="1px solid" borderColor={doneBorder} borderRadius="xl">
         <VStack align="stretch" spacing={2}>
-          <HStack>
-            <CheckCircle size={22} color="#38A169" />
-            <Text fontWeight="semibold" color="green.800">
-              Сегодня всё сделано ✅
+          <HStack color={doneIconColor}>
+            <CheckCircle size={22} />
+            <Text fontWeight="semibold" color={doneTitle}>
+              Сегодня всё сделано
             </Text>
           </HStack>
-          <Text fontSize="sm" color="green.700">
+          <Text fontSize="sm" color={doneBody}>
             Возвращайся завтра за новым шагом.
           </Text>
           <Button as={Link} to="/train" size="sm" variant="outline" colorScheme="green">
@@ -44,43 +56,27 @@ export default function TodayLesson() {
   }
 
   const { lesson, module, course } = data;
-  const meta = lesson.meta && typeof lesson.meta === 'object' ? lesson.meta : {};
   const moduleProgress = module.total > 0 ? (module.done / module.total) * 100 : 0;
   const title = shortTitle(lesson.title);
 
   return (
     <Box
       p={5}
-      bg="white"
+      bg={lessonBg}
       border="1px solid"
-      borderColor="purple.100"
+      borderColor={lessonBorder}
       borderRadius="xl"
       shadow="sm"
     >
       <VStack align="stretch" spacing={4}>
-        <HStack justify="space-between" flexWrap="wrap">
-          <Badge colorScheme="purple" borderRadius="md">
-            Сегодня
-          </Badge>
-          <Text fontSize="xs" color="gray.400">
-            {course?.title} · день {module.done + 1} из {module.total}
-          </Text>
-        </HStack>
-
         <Box>
-          <Text fontWeight="bold" fontSize="lg" lineHeight="short">
+          <Text fontSize="xs" color={metaColor} mb={1}>
+            Сегодня · день {module.done + 1} из {module.total}
+            {course?.title ? ` · ${course.title}` : ''}
+          </Text>
+          <Text fontWeight="bold" fontSize="xl" lineHeight="short">
             {title}
           </Text>
-          {lesson.description && (
-            <Text fontSize="sm" color="gray.600" mt={1}>
-              Цель: {lesson.description}
-            </Text>
-          )}
-          {meta.why && (
-            <Text fontSize="xs" color="gray.500" mt={2}>
-              {meta.why}
-            </Text>
-          )}
         </Box>
 
         <Box>
@@ -93,7 +89,7 @@ export default function TodayLesson() {
           h="12"
           borderRadius="xl"
           leftIcon={<Play size={18} />}
-          onClick={() => navigate(`/lesson/${lesson.id}`)}
+          onClick={() => navigate('/train')}
         >
           Начать
         </Button>
