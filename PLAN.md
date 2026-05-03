@@ -106,7 +106,7 @@
 - [x] GitHub Actions CI (`.github/workflows/ci.yml`) — backend syntax + frontend build
 
 ### Остаётся
-- [ ] Настроить ESLint + Prettier на уровне **единого** monorepo-конфига — *⚠️ в `frontend` есть ESLint в devDependencies; общего корневого eslint/prettier нет*
+- [x] ESLint + Prettier monorepo-конфиг: корневые `eslint.config.js` (flat), `.prettierrc.json`, `.prettierignore`; скрипты `lint`/`format` в `package.json`
 - [x] Тесты: Vitest (frontend), Jest + Supertest (backend) — *уже в спринте 4b; пункт в «Остаётся» был устаревшим*
 - [ ] Документировать API (OpenAPI/Swagger)
 
@@ -250,7 +250,7 @@
 - [x] Каждый атом с полным набором полей по спецификации плана — *⚠️ сверять поля по мере приёмки контента*
 - [x] `seed-content.js` переведён на `atomic-lessons.json` и наполняет БД
 - [ ] Mapping / миграция `meta.skill → skill_key` на уровне схемы Prisma (`Lesson.skill_key` FK)
-- [ ] Удалить `gpt_coures.json` после окончательной миграции и бэкапа
+- [x] `backend/data/gpt_coures.json` удалён (не использовался в коде, заменён `atomic-lessons.json`)
 
 ### DoD
 В БД 22 атомарных урока с реальными источниками. `gpt_coures.json` удалён. — *⚠️ ≥22 урока из atomic в сиде есть; файл `gpt_coures.json` пока не удалён.*
@@ -272,7 +272,7 @@
 - [x] Backend: `GET /api/admin/funnel` — агрегаты (онбординг, ≥1 урок, streak ≥7)
 - [x] Доступность: контраст (`mutedFg`), 44px+, `prefers-reduced-motion` — *спринт 25; полный аудит всех экранов не заявлен*
 - [x] Frontend: `React.lazy` для ряда экранов — *⚠️ не все тяжёлые страницы вынесены по плану спринта 25*
-- [ ] Обновить `README.md` — *уточнить актуальность относительно репо*
+- [x] `README.md` переписан под актуальный стек: маршруты, косточки, семейный режим, Telegram Stars, аналитика; убраны упоминания треков и MongoDB
 
 ---
 
@@ -320,7 +320,7 @@
 - [x] Роутинг: `/train`, `/tracks` → редирект; `/routes` → `/profile/marshrut`
 - [x] Нет `Tracks.jsx` / `TrackCard.jsx` / `useTracks.js` / бэкенд `routes/tracks.js` в репо
 - [x] Библиотека — `Library.jsx`, маршрут — из профиля (`/profile/marshrut`, `RoutesScreen`)
-- [ ] Migration: данные из `Track`/`UserTrack` → `Route`/`UserRoute` или дроп таблиц — *модели `Track`/`UserTrack` в схеме ещё есть*
+- [x] Migration: дроп таблиц — `20260504200000_drop_legacy_tracks/migration.sql`, модели удалены из `schema.prisma`, легаси-роут `GET /api/courses/tracks` и трек-сид удалены
 
 #### DoD
 В nav 3 пункта. Слово «трек» не встречается в UI и в коде frontend. — *⚠️ возможны вхождения в README/корневом описании; Prisma-модели треков сохранены.*

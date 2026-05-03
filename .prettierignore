@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+coverage
+.lhci
+
+# Generated
+backend/prisma/migrations/**/*.sql
+backend/prisma/dev.db*
+package-lock.json
+
+# Data
+backend/data/*.json
+курс

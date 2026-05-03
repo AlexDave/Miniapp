@@ -66,7 +66,6 @@ afterAll(async () => {
 });
 
 afterEach(async () => {
-  await prisma.userTrack.deleteMany({});
   await prisma.user.deleteMany({});
 });
 

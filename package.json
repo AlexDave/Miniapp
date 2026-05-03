@@ -1,7 +1,7 @@
 {
   "name": "dog-course-app",
   "version": "1.0.0",
-  "description": "Мобильное веб-приложение для обучения с курсами и треками",
+  "description": "Telegram Mini App для обучения дрессировке собак",
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
@@ -11,20 +11,32 @@
     "db:seed": "cd backend && npm run db:seed",
     "build": "cd frontend && npm run build",
     "start": "cd backend && npm start",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "lint": "eslint \"backend/src/**/*.js\" \"frontend/src/**/*.{js,jsx}\"",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,json,md}\""
   },
   "keywords": [
     "react",
     "nodejs",
     "express",
-    "mongodb",
-    "education",
-    "courses"
+    "telegram",
+    "mini-app",
+    "education"
   ],
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^9.10.0",
     "concurrently": "^8.2.2",
+    "eslint": "^9.10.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.11",
+    "globals": "^15.9.0",
+    "prettier": "^3.3.3",
     "wait-on": "^9.0.5"
   },
   "engines": {

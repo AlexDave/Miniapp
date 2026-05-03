@@ -33,7 +33,6 @@ model User {
   payments        Payment[]
   reminderBindTokens ReminderBindToken[]
   userTasks       UserTask[]
-  userTracks      UserTrack[]
   achievements    UserAchievement[]
   notifications   UserNotification[]
   courseProgress  CourseProgress[]
@@ -456,44 +455,6 @@ model RouteSkill {
 
   @@unique([route_id, skill_key])
   @@map("route_skills")
-}
-
-// Трек обучения
-model Track {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String?
-  category    String?
-  difficulty  String?  @default("Начинающий")
-  duration_days Int
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  
-  // Связи
-  userTracks  UserTrack[]
-  
-  @@map("tracks")
-}
-
-// Прогресс пользователя по треку
-model UserTrack {
-  id              Int      @id @default(autoincrement())
-  user_id         Int
-  track_id        Int
-  days_remaining  Int
-  completed_today Int      @default(0)
-  last_completed_at DateTime?
-  is_completed    Boolean  @default(false)
-  started_at      DateTime @default(now())
-  completed_at    DateTime?
-  
-  // Связи
-  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  track           Track    @relation(fields: [track_id], references: [id], onDelete: Cascade)
-  
-  @@unique([user_id, track_id])
-  @@map("user_tracks")
 }
 
 // Достижения
