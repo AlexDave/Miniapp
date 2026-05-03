@@ -127,6 +127,7 @@ export default function TaskChecklist({ task, onComplete }) {
           key={step.id}
           p={3}
           bg="gray.50"
+          _dark={{ bg: 'gray.700', borderColor: 'gray.600' }}
           borderRadius="lg"
           border="1px solid"
           borderColor="gray.200"

@@ -30,14 +30,14 @@ export default function SkillMap() {
   const { data, isLoading } = useSkillMap();
 
   if (isLoading) {
-    return <Box h="200px" bg="gray.50" borderRadius="lg" />;
+    return <Box h="200px" bg="gray.50" _dark={{ bg: 'gray.700' }} borderRadius="lg" />;
   }
 
   const skills = data?.skills ?? [];
 
   if (skills.length === 0) {
     return (
-      <Box p={4} bg="gray.50" borderRadius="lg" textAlign="center">
+      <Box p={4} bg="gray.50" _dark={{ bg: 'gray.700' }} borderRadius="lg" textAlign="center">
         <Text fontSize="sm" color="gray.500">Начни первый урок чтобы увидеть карту навыков</Text>
       </Box>
     );
@@ -57,6 +57,7 @@ export default function SkillMap() {
             key={skill.id}
             p={3}
             bg="white"
+            _dark={{ bg: 'gray.800', borderColor: 'gray.600' }}
             border="1px solid"
             borderColor="gray.200"
             borderRadius="lg"

@@ -6,36 +6,49 @@ const STEP_STYLES = {
     bg: 'white',
     border: '1px solid',
     borderColor: 'gray.200',
+    darkBg: 'gray.700',
+    darkBorderColor: 'gray.600',
     icon: null,
   },
   tip: {
     bg: 'yellow.50',
     border: '1px solid',
     borderColor: 'yellow.200',
+    darkBg: 'yellow.900',
+    darkBorderColor: 'yellow.700',
     icon: <Lightbulb size={16} color="#B7791F" />,
     label: 'Совет',
     labelColor: 'yellow.700',
+    darkLabelColor: 'yellow.300',
   },
   card: {
     bg: 'blue.50',
     border: '1px solid',
     borderColor: 'blue.200',
+    darkBg: 'blue.900',
+    darkBorderColor: 'blue.700',
     icon: <Info size={16} color="#2B6CB0" />,
     label: 'Важно',
     labelColor: 'blue.700',
+    darkLabelColor: 'blue.300',
   },
   diagram: {
     bg: 'gray.50',
     border: '1px solid',
     borderColor: 'gray.300',
+    darkBg: 'gray.700',
+    darkBorderColor: 'gray.600',
     icon: <AlertCircle size={16} color="#4A5568" />,
     label: 'Схема',
     labelColor: 'gray.600',
+    darkLabelColor: 'gray.300',
   },
   image: {
     bg: 'transparent',
     border: 'none',
     borderColor: 'transparent',
+    darkBg: 'transparent',
+    darkBorderColor: 'transparent',
     icon: null,
   },
 };
@@ -101,8 +114,8 @@ function DiagramContent({ content }) {
 
     if (data.type === 'position' || data.type === 'distance') {
       return (
-        <Box p={2} bg="white" borderRadius="md" border="1px dashed" borderColor="gray.300">
-          <Text fontSize="sm" color="gray.600" fontStyle="italic">{data.label}</Text>
+        <Box p={2} bg="white" _dark={{ bg: 'gray.700', borderColor: 'gray.500' }} borderRadius="md" border="1px dashed" borderColor="gray.300">
+          <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.300' }} fontStyle="italic">{data.label}</Text>
         </Box>
       );
     }
@@ -122,18 +135,25 @@ export default function TheoryStep({ step }) {
       <Box>
         <StepImage imageUrl={step.image_url} altText={step.alt_text} role={step.image_role ?? 'hero'} />
         {step.content && (
-          <Text fontSize="sm" color="gray.600" textAlign="center" lineHeight="1.6">{step.content}</Text>
+          <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.300' }} textAlign="center" lineHeight="1.6">{step.content}</Text>
         )}
       </Box>
     );
   }
 
   return (
-    <Box p={3} bg={style.bg} border={style.border} borderColor={style.borderColor} borderRadius="lg">
+    <Box
+      p={3}
+      bg={style.bg}
+      _dark={{ bg: style.darkBg, borderColor: style.darkBorderColor }}
+      border={style.border}
+      borderColor={style.borderColor}
+      borderRadius="lg"
+    >
       {style.icon && (
         <HStack mb={1}>
           {style.icon}
-          <Text fontSize="xs" fontWeight="semibold" color={style.labelColor}>
+          <Text fontSize="xs" fontWeight="semibold" color={style.labelColor} _dark={{ color: style.darkLabelColor }}>
             {style.label}
           </Text>
         </HStack>

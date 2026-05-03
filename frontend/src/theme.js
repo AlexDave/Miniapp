@@ -193,6 +193,9 @@ const theme = extendTheme({
           color: 'purple.500',
           _hover: {
             bg: 'purple.50',
+            _dark: {
+              bg: 'purple.900',
+            },
           },
         },
       },
@@ -201,6 +204,10 @@ const theme = extendTheme({
       baseStyle: {
         container: {
           bg: 'white',
+          _dark: {
+            bg: 'gray.800',
+            borderColor: 'gray.700',
+          },
           borderRadius: 'xl',
           boxShadow: 'base',
           border: '1px solid',

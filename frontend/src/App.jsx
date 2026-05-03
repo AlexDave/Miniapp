@@ -291,8 +291,12 @@ function Header({ toggleColorMode, colorMode }) {
 function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const navBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)');
+  const inactiveColor = useColorModeValue('gray.500', 'gray.400');
+  const activeItemBg = useColorModeValue('purple.50', 'purple.900');
+  const activeItemHoverBg = useColorModeValue('purple.100', 'purple.800');
+  const inactiveItemHoverBg = useColorModeValue('gray.100', 'gray.700');
 
   const navigationItems = [
     { path: '/', icon: <Home size={24} />, label: 'Главная', match: (p) => p === '/' },
@@ -318,13 +322,13 @@ function BottomNavigation() {
       right={0}
       zIndex={10}
       backdropFilter="blur(10px)"
-      bg={useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')}
+      bg={navBg}
     >
       <Flex justify="space-around" align="center" py={2}>
         {navigationItems.map(({ path, icon, label, match }) => {
           const isActive = match ? match(location.pathname) : location.pathname === path;
-          const color = isActive ? 'purple.500' : useColorModeValue('gray.500', 'gray.400');
-          
+          const color = isActive ? 'purple.500' : inactiveColor;
+
           return (
             <MotionBox
               key={label}
@@ -337,16 +341,16 @@ function BottomNavigation() {
                 onClick={() => navigate(path)}
                 p={2}
                 borderRadius="lg"
-                bg={isActive ? 'purple.50' : 'transparent'}
-                _hover={{ bg: isActive ? 'purple.100' : 'gray.100' }}
+                bg={isActive ? activeItemBg : 'transparent'}
+                _hover={{ bg: isActive ? activeItemHoverBg : inactiveItemHoverBg }}
                 transition="all 0.2s"
                 minW="60px"
               >
                 <Box color={color}>
                   {icon}
                 </Box>
-                <Text 
-                  fontSize="xs" 
+                <Text
+                  fontSize="xs"
                   color={color}
                   fontWeight={isActive ? 'semibold' : 'normal'}
                 >
