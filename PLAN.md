@@ -263,6 +263,271 @@
 
 ---
 
+# Доп. бэклог по итогам UX-аудита (2026-05-03)
+
+Аудит показал три класса проблем:
+1. **Концептуальный шум** — Курсы/Библиотека/Треки/Маршруты/Навыки/Категории/Атомы/Уроки/Косточки/XP — слишком много сущностей в UI.
+2. **Дублирование** — `Dashboard.TodayLesson` и `TrainScreen` показывают одно и то же.
+3. **Контентная пустота** — нет видео/иллюстраций, «Не получилось» обрывается, уроки не работают hands-free с собакой.
+
+Спринты ниже — продолжение бэклога после 7-13. Группировка по фазам: **A** сокращение, **B** контент, **C** удержание, **D** продакшн.
+
+---
+
+## Фаза A — Сокращение и фокус
+
+### Спринт 14: Онбординг 5→2 шага 🔄
+
+**Цель:** довести юзера до первого урока за минимум кликов; убрать рассинхрон с бэком.
+
+#### Задачи
+- [ ] `OnboardingWizard.jsx`: оставить только 2 шага — кличка + возрастная корзина
+- [ ] Удалить hardcoded `ROUTE_OPTIONS` из вьюверда — маршрут назначается на бэке по `dog_age_bucket`
+- [ ] Backend: `POST /api/onboarding/complete` — возвращает назначенный `route_key` + первый `lesson_id`
+- [ ] Шаги «цели» и «главная проблема» — спросить ВНУТРИ первого урока (`Зачем` фаза) или после 3-го дня
+- [ ] После онбординга: редирект СРАЗУ на `/lesson/:firstId` (а не на `/onboarding/recommendations`)
+- [ ] Удалить экран `OnboardingRecommendations.jsx` (рекомендации курсов = старая концепция)
+- [ ] `OnboardingGate`: не редиректить если `selected_route_key` уже есть (даже без `onboarding_completed`)
+
+#### DoD
+Новый юзер от старта до фразы «Зачем тренировать "Сидеть"» — не больше 3 экранов.
+
+---
+
+### Спринт 15: Консолидация навигации 🔄
+
+**Цель:** 3 таба вместо 5; убрать дубли «Сегодня/Тренировка»; ампутировать Tracks.
+
+#### Задачи
+- [ ] `BottomNavigation`: оставить **Сегодня · Навыки · Я**
+- [ ] Удалить `TrainScreen.jsx` — слить логику в Dashboard как hero-блок
+- [ ] Маршрут как карточка прогресса наверху Dashboard (RouteCard 70% экрана), а не отдельный таб
+- [ ] Удалить из роутинга: `/train`, `/tracks`, `/routes` (последний — внутрь профиля как «Сменить маршрут»)
+- [ ] Удалить `Tracks.jsx`, `TrackCard.jsx`, `useTracks.js`, `routes/tracks.js` (бэк)
+- [ ] `Courses.jsx` → переименовать в `Library.jsx`, спрятать в Profile или вторичный экран
+- [ ] Migration: данные из `Track`/`UserTrack` мигрировать в `Route`/`UserRoute` (или drop, если пустые в проде)
+
+#### DoD
+В nav 3 пункта. Слово «трек» не встречается в UI и в коде frontend.
+
+---
+
+### Спринт 16: Чистка моков и мёртвых ссылок 🔄
+
+**Цель:** убрать всё, что притворяется работающим.
+
+#### Задачи
+- [ ] `Profile.jsx`: удалить hardcoded `[focus, sit, recall]` (строки 240-243) — заменить на текущий маршрут + 3 атома с самым высоким прогрессом
+- [ ] `Profile.jsx`: премиум-баннер скрыть за `feature_flag.payments` (default off) или удалить
+- [ ] `Profile.jsx` Settings/Поддержка: убрать кнопки «Настроить»/«Открыть», которые ничего не делают, ИЛИ реализовать минимум
+- [ ] `seed.js` достижения: переписать `tracks_completed` → `routes_completed`, `perfect_reports` → `bones_earned`
+- [ ] Удалить `xp` из всех frontend-компонентов (PLAN сп.8 не закрыт): `LevelBadge`, `XPAnimation`, `gamification/`
+- [ ] Скрыть `Notifications.jsx` пока пустой, или убрать иконку колокольчика из header
+
+#### DoD
+Каждая видимая кнопка либо работает, либо невидима. `grep -r "XP\|Track\|focus.*sit.*recall"` пуст.
+
+---
+
+## Фаза B — Контент: то, без чего продукт пустой
+
+### Спринт 17: Hands-free режим урока 🔄
+
+**Цель:** во время «Делаем» телефон лежит, я работаю с собакой.
+
+#### Задачи
+- [ ] `TaskStepFlow.jsx`: режим «таймер» — 60-90 сек на шаг, авто-переход
+- [ ] Web Speech API: озвучивание шага голосом перед таймером (русский TTS)
+- [ ] Одна большая кнопка «Готово» / свайп вниз «Не получилось» (без выбора многих опций)
+- [ ] Auto-wake-lock на странице урока (Screen Wake Lock API) — экран не гаснет
+- [ ] Vibration API на завершении шага (если поддерживается Telegram WebApp)
+- [ ] Настройка в профиле: «Тихий режим» (без TTS/без вибро)
+- [ ] Telegram WebApp `disableVerticalSwipes()` на странице урока
+
+#### DoD
+Можно пройти урок ни разу не глядя в экран после старта. Экран не гаснет 5 минут.
+
+---
+
+### Спринт 18: «Не получилось» с глубиной 🔄
+
+**Цель:** провал — не тупик, а развилка.
+
+#### Задачи
+- [ ] Schema: `Lesson.fallback_tree` — JSON с уровнями упрощения (3 уровня)
+- [ ] `seed-content.js`: для каждого из 22 атомов прописать L1/L2/L3 упрощения
+- [ ] `LessonView` экран `bonesResult.outcome === 'no'`: показать L1, кнопки «Попробовать снова» / «Ещё проще»
+- [ ] Backend: трекать `attempts_at_level` в `LessonProgress`
+- [ ] Если 3 раза провал на L3 — кнопка «Спросить у тренера» (текстовый шаблонный ответ или ссылка на чат)
+- [ ] FAQ-блок «Частые проблемы» внизу экрана (3-5 ссылок на смежные атомы: туалет/лай/возбуждение)
+
+#### DoD
+После «Не получилось» юзер всегда имеет 1 содержательный следующий шаг, не «К тренировке».
+
+---
+
+### Спринт 19: Демонстрационные иллюстрации (расширение сп.10) 🔄
+
+**Цель:** покрыть 22 атома GIF/видео-демо, не статикой.
+
+#### Задачи
+- [ ] Доуточнить `docs/illustration-brief.md`: GIF 3-5 сек, 480p, ≤500 KB, без звука
+- [ ] `LessonStep.media_type` (`image|gif|video`), `LessonStep.media_url`, `LessonStep.poster_url`
+- [ ] Backend: `/public/lesson-media/` + CDN-готовая раздача (Cache-Control)
+- [ ] `TheoryStep.jsx`: рендер `<video autoplay loop muted playsinline>` для GIF/MP4
+- [ ] Контент: 22 атома × ~3 шага = ~66 GIF (отрисовка/съёмка с реальным щенком)
+- [ ] Lazy-loading + IntersectionObserver, чтобы не качать всё сразу
+- [ ] Fallback на статичную картинку если медиа не загрузилось
+
+#### DoD
+В каждом из 22 атомов хотя бы 1 шаг с видео-демонстрацией.
+
+---
+
+## Фаза C — Удержание и связь с реальностью
+
+### Спринт 20: Telegram-бот напоминания 🔄
+
+**Цель:** нативный канал для возврата без push-инфраструктуры.
+
+#### Задачи
+- [ ] Backend: cron-job runner (`node-cron` или внешний trigger) — каждый час
+- [ ] Schema: `User.reminder_time` (HH:MM в TZ), `User.tz`, `User.reminders_enabled`
+- [ ] Bot endpoint: при `/start` запрос на привязку `chat_id` к user
+- [ ] Job: для users с `reminders_enabled` и `reminder_time` ≈ now — отправить сообщение «🐾 {petName} ждёт 5 минут практики» + deeplink на mini-app
+- [ ] Skip если урок уже сделан сегодня
+- [ ] Профиль: настройка времени + переключатель + «не беспокоить в выходные»
+- [ ] Анти-спам: не больше 1 напоминания в день
+
+#### DoD
+Юзер с `reminder_time=19:00` получает 1 сообщение в 19:00 в дни, когда не тренировался.
+
+---
+
+### Спринт 21: Журнал поведения 🔄
+
+**Цель:** связать реальные проблемы с уроками.
+
+#### Задачи
+- [ ] Schema: `BehaviorEvent` (`user_id`, `type`, `note`, `severity`, `created_at`). Типы: `barking`, `accident`, `escape`, `aggression`, `chewing`, `other`
+- [ ] Backend: `POST /api/behavior/log`, `GET /api/behavior` (последние 30 дней)
+- [ ] Frontend: на Dashboard кнопка «Отметить инцидент» → bottom sheet с типами
+- [ ] Mapping `BehaviorEvent.type → suggested_skill_key` в `data/behavior-suggestions.json`
+- [ ] После лога: предложить релевантный атом «У вас 3 случая лая за неделю — попробуйте навык "Контроль лая"»
+- [ ] В профиле: timeline инцидентов + статистика «лай ↓ на 40% за 2 недели»
+
+#### DoD
+Каждый залогированный инцидент имеет 1 рекомендуемый атом для тренировки.
+
+---
+
+### Спринт 22: Эмоциональная награда и видео-полка 🔄
+
+**Цель:** косточка = конкретный микро-навык, а не абстрактное число.
+
+#### Задачи
+- [ ] `Skill.atomic_outcome` — текстовое описание «садится по голосу с расстояния 1 м»
+- [ ] `LessonView` Итог: вместо «+1 косточка» — «{petName} теперь умеет: {atomic_outcome} ({n}/{target})»
+- [ ] Backend: `POST /api/lessons/:id/video` (multipart, max 10 MB, 5 сек, MP4) — опционально на Итоге
+- [ ] Storage: локально `/public/user-videos/` (потом → S3-совместимое хранилище)
+- [ ] Frontend: `<input type="file" accept="video/*" capture>` на экране Итога
+- [ ] `Profile.jsx`: «Полка трофеев» — grid превью видео с подписью «{atomic_outcome} · {date}»
+- [ ] Privacy: видео только для владельца, не публикуются
+
+#### DoD
+На Полке трофеев минимум 1 видео после 3 завершённых уроков с записью.
+
+---
+
+## Фаза D — Готовность к продакшну
+
+### Спринт 23: Платежи Telegram Stars 🔄
+
+**Цель:** заменить мок-баннер на работающую покупку.
+
+#### Задачи
+- [ ] Решить модель: подписка vs одноразовая разблокировка маршрута vs free-форевер
+- [ ] Schema: `User.tier` (`free|pro`), `User.tier_expires_at`, `Payment` лог
+- [ ] Backend: `POST /api/payments/invoice` — создать invoice через Telegram Bot API (XTR)
+- [ ] Webhook `successful_payment` → апдейт `User.tier`
+- [ ] Frontend: `Profile.jsx` баннер «Купить» → реальный `Telegram.WebApp.openInvoice()`
+- [ ] Gating: маршруты «Calm at home», «Recall» — только для `tier=pro`
+- [ ] Refund-эндпоинт + soft-grace 3 дня после expiry
+
+#### DoD
+Реальная транзакция Stars проходит, `tier` меняется, премиум-маршрут разблокируется.
+
+---
+
+### Спринт 24: Аналитика воронки (расширение сп.13) 🔄
+
+**Цель:** мерить, иначе нельзя итерировать.
+
+#### Задачи
+- [ ] Backend: `AnalyticsEvent` table (`user_id`, `event`, `props` JSON, `ts`)
+- [ ] События: `onboarding.start`, `onboarding.complete`, `lesson.opened`, `lesson.theory_seen`, `lesson.task_started`, `lesson.completed`, `lesson.failed`, `lesson.repeated`, `route.started`, `route.completed`, `bone.awarded`, `reminder.sent`, `reminder.opened`, `behavior.logged`, `payment.invoice_created`, `payment.success`
+- [ ] `GET /api/admin/funnel?from=&to=` — агрегаты воронки по дням
+- [ ] `GET /api/admin/cohort?week=` — retention по неделям
+- [ ] Простая HTML-админка `/admin/dashboard` с базовыми графиками (Chart.js)
+- [ ] Auth: bearer token из `.env`, не Telegram
+
+#### DoD
+В админке видно: % онбординг→1-й урок, D1/D7/D30 retention, lesson success rate.
+
+---
+
+### Спринт 25: Доступность и performance 🔄
+
+**Цель:** соответствие WCAG AA + быстрый старт mini-app.
+
+#### Задачи
+- [ ] Контраст текста ≥ 4.5:1 (особенно `gray.500` на `gray.50`)
+- [ ] Все интерактивные элементы ≥ 44×44 px
+- [ ] `prefers-reduced-motion`: отключать AnimatePresence, оставлять fade
+- [ ] `aria-live` для динамических награждений (косточка/стадия)
+- [ ] Code splitting: `React.lazy` для `Profile`, `SkillsScreen`, `Library`, `LessonView`
+- [ ] Initial bundle ≤ 200 KB gzipped (сейчас замерить и оптимизировать)
+- [ ] Preload `useTodayLesson` в `index.html` через `<link rel="preload">`
+- [ ] Lighthouse CI в GitHub Actions: блокировать PR с regression > 5 пунктов
+
+#### DoD
+Lighthouse Mobile ≥ 90 по Performance/Accessibility/Best Practices.
+
+---
+
+### Спринт 26 (опц.): Семейный режим 🔄
+
+**Цель:** один питомец, несколько хозяев — общий прогресс.
+
+#### Задачи
+- [ ] Schema: `Pet` (отделить от `User`), `PetMember` (`pet_id`, `user_id`, `role`)
+- [ ] Migration: 1 user → 1 pet (default), позже invite по ссылке
+- [ ] Backend: `POST /api/pets/:id/invite` → одноразовый токен в Telegram-сообщении
+- [ ] Backend: `POST /api/pets/join/:token` → присоединение
+- [ ] Frontend: на Dashboard показывать «Аня сделала утренний урок 2 ч назад»
+- [ ] Профиль: «Хозяева Барбоса» список + «Пригласить»
+- [ ] Косточки и стадия — общие на питомца, не на юзера
+
+#### DoD
+2 telegram-аккаунта тренируют 1 виртуального щенка, прогресс синхронизирован.
+
+---
+
+## Приоритетная последовательность
+
+```
+A: 14 → 15 → 16          (≈2 недели — фундамент UX)
+B: 17 → 18 → 19          (≈3 недели — контент-минимум для беты)
+C: 20 → 21 → 22          (≈3 недели — удержание)
+D: 23 → 24 → 25 → [26]   (≈3 недели — продакшн)
+```
+
+**MVP-релиз:** A + B + 20 (напоминания) = 6 недель работы.
+**Public beta:** A + B + C + 24 (аналитика).
+**Launch:** всё включая 23 (платежи) и 25 (a11y).
+
+---
+
 ## Технический стек
 
 | Слой | Технология |
