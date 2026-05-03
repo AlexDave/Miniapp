@@ -144,12 +144,13 @@ function Notifications() {
                 <Box
                   p={4}
                   bg="gray.100"
+                  _dark={{ bg: 'gray.700', color: 'gray.300' }}
                   borderRadius="full"
                   color="gray.500"
                 >
                   <Bell size={32} />
                 </Box>
-                <Text fontWeight="semibold" color="gray.500">
+                <Text fontWeight="semibold" color="gray.500" _dark={{ color: 'gray.300' }}>
                   Нет уведомлений
                 </Text>
                 <Text fontSize="sm" color={textColor}>

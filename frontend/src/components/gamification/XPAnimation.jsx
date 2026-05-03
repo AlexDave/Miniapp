@@ -93,6 +93,7 @@ export default function XPAnimation({ result, onContinue, onRetry }) {
         >
           <VStack
             bg="white"
+            _dark={{ bg: 'gray.800' }}
             borderRadius="2xl"
             p={6}
             spacing={4}
@@ -174,7 +175,7 @@ export default function XPAnimation({ result, onContinue, onRetry }) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: sec(MOTION.duration.normal), ease: MOTION.easing.default }}
                   >
-                    <Text fontSize="sm" textAlign="center" color="gray.700">
+                    <Text fontSize="sm" textAlign="center" color="gray.700" _dark={{ color: 'gray.200' }}>
                       {feedback_message}
                     </Text>
                   </motion.div>
@@ -220,8 +221,8 @@ export default function XPAnimation({ result, onContinue, onRetry }) {
                   )}
 
                   {fallback_tasks.length > 0 && (
-                    <Box w="100%" bg="gray.50" borderRadius="lg" p={3} mt={2}>
-                      <Text fontSize="xs" color="gray.600" mb={2}>
+                    <Box w="100%" bg="gray.50" _dark={{ bg: 'gray.700' }} borderRadius="lg" p={3} mt={2}>
+                      <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.300' }} mb={2}>
                         Проще так:
                       </Text>
                       <VStack align="stretch" spacing={1}>
@@ -235,8 +236,8 @@ export default function XPAnimation({ result, onContinue, onRetry }) {
                   )}
 
                   <HStack justify="space-between" mb={1} mt={3}>
-                    <Text fontSize="xs" color="gray.500">{level.name}</Text>
-                    <Text fontSize="xs" color="gray.500">{total_xp} XP</Text>
+                    <Text fontSize="xs" color="gray.500" _dark={{ color: 'gray.400' }}>{level.name}</Text>
+                    <Text fontSize="xs" color="gray.500" _dark={{ color: 'gray.400' }}>{total_xp} XP</Text>
                   </HStack>
                   <AnimatedProgressBar
                     value={progressPct}

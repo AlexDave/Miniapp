@@ -10,11 +10,11 @@ function getIntensity(xp) {
   return 3;
 }
 
-const COLORS = ['#EDF2F7', '#C6F6D5', '#68D391', '#276749'];
+const LIGHT_COLORS = ['gray.100', 'green.100', 'green.300', 'green.700'];
+const DARK_COLORS = ['gray.700', 'green.900', 'green.600', 'green.400'];
 
 function DayCell({ day }) {
   const intensity = getIntensity(day.xp);
-  const color = COLORS[intensity];
 
   return (
     <Tooltip
@@ -25,7 +25,8 @@ function DayCell({ day }) {
       <Box
         w="12px"
         h="12px"
-        bg={color}
+        bg={LIGHT_COLORS[intensity]}
+        _dark={{ bg: DARK_COLORS[intensity] }}
         borderRadius="2px"
         cursor="default"
         _hover={{ transform: 'scale(1.3)', transition: 'transform 0.1s' }}
@@ -38,7 +39,7 @@ export default function ActivityHeatmap() {
   const { data, isLoading } = useActivity();
 
   if (isLoading) {
-    return <Box h="80px" bg="gray.50" borderRadius="lg" />;
+    return <Box h="80px" bg="gray.50" _dark={{ bg: 'gray.700' }} borderRadius="lg" />;
   }
 
   const days = data?.days ?? [];
@@ -73,8 +74,8 @@ export default function ActivityHeatmap() {
 
       <HStack spacing={2} mt={2} justify="flex-end">
         <Text fontSize="xs" color="gray.400">Меньше</Text>
-        {COLORS.map((c, i) => (
-          <Box key={i} w="10px" h="10px" bg={c} borderRadius="2px" />
+        {LIGHT_COLORS.map((c, i) => (
+          <Box key={i} w="10px" h="10px" bg={c} _dark={{ bg: DARK_COLORS[i] }} borderRadius="2px" />
         ))}
         <Text fontSize="xs" color="gray.400">Больше</Text>
       </HStack>

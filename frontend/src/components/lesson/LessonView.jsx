@@ -35,7 +35,7 @@ function WhyScreen({ why, onNext }) {
         <Text fontSize="sm" fontWeight="bold" color="purple.600" mb={2} textTransform="uppercase" letterSpacing="wide">
           Зачем это тренировать
         </Text>
-        <Text fontSize="md" lineHeight="1.7" color="gray.700">
+        <Text fontSize="md" lineHeight="1.7" color="gray.700" _dark={{ color: 'gray.200' }}>
           {why || 'Это упражнение формирует у собаки полезный навык.'}
         </Text>
       </Box>
@@ -211,7 +211,7 @@ export default function LessonView() {
   if (phase === -1 && !bonesResult) {
     return (
       <Box pb={24}>
-        <HStack px={4} py={3} borderBottom="1px solid" borderColor="gray.100">
+        <HStack px={4} py={3} borderBottom="1px solid" borderColor="gray.100" _dark={{ borderColor: 'gray.700' }}>
           <Button variant="ghost" size="sm" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
             Назад
           </Button>
@@ -324,7 +324,7 @@ export default function LessonView() {
 
   return (
     <Box pb={24}>
-      <HStack px={4} py={3} borderBottom="1px solid" borderColor="gray.100">
+      <HStack px={4} py={3} borderBottom="1px solid" borderColor="gray.100" _dark={{ borderColor: 'gray.700' }}>
         <IconButton
           aria-label="Назад"
           icon={<ArrowLeft size={18} />}

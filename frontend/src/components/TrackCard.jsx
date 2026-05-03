@@ -42,12 +42,13 @@ function TrackCard({
   });
 
   return (
-    <Box 
-      borderWidth="1px" 
-      borderRadius="md" 
-      boxShadow="lg" 
-      overflow="hidden" 
+    <Box
+      borderWidth="1px"
+      borderRadius="md"
+      boxShadow="lg"
+      overflow="hidden"
       bg="white"
+      _dark={{ bg: 'gray.800', borderColor: 'gray.700' }}
       position="relative"
     >
       {/* Прогресс-бар с текстом */}
