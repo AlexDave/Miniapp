@@ -40,7 +40,7 @@ import { mergeDailyTaskStepsData } from '../../utils/lessonSteps';
 // Фазы урока: 0=Зачем 1=Как 2=Делаем 3=Итог
 const PHASE_LABELS = ['Зачем', 'Как', 'Делаем', 'Итог'];
 
-function WhyScreen({ why, onNext }) {
+function WhyScreen({ why, skipCost, onNext }) {
   return (
     <VStack spacing={6} align="stretch" pt={4} pb={8}>
       <Box p={5} bg="purple.50" borderRadius="xl" border="1px solid" borderColor="purple.100">
@@ -48,14 +48,36 @@ function WhyScreen({ why, onNext }) {
           Зачем это тренировать
         </Text>
         <Text fontSize="md" lineHeight="1.7" color="gray.700">
-          {why || 'Это упражнение формирует у собаки полезный навык.'}
+          {why || 'Это упражнение формирует у собаке полезный навык.'}
         </Text>
       </Box>
+      {skipCost && (
+        <Box p={4} bg="orange.50" borderRadius="xl" border="1px solid" borderColor="orange.200">
+          <Text fontSize="xs" fontWeight="bold" color="orange.600" mb={1} textTransform="uppercase" letterSpacing="wide">
+            ⚠️ Если пропустить
+          </Text>
+          <Text fontSize="sm" lineHeight="1.6" color="gray.700">
+            {skipCost}
+          </Text>
+        </Box>
+      )}
       <Button colorScheme="purple" size="lg" borderRadius="xl" onClick={onNext}>
         Понятно, к шагам
       </Button>
     </VStack>
   );
+}
+
+/** Нормализует fallback_tasks в массив строк для ReportForm (поддерживает оба формата). */
+function normalizeFallbackTasksForUI(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter((t) => typeof t === 'string');
+  if (typeof raw === 'object') {
+    return ['easy', 'normal', 'hard']
+      .map((k) => raw[k]?.description)
+      .filter(Boolean);
+  }
+  return [];
 }
 
 function HowScreen({ steps, onNext, onBack }) {
@@ -524,7 +546,7 @@ export default function LessonView() {
             style={{ width: '100%' }}
           >
             {phase === 0 && (
-              <WhyScreen why={lessonMeta.why} onNext={handleTheoryDone} />
+              <WhyScreen why={lessonMeta.why} skipCost={lessonMeta.skip_cost} onNext={handleTheoryDone} />
             )}
 
             {phase === 1 && theorySteps.length > 0 && (
@@ -556,7 +578,7 @@ export default function LessonView() {
                 <ReportForm
                   key={taskAborted ? 'task-abort' : 'task-normal'}
                   initialSuccess={taskAborted ? 'no' : 'yes'}
-                  fallbackTasks={Array.isArray(lessonMeta.fallback_tasks) ? lessonMeta.fallback_tasks : []}
+                  fallbackTasks={normalizeFallbackTasksForUI(lessonMeta.fallback_tasks)}
                   onSubmit={handleReportSubmit}
                   isLoading={submitReport.isLoading}
                 />
