@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { MessageCircle, ChevronDown } from 'lucide-react';
+import { skillTitleRu } from '../../constants/skillLabels';
 
 function levelFromTree(tree, tier) {
   const k = `L${tier}`;
@@ -162,7 +163,7 @@ export default function LessonFailureOutcome({
                     fontSize="sm"
                     color="purple.600"
                   >
-                    → {item.title || item.skill_key}
+                    → {item.title || skillTitleRu(item.skill_key)}
                   </Link>
                 ))}
               </VStack>

@@ -4,7 +4,8 @@ import {
   VStack,
   HStack,
   Text,
-  Badge,
+  Tag,
+  TagLabel,
   Progress,
   Button,
   Divider,
@@ -13,13 +14,22 @@ import {
 import { motion, useReducedMotion } from 'framer-motion';
 import ReducedMotionAnimatePresence from '../../motion/ReducedMotionAnimatePresence';
 import { Link as RouterLink } from 'react-router-dom';
-import { CheckCircle, ChevronDown, ChevronRight, MapPin } from 'lucide-react';
+import { Brain, CheckCircle, ChevronDown, ChevronRight, MapPin } from 'lucide-react';
 import RouteProgressMap from './RouteProgressMap';
+import { skillTitleRu } from '../../constants/skillLabels';
 
 const MotionBox = motion(Box);
 
-export default function RouteCard({ route, isSelected, onSelect, isSelecting, isProUser = false }) {
-  const [expanded, setExpanded] = useState(false);
+export default function RouteCard({
+  route,
+  isSelected,
+  onSelect,
+  isSelecting,
+  isProUser = false,
+  surface = 'default',
+}) {
+  const isHomeSurface = surface === 'home';
+  const [expanded, setExpanded] = useState(isHomeSurface);
   const reduceMotion = useReducedMotion();
   const bg = useColorModeValue('white', 'gray.800');
   const border = useColorModeValue('gray.200', 'gray.600');
@@ -56,20 +66,30 @@ export default function RouteCard({ route, isSelected, onSelect, isSelecting, is
                   {route.title}
                 </Text>
                 {isSelected && (
-                  <Badge colorScheme="purple" variant="solid" fontSize="xs">
-                    <HStack spacing={1}><CheckCircle size={10} /><span>Мой</span></HStack>
-                  </Badge>
-                )}
-                {route.requires_pro && (
-                  <Badge colorScheme="orange" variant="subtle" fontSize="xs">
-                    Pro
-                  </Badge>
+                  <Tag
+                    size="sm"
+                    colorScheme="purple"
+                    borderRadius="full"
+                    display="inline-flex"
+                    alignItems="center"
+                    gap={1}
+                    px={2}
+                    py={0.5}
+                    minH="22px"
+                  >
+                    <Box display="flex" alignItems="center" lineHeight={0} flexShrink={0} aria-hidden>
+                      <CheckCircle size={12} strokeWidth={2.5} />
+                    </Box>
+                    <TagLabel fontSize="xs" fontWeight="semibold" lineHeight={1} mb={0}>
+                      Активный
+                    </TagLabel>
+                  </Tag>
                 )}
               </HStack>
               {ageLabel() && <Text fontSize="xs" color={muted}>{ageLabel()}</Text>}
               {isSelected && (
                 <Box mt={1}>
-                  <RouteProgressMap route={route} variant="inline" />
+                  <RouteProgressMap route={route} variant={isHomeSurface ? 'block' : 'inline'} />
                 </Box>
               )}
             </Box>
@@ -87,7 +107,7 @@ export default function RouteCard({ route, isSelected, onSelect, isSelecting, is
               : { animate: { rotate: expanded ? 180 : 0 }, transition: { duration: 0.2 } })}
             onClick={() => setExpanded((v) => !v)}
             color={muted}
-            aria-label={expanded ? 'Свернуть описание маршрута' : 'Раскрыть описание маршрута'}
+            aria-label={expanded ? 'Свернуть список навыков' : 'Раскрыть список навыков'}
             aria-expanded={expanded}
           >
             <ChevronDown size={18} style={{ transform: reduceMotion && expanded ? 'rotate(180deg)' : undefined }} />
@@ -108,22 +128,46 @@ export default function RouteCard({ route, isSelected, onSelect, isSelecting, is
           mb={3}
         />
 
-        <Button
-          colorScheme={isSelected ? 'purple' : 'gray'}
-          variant={isSelected ? 'solid' : 'outline'}
-          size="sm"
-          w="full"
-          borderRadius="lg"
-          isLoading={isSelecting}
-          onClick={onSelect}
-          leftIcon={isSelected ? <CheckCircle size={14} /> : <MapPin size={14} />}
-        >
-          {isSelected
-            ? 'Активный маршрут'
-            : route.requires_pro && !isProUser
-              ? 'Только в Pro'
-              : 'Выбрать маршрут'}
-        </Button>
+        {isHomeSurface && isSelected ? (
+          <VStack spacing={2} align="stretch">
+            <Button
+              as={RouterLink}
+              to="/skills"
+              colorScheme="purple"
+              variant="solid"
+              size="sm"
+              w="full"
+              borderRadius="lg"
+              leftIcon={<Brain size={16} />}
+            >
+              К навыкам
+            </Button>
+            <Text
+              as={RouterLink}
+              to="/profile/marshrut"
+              fontSize="xs"
+              color="purple.500"
+              fontWeight="medium"
+              textAlign="center"
+              _hover={{ textDecoration: 'underline' }}
+            >
+              Сменить маршрут
+            </Text>
+          </VStack>
+        ) : isSelected ? null : (
+          <Button
+            colorScheme="gray"
+            variant="outline"
+            size="sm"
+            w="full"
+            borderRadius="lg"
+            isLoading={isSelecting}
+            onClick={onSelect}
+            leftIcon={<MapPin size={14} />}
+          >
+            {route.requires_pro && !isProUser ? 'Только в Pro' : 'Выбрать маршрут'}
+          </Button>
+        )}
       </Box>
 
       <ReducedMotionAnimatePresence initial={false}>
@@ -143,7 +187,7 @@ export default function RouteCard({ route, isSelected, onSelect, isSelecting, is
               </Text>
               <VStack align="stretch" spacing={0.5}>
                 {(route.skills ?? []).map((rs, i) => {
-                  const label = rs.skill_title ?? rs.skill_key;
+                  const label = rs.skill_title ?? skillTitleRu(rs.skill_key);
                   return (
                     <Box
                       key={rs.skill_key}

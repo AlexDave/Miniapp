@@ -5,6 +5,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerBody,
+  DrawerFooter,
   DrawerCloseButton,
   Button,
   VStack,
@@ -15,6 +16,7 @@ import {
   FormLabel,
   Select,
   useToast,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { useLogBehaviorIncident } from '../../hooks/useBehavior';
 
@@ -29,11 +31,14 @@ const TYPES = [
 
 export default function BehaviorIncidentDrawer({ isOpen, onClose }) {
   const toast = useToast();
+  const hintColor = useColorModeValue('gray.600', 'gray.400');
   const logMut = useLogBehaviorIncident();
+  const [selectedType, setSelectedType] = useState(null);
   const [note, setNote] = useState('');
   const [severity, setSeverity] = useState('2');
 
   function reset() {
+    setSelectedType(null);
     setNote('');
     setSeverity('2');
   }
@@ -43,10 +48,11 @@ export default function BehaviorIncidentDrawer({ isOpen, onClose }) {
     onClose();
   }
 
-  async function submit(type) {
+  async function submit() {
+    if (!selectedType) return;
     try {
       const res = await logMut.mutateAsync({
-        type,
+        type: selectedType,
         note: note.trim() || undefined,
         severity: parseInt(severity, 10) || 2,
       });
@@ -77,21 +83,23 @@ export default function BehaviorIncidentDrawer({ isOpen, onClose }) {
         </DrawerHeader>
         <DrawerBody pb={8}>
           <VStack spacing={4} align="stretch">
-            <Text fontSize="sm" color="gray.600">
-              Выберите тип — запись поможет подсказать подходящий атом в навыках.
+            <Text fontSize="sm" color={hintColor}>
+              Выберите тип, при необходимости дополните заметкой и нажмите «Сохранить».
             </Text>
             <SimpleGrid columns={2} spacing={2}>
               {TYPES.map((t) => (
                 <Button
                   key={t.id}
-                  variant="outline"
+                  type="button"
+                  variant={selectedType === t.id ? 'solid' : 'outline'}
+                  colorScheme="purple"
                   h="auto"
                   py={3}
                   px={2}
                   whiteSpace="normal"
                   textAlign="center"
-                  onClick={() => submit(t.id)}
-                  isLoading={logMut.isLoading}
+                  onClick={() => setSelectedType(t.id)}
+                  isDisabled={logMut.isLoading}
                   borderRadius="xl"
                 >
                   <Text fontSize="lg" mb={1}>{t.emoji}</Text>
@@ -121,6 +129,19 @@ export default function BehaviorIncidentDrawer({ isOpen, onClose }) {
             </FormControl>
           </VStack>
         </DrawerBody>
+        <DrawerFooter borderTopWidth="1px" flexDir={{ base: 'column', sm: 'row' }} gap={2}>
+          <Button variant="ghost" onClick={handleClose} isDisabled={logMut.isLoading}>
+            Отмена
+          </Button>
+          <Button
+            colorScheme="purple"
+            onClick={() => submit()}
+            isLoading={logMut.isLoading}
+            isDisabled={!selectedType}
+          >
+            Сохранить
+          </Button>
+        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );

@@ -2,6 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { Box, Image, AspectRatio, Text } from '@chakra-ui/react';
 import { resolveLessonMediaUrl } from '../../utils/lessonMediaUrl';
 
+/** YouTube в шаге теории: embed/watch — в <video> не воспроизводится, нужен iframe */
+export function toYoutubeEmbedUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const u = url.trim();
+  if (/youtube\.com\/embed\//i.test(u) || /youtube-nocookie\.com\/embed\//i.test(u)) return u;
+  const watch = u.match(/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/i);
+  if (watch) return `https://www.youtube.com/embed/${watch[1]}`;
+  const short = u.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
+  if (short) return `https://www.youtube.com/embed/${short[1]}`;
+  return '';
+}
+
 function useInView(rootMargin = '120px') {
   const ref = useRef(null);
   const [inView, setInView] = useState(false);
@@ -100,6 +112,26 @@ export default function LazyStepMedia({
   }
 
   if (mediaType === 'video') {
+    const ytEmbed = toYoutubeEmbedUrl(resolved);
+    if (ytEmbed) {
+      return (
+        <Box ref={ref} mb={2}>
+          <AspectRatio ratio={16 / 9} borderRadius="lg" overflow="hidden">
+            {inView ? (
+              <iframe
+                src={ytEmbed}
+                title={alt}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                style={{ width: '100%', height: '100%', border: 0 }}
+              />
+            ) : (
+              <Box bg="gray.100" w="100%" h="100%" />
+            )}
+          </AspectRatio>
+        </Box>
+      );
+    }
     return (
       <Box ref={ref} mb={2}>
         <AspectRatio ratio={16 / 9} borderRadius="lg" overflow="hidden">
@@ -111,7 +143,7 @@ export default function LazyStepMedia({
               playsInline
               loop
               autoPlay
-              controls={false}
+              controls
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={() => setFailed(true)}
             />

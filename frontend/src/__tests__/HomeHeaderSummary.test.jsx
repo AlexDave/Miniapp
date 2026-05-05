@@ -10,12 +10,16 @@ vi.mock('../hooks/useProfile', () => ({
 vi.mock('../hooks/useProgress', () => ({
   useUserStats: vi.fn(),
 }));
+vi.mock('../hooks/useRoutes', () => ({
+  useRoutes: vi.fn(),
+}));
 vi.mock('../store', () => ({
   default: vi.fn(),
 }));
 
 import { useProfile } from '../hooks/useProfile';
 import { useUserStats } from '../hooks/useProgress';
+import { useRoutes } from '../hooks/useRoutes';
 import useStore from '../store';
 import HomeHeaderSummary from '../components/layout/HomeHeaderSummary';
 
@@ -42,6 +46,10 @@ beforeEach(() => {
       streak: 3,
     },
   });
+  useRoutes.mockReturnValue({
+    data: { routes: [], route_paused: false },
+    isLoading: false,
+  });
 });
 
 describe('HomeHeaderSummary', () => {
@@ -53,5 +61,19 @@ describe('HomeHeaderSummary', () => {
     const row = screen.getByText('Buddy').closest('div');
     expect(row?.textContent).toMatch(/🔥/);
     expect(row?.textContent).toMatch(/🦴/);
+  });
+
+  test('на главной в inline показывает название выбранного маршрута', () => {
+    useRoutes.mockReturnValue({
+      data: {
+        routes: [{ key: 'puppy', title: 'Щенок дома', is_selected: true }],
+        route_paused: false,
+      },
+      isLoading: false,
+    });
+
+    render(<HomeHeaderSummary variant="inline" />, { wrapper: Wrapper });
+
+    expect(screen.getByText('Щенок дома')).toBeInTheDocument();
   });
 });

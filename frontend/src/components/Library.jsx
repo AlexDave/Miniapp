@@ -1,40 +1,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Box, 
-  Text, 
-  VStack, 
-  Spinner, 
-  Button, 
-  SimpleGrid, 
+import {
+  Box,
+  Text,
+  VStack,
+  Spinner,
+  Button,
+  SimpleGrid,
   Badge,
-  Flex,
   Icon,
   useToast,
-  Input,
-  InputGroup,
-  InputLeftElement,
   HStack,
-  Select,
   Card,
   CardBody,
   Progress,
   useColorModeValue,
   Heading,
-  IconButton,
-  Tooltip
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { 
-  BookOpen, 
-  Clock, 
-  Star, 
-  Search, 
-  Filter,
+import {
+  BookOpen,
+  Clock,
+  Star,
   Play,
   Award,
   Users,
-  TrendingUp
+  TrendingUp,
 } from 'lucide-react';
 import { useApi } from '../hooks/useApi.js';
 import config from '../config.jsx';
@@ -46,10 +37,6 @@ const MotionCard = motion(Card);
 
 function Library() {
   const [courses, setCourses] = useState([]);
-  const [filteredCourses, setFilteredCourses] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const { loading, error, get } = useApi();
   const { courseProgress, addNotification } = useStore();
   const { data: profile } = useProfile();
@@ -91,7 +78,6 @@ function Library() {
       try {
         const data = await get(config.api.endpoints.courses);
         setCourses(data);
-        setFilteredCourses(data);
       } catch (err) {
         toast({
           title: 'Ошибка загрузки',
@@ -105,30 +91,6 @@ function Library() {
 
     fetchCourses();
   }, [get, toast]);
-
-  useEffect(() => {
-    let filtered = courses;
-
-    // Поиск по названию и описанию
-    if (searchTerm) {
-      filtered = filtered.filter(course =>
-        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Фильтр по категории
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(course => course.category === selectedCategory);
-    }
-
-    // Фильтр по сложности
-    if (selectedDifficulty !== 'all') {
-      filtered = filtered.filter(course => course.difficulty === selectedDifficulty);
-    }
-
-    setFilteredCourses(filtered);
-  }, [courses, searchTerm, selectedCategory, selectedDifficulty]);
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -250,75 +212,12 @@ function Library() {
           </Box>
         )}
 
-        {/* Search and Filters */}
-        <Card bg={bg} border="1px solid" borderColor={borderColor}>
-          <CardBody>
-            <VStack spacing={4}>
-              {/* Search */}
-              <InputGroup>
-                <InputLeftElement pointerEvents="none">
-                  <Icon as={Search} color="gray.400" />
-                </InputLeftElement>
-                <Input
-                  placeholder="Поиск в библиотеке..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  bg={useColorModeValue('gray.50', 'gray.700')}
-                />
-              </InputGroup>
-
-              {/* Filters */}
-              <HStack spacing={4} width="100%">
-                <Select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  bg={useColorModeValue('gray.50', 'gray.700')}
-                >
-                  <option value="all">Все категории</option>
-                  <option value="obedience">Послушание</option>
-                  <option value="tricks">Трюки</option>
-                  <option value="behavior">Поведение</option>
-                  <option value="training">Обучение</option>
-                </Select>
-
-                <Select
-                  value={selectedDifficulty}
-                  onChange={(e) => setSelectedDifficulty(e.target.value)}
-                  bg={useColorModeValue('gray.50', 'gray.700')}
-                >
-                  <option value="all">Любая сложность</option>
-                  <option value="beginner">Начинающий</option>
-                  <option value="intermediate">Средний</option>
-                  <option value="advanced">Продвинутый</option>
-                </Select>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        {/* Results Count */}
-        <HStack justify="space-between">
-          <Text color={textColor}>
-            Найдено {filteredCourses.length} программ
-          </Text>
-          {(searchTerm || selectedCategory !== 'all' || selectedDifficulty !== 'all') && (
-            <Button
-              size="sm"
-              variant="ghost"
-              color="purple.500"
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedCategory('all');
-                setSelectedDifficulty('all');
-              }}
-            >
-              Сбросить фильтры
-            </Button>
-          )}
-        </HStack>
+        <Text color={textColor} fontSize="sm">
+          Всего программ: {courses.length}
+        </Text>
 
         {/* Courses Grid */}
-        {filteredCourses.length === 0 ? (
+        {courses.length === 0 ? (
           <VStack spacing={6} align="center" justify="center" p={8}>
             <Box textAlign="center">
               <Icon as={BookOpen} w={12} h={12} color="gray.400" mb={4} />
@@ -326,13 +225,13 @@ function Library() {
                 Ничего не найдено
               </Text>
               <Text color={textColor}>
-                Попробуйте изменить параметры поиска
+                Курсы появятся после настройки каталога на сервере.
               </Text>
             </Box>
           </VStack>
         ) : (
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-            {filteredCourses.map((course, index) => (
+            {courses.map((course, index) => (
               <MotionCard
                 key={course.id}
                 initial={{ opacity: 0, y: 20 }}

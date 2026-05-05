@@ -1,10 +1,9 @@
 {
-  "generatedAt": "2026-05-01T19:38:31.836Z",
   "courses": [
     {
       "slug": "puppy",
       "title": "Онлайн-курс: щенок",
-      "description": "Подготовка к щенку, быт, туалет, здоровье, базовые команды и социализация (из материалов личного кабинета).",
+      "description": "Первый месяц рядом с малышом: мягко про туалет, сон, людей, звуки и первые слова-подсказки, без давления — вы учитесь понимать друг друга",
       "category": "Щенок",
       "duration": "19 уроков",
       "difficulty": "Начинающий",
@@ -13,123 +12,104 @@
         {
           "lessonNumber": 1,
           "title": "Урок 1. Кто такой щенок?",
-          "youtubeId": "a-pnVSz_rus",
-          "video_url": "https://www.youtube.com/watch?v=a-pnVSz_rus"
+          "youtubeId": "a-pnVSz_rus"
         },
         {
           "lessonNumber": 2,
           "title": "Урок 2. Что нужно купить к приезду щенка?",
-          "youtubeId": "SdgrsOcNMMA",
-          "video_url": "https://www.youtube.com/watch?v=SdgrsOcNMMA"
+          "youtubeId": "SdgrsOcNMMA"
         },
         {
           "lessonNumber": 3,
           "title": "Урок 3. Как подготовить квартиру к приезду щенка?",
-          "youtubeId": "ULz4XQBJ_qY",
-          "video_url": "https://www.youtube.com/watch?v=ULz4XQBJ_qY"
+          "youtubeId": "ULz4XQBJ_qY"
         },
         {
           "lessonNumber": 4,
           "title": "Урок 4. Приучаем щенка ходить в туалет на пеленку",
-          "youtubeId": "5GlInGsUkO0",
-          "video_url": "https://www.youtube.com/watch?v=5GlInGsUkO0"
+          "youtubeId": "5GlInGsUkO0"
         },
         {
           "lessonNumber": 5,
           "title": "Урок 5. Приучаем щенка ходить в туалет на улице",
-          "youtubeId": "nhFO4pPAaTE",
-          "video_url": "https://www.youtube.com/watch?v=nhFO4pPAaTE"
+          "youtubeId": "nhFO4pPAaTE"
         },
         {
           "lessonNumber": 6,
           "title": "Урок 6. Поощрения/наказания. Границы и правила дома",
-          "youtubeId": "jCirkaLVyYc",
-          "video_url": "https://www.youtube.com/watch?v=jCirkaLVyYc"
+          "youtubeId": "jCirkaLVyYc"
         },
         {
           "lessonNumber": 7,
           "title": "Урок 7. Правила здоровья и профилактика болезней",
-          "youtubeId": "hSBIc5GIRAQ",
-          "video_url": "https://www.youtube.com/watch?v=hSBIc5GIRAQ"
+          "youtubeId": "hSBIc5GIRAQ"
         },
         {
           "lessonNumber": 8,
           "title": "Урок 8. Уход за собакой (купание, чистка ушей, глаз, стрижка когтей)",
-          "youtubeId": "NbNA_fzbWlk",
-          "video_url": "https://www.youtube.com/watch?v=NbNA_fzbWlk"
+          "youtubeId": "NbNA_fzbWlk"
         },
         {
           "lessonNumber": 9,
           "title": "Урок 9. Команды \"Фу\" и \"Нельзя\"",
-          "youtubeId": "1HiVQ6Q2jA4",
-          "video_url": "https://www.youtube.com/watch?v=1HiVQ6Q2jA4"
+          "youtubeId": "1HiVQ6Q2jA4"
         },
         {
           "lessonNumber": 10,
           "title": "Урок 10. Кто такой кинолог?",
-          "youtubeId": "CZ4JLByCRKc",
-          "video_url": "https://www.youtube.com/watch?v=CZ4JLByCRKc"
+          "youtubeId": "CZ4JLByCRKc"
         },
         {
           "lessonNumber": 11,
           "title": "Урок 11. Как избавиться от лая собаки",
-          "youtubeId": "xAJaZviIk1k",
-          "video_url": "https://www.youtube.com/watch?v=xAJaZviIk1k"
+          "youtubeId": "xAJaZviIk1k"
         },
         {
           "lessonNumber": 12,
           "title": "Урок 12. Вольеры, Клетки, переноски",
-          "youtubeId": "uU12GTFlPCU",
-          "video_url": "https://www.youtube.com/watch?v=uU12GTFlPCU"
+          "youtubeId": "uU12GTFlPCU"
         },
         {
           "lessonNumber": 13,
           "title": "Урок 13. Собака мешает спать",
-          "youtubeId": "KKdptfxk8B8",
-          "video_url": "https://www.youtube.com/watch?v=KKdptfxk8B8"
+          "youtubeId": "KKdptfxk8B8"
         },
         {
           "lessonNumber": 14,
           "title": "Урок 14. Первая прогулка с собакой",
-          "youtubeId": "YkD3TFEP3-g",
-          "video_url": "https://www.youtube.com/watch?v=YkD3TFEP3-g"
+          "youtubeId": "YkD3TFEP3-g"
         },
         {
           "lessonNumber": 15,
           "title": "Урок 15. Учим команды сидеть и лежать",
-          "youtubeId": "r-BWxhJTWoA",
-          "video_url": "https://www.youtube.com/watch?v=r-BWxhJTWoA"
+          "youtubeId": "r-BWxhJTWoA"
         },
         {
           "lessonNumber": 16,
           "title": "Урок 16. Учим щенка отзываться на кличку",
-          "youtubeId": "IndeEWMEqvE",
-          "video_url": "https://www.youtube.com/watch?v=IndeEWMEqvE"
+          "youtubeId": "IndeEWMEqvE"
         },
         {
           "lessonNumber": 17,
           "title": "Урок 17. отучаем щенка кусать руки и ноги",
-          "youtubeId": "IHLUNn-n8MM",
-          "video_url": "https://www.youtube.com/watch?v=IHLUNn-n8MM"
+          "youtubeId": "IHLUNn-n8MM"
         },
         {
           "lessonNumber": 18,
           "title": "Урок 18. Развитие щенка",
-          "youtubeId": "2rei9GecGdo",
-          "video_url": "https://www.youtube.com/watch?v=2rei9GecGdo"
+          "youtubeId": "2rei9GecGdo"
         },
         {
           "lessonNumber": 19,
           "title": "Урок 19. Как утомить щенка",
-          "youtubeId": "H0z28tp5w9w",
-          "video_url": "https://www.youtube.com/watch?v=H0z28tp5w9w"
+          "youtubeId": "H0z28tp5w9w"
         }
       ]
     },
     {
       "slug": "adult-standard",
       "title": "Курс для собак от 6 месяцев (Стандарт)",
-      "description": "Команды, ведение, подзыв, работа с типичными проблемами поведения.",
+      "description": "Спокойные короткие занятия: команды как язык доверия, рядом на улице, подзыв, «фу» и опора в быту — вместе с подростком-собакой, а не против него",
       "category": "От 6 месяцев",
       "duration": "16 уроков",
       "difficulty": "Начинающий",
@@ -138,98 +118,82 @@
         {
           "lessonNumber": 1,
           "title": "Урок 1. Зачем учить команды с собакой?",
-          "youtubeId": "aX8_9CitsBY",
-          "video_url": "https://www.youtube.com/watch?v=aX8_9CitsBY"
+          "youtubeId": "aX8_9CitsBY"
         },
         {
           "lessonNumber": 2,
           "title": "Урок 2. Как утомить собаку?",
-          "youtubeId": "X2cKwubdAw8",
-          "video_url": "https://www.youtube.com/watch?v=X2cKwubdAw8"
+          "youtubeId": "X2cKwubdAw8"
         },
         {
           "lessonNumber": 3,
           "title": "Урок 3. Учим команду сидеть",
-          "youtubeId": "7M03x8gCGxI",
-          "video_url": "https://www.youtube.com/watch?v=7M03x8gCGxI"
+          "youtubeId": "7M03x8gCGxI"
         },
         {
           "lessonNumber": 4,
           "title": "Урок 4. Учим команду \"лежать\"",
-          "youtubeId": "v3PLlgyWiqc",
-          "video_url": "https://www.youtube.com/watch?v=v3PLlgyWiqc"
+          "youtubeId": "v3PLlgyWiqc"
         },
         {
           "lessonNumber": 5,
           "title": "Урок 5. Ведение за рукой",
-          "youtubeId": "_Dns_Y9xfi8",
-          "video_url": "https://www.youtube.com/watch?v=_Dns_Y9xfi8"
+          "youtubeId": "_Dns_Y9xfi8"
         },
         {
           "lessonNumber": 6,
           "title": "Урок 6. Учим команду \"Ко мне\"",
-          "youtubeId": "sL1cDeoUB-M",
-          "video_url": "https://www.youtube.com/watch?v=sL1cDeoUB-M"
+          "youtubeId": "sL1cDeoUB-M"
         },
         {
           "lessonNumber": 7,
           "title": "Урок 7. Учим команду \"рядом\"",
-          "youtubeId": "r-Gv1DdPN30",
-          "video_url": "https://www.youtube.com/watch?v=r-Gv1DdPN30"
+          "youtubeId": "r-Gv1DdPN30"
         },
         {
           "lessonNumber": 8,
           "title": "Урок 8. Учим команду \"Ждать\"",
-          "youtubeId": "bdWbDqFfLS8",
-          "video_url": "https://www.youtube.com/watch?v=bdWbDqFfLS8"
+          "youtubeId": "bdWbDqFfLS8"
         },
         {
           "lessonNumber": 9,
           "title": "Урок 9. Учим команду \"ФУ\"",
-          "youtubeId": "fFM6TGFVuRQ",
-          "video_url": "https://www.youtube.com/watch?v=fFM6TGFVuRQ"
+          "youtubeId": "fFM6TGFVuRQ"
         },
         {
           "lessonNumber": 10,
           "title": "Урок 10. Учим команду \"Место\"",
-          "youtubeId": "DnO-trzoSIA",
-          "video_url": "https://www.youtube.com/watch?v=DnO-trzoSIA"
+          "youtubeId": "DnO-trzoSIA"
         },
         {
           "lessonNumber": 11,
           "title": "Урок 11. Учим команду \"Глазки\"",
-          "youtubeId": "j87kSWG5zXc",
-          "video_url": "https://www.youtube.com/watch?v=j87kSWG5zXc"
+          "youtubeId": "j87kSWG5zXc"
         },
         {
           "lessonNumber": 12,
           "title": "Урок 12. Улучшаем подзыв",
-          "youtubeId": "ZCO4zlYxTLY",
-          "video_url": "https://www.youtube.com/watch?v=ZCO4zlYxTLY"
+          "youtubeId": "ZCO4zlYxTLY"
         },
         {
           "lessonNumber": 13,
           "title": "Урок 13. Отучаем тянуть",
-          "youtubeId": "6KP8l3Xcn0Q",
-          "video_url": "https://www.youtube.com/watch?v=6KP8l3Xcn0Q"
+          "youtubeId": "6KP8l3Xcn0Q"
         },
         {
           "lessonNumber": 14,
           "title": "Урок 14. Приучаем к одиночеству",
-          "youtubeId": "OQDC-1dNM1I",
-          "video_url": "https://www.youtube.com/watch?v=OQDC-1dNM1I"
+          "youtubeId": "OQDC-1dNM1I"
         },
         {
           "lessonNumber": 15,
           "title": "Урок 15. Отучаем подбирать с земли",
-          "youtubeId": "pjkEu6z234k",
-          "video_url": "https://www.youtube.com/watch?v=pjkEu6z234k"
+          "youtubeId": "pjkEu6z234k"
         },
         {
           "lessonNumber": 16,
           "title": "Урок 16. Отучаем собаку лаять",
-          "youtubeId": "grfZnqREy5M",
-          "video_url": "https://www.youtube.com/watch?v=grfZnqREy5M"
+          "youtubeId": "grfZnqREy5M"
         }
       ]
     }

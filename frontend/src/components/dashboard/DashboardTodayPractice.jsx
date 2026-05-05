@@ -11,6 +11,7 @@ import {
   Button,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
+import { lessonNavState } from '../../constants/bottomNav';
 import { Play, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTodayLesson, useLesson } from '../../hooks/useLessons';
@@ -152,7 +153,7 @@ export default function DashboardTodayPractice() {
           isLoading={loadingDetail}
           isDisabled={loadingDetail}
           successTap
-          onClick={() => navigate(`/lesson/${lesson.id}`)}
+          onClick={() => navigate(`/lesson/${lesson.id}`, { state: lessonNavState('/') })}
         >
           Начать практику
         </PressableButton>

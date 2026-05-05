@@ -29,6 +29,7 @@ export default function RoutesScreen() {
   const [selectingKey, setSelectingKey] = useState(null);
 
   const selectedRoute = routes.find((r) => r.is_selected);
+  const routesToPick = routes.filter((r) => !r.is_selected);
 
   async function handleSelect(routeKey) {
     const r = routes.find((x) => x.key === routeKey);
@@ -115,7 +116,7 @@ export default function RoutesScreen() {
             Персональный путь по навыкам вашей собаки
           </Text>
           <Text fontSize="xs" color={muted} mt={2}>
-            Чтобы сменить маршрут, выберите другой в списке ниже.
+            Ниже — только другие маршруты; активный показан выше и в списке не повторяется.
           </Text>
         </Box>
 
@@ -204,7 +205,7 @@ export default function RoutesScreen() {
         )}
 
         <VStack spacing={3} align="stretch">
-          {routes.map((route, i) => (
+          {routesToPick.map((route, i) => (
             <motion.div
               key={route.key}
               initial={{ opacity: 0, y: 12 }}
@@ -213,7 +214,7 @@ export default function RoutesScreen() {
             >
               <RouteCard
                 route={route}
-                isSelected={route.is_selected}
+                isSelected={false}
                 isSelecting={selectingKey === route.key}
                 isProUser={isPro}
                 onSelect={() => handleSelect(route.key)}
@@ -221,6 +222,12 @@ export default function RoutesScreen() {
             </motion.div>
           ))}
         </VStack>
+
+        {selectedRoute && routesToPick.length === 0 && routes.length > 0 && (
+          <Text fontSize="xs" color={muted} textAlign="center">
+            Других маршрутов для переключения пока нет.
+          </Text>
+        )}
 
         {routes.length === 0 && (
           <Box textAlign="center" py={12} px={2}>

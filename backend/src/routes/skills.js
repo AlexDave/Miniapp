@@ -12,17 +12,25 @@ function skillProgress(bonesForSkill = 0, targetBones = 5) {
 }
 
 // Проверить, разблокирован ли навык (soft = рекомендация, не блокировка)
-function isRecommended(skill, bonesBySkill = {}) {
-  if (!skill.unlock_rules) return { locked: false, hint: null };
+function isRecommended(skill, bonesBySkill = {}, skillTitleByKey = new Map()) {
+  const empty = { locked: false, hint: null, hint_skill_key: null, hint_skill_title: null };
+  if (!skill.unlock_rules) return empty;
   try {
     const rules = JSON.parse(skill.unlock_rules);
     const soft = rules.soft ?? [];
     const unmet = soft.filter((r) => (bonesBySkill[r.skill] ?? 0) < r.min);
-    if (unmet.length === 0) return { locked: false, hint: null };
+    if (unmet.length === 0) return empty;
     const first = unmet[0];
-    return { locked: false, hint: `Рекомендуем сначала: «${first.skill}»` };
+    const key = first.skill;
+    const label = skillTitleByKey.get(key) ?? key;
+    return {
+      locked: false,
+      hint: `Рекомендуем сначала: «${label}»`,
+      hint_skill_key: key,
+      hint_skill_title: label,
+    };
   } catch {
-    return { locked: false, hint: null };
+    return empty;
   }
 }
 
@@ -42,11 +50,22 @@ router.get('/tree', async (req, res) => {
 
     const bones = parseBones(pet?.bones_json);
 
+    const skillTitleByKey = new Map();
+    for (const cat of categories) {
+      for (const s of cat.skills) {
+        skillTitleByKey.set(s.key, s.title);
+      }
+    }
+
     const tree = categories.map((cat) => {
       const skillsWithProgress = cat.skills.map((skill) => {
         const bonesEarned = bones[skill.key] ?? 0;
         const pct = skillProgress(bonesEarned, skill.target_bones);
-        const { locked, hint } = isRecommended(skill, bones);
+        const { locked, hint, hint_skill_key, hint_skill_title } = isRecommended(
+          skill,
+          bones,
+          skillTitleByKey
+        );
         return {
           key:          skill.key,
           title:        skill.title,
@@ -59,6 +78,8 @@ router.get('/tree', async (req, res) => {
           is_complete:  pct >= 100,
           locked,
           unlock_hint:  hint,
+          unlock_hint_skill_key: hint_skill_key,
+          unlock_hint_skill_title: hint_skill_title,
         };
       });
 

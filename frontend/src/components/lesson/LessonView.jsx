@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import ReducedMotionAnimatePresence from '../../motion/ReducedMotionAnimatePresence';
 import {
@@ -15,9 +15,8 @@ import {
   Alert,
   AlertIcon,
   IconButton,
-  Progress,
 } from '@chakra-ui/react';
-import { ArrowLeft, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   useLesson,
   useSubmitReport,
@@ -32,23 +31,72 @@ import TaskStepFlow from './TaskStepFlow';
 import ReportForm from './ReportForm';
 import LessonFailureOutcome from './LessonFailureOutcome';
 import TheoryStep from './TheoryStep';
-import BoneCelebrate from '../gamification/BoneCelebrate';
-import LessonVictoryVideoUpload from './LessonVictoryVideoUpload';
+import { LessonJustCompletedScreen, LessonAlreadyCompletedScreen } from './LessonSuccessScreen';
 import { MOTION, sec } from '../../motion/tokens';
 import { mergeDailyTaskStepsData } from '../../utils/lessonSteps';
+import { BOTTOM_TAB_STATE_KEY } from '../../constants/bottomNav';
 
 // Фазы урока: 0=Зачем 1=Как 2=Делаем 3=Итог
 const PHASE_LABELS = ['Зачем', 'Как', 'Делаем', 'Итог'];
 
+/** Разбор meta с API: объект, JSON-строка или «строка внутри строки». */
+function parseLessonMetaRaw(meta) {
+  if (meta == null) return {};
+  if (typeof meta === 'object' && !Array.isArray(meta)) return meta;
+  if (typeof meta === 'string') {
+    try {
+      let o = JSON.parse(meta);
+      if (typeof o === 'string') {
+        try {
+          o = JSON.parse(o);
+        } catch {
+          /* одна строка JSON */
+        }
+      }
+      return o && typeof o === 'object' && !Array.isArray(o) ? o : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+/** Достаёт абзац после ## Зачем из markdown теории (как в seed). */
+function whyFromTheoryMarkdown(theory) {
+  if (!theory || typeof theory !== 'string') return '';
+  const m = theory.match(/## Зачем\s*\n+([\s\S]*?)(?=\n## |\n### |\n>|\n\n\n|$)/);
+  if (!m?.[1]) return '';
+  return m[1].replace(/\n{2,}/g, '\n').trim();
+}
+
+/** Текст для экрана «Смысл дня»: несколько источников, чтобы не было пусто при кэше/старых ответах. */
+function resolveLessonWhyText(lesson, lessonMeta) {
+  const fromTitle = lesson?.title?.replace(/^День\s+\d+:\s*/i, '').trim();
+  const candidates = [
+    lessonMeta?.why,
+    lessonMeta?.Why,
+    lesson?.description,
+    whyFromTheoryMarkdown(lesson?.theory),
+    fromTitle,
+  ];
+  for (const c of candidates) {
+    if (c != null && String(c).trim()) return String(c).trim();
+  }
+  return '';
+}
+
 function WhyScreen({ why, skipCost, onNext }) {
+  const body =
+    (why && String(why).trim()) ||
+    'Краткое объяснение смысла дня пока не загружено. Попробуйте обновить страницу.';
   return (
     <VStack spacing={6} align="stretch" pt={4} pb={8}>
       <Box p={5} bg="purple.50" borderRadius="xl" border="1px solid" borderColor="purple.100">
         <Text fontSize="sm" fontWeight="bold" color="purple.600" mb={2} textTransform="uppercase" letterSpacing="wide">
-          Зачем это тренировать
+          Смысл дня
         </Text>
         <Text fontSize="md" lineHeight="1.7" color="gray.700">
-          {why || 'Это упражнение формирует у собаке полезный навык.'}
+          {body}
         </Text>
       </Box>
       {skipCost && (
@@ -96,13 +144,13 @@ function HowScreen({ steps, onNext, onBack }) {
 
   const step = steps[idx];
 
+  const showBack = idx > 0 || onBack;
+
   return (
     <VStack spacing={4} align="stretch" pt={4} pb={8}>
-      <HStack justify="space-between">
-        <Text fontSize="xs" color="mutedFg">{idx + 1} из {total}</Text>
-        <Progress value={((idx + 1) / total) * 100} colorScheme="purple" size="xs" borderRadius="full" flex={1} mx={2} />
-        <Text fontSize="xs" color="mutedFg">{Math.round(((idx + 1) / total) * 100)}%</Text>
-      </HStack>
+      <Text fontSize="xs" color="mutedFg" textAlign="center">
+        Шаг {idx + 1} из {total}
+      </Text>
 
       <ReducedMotionAnimatePresence mode="wait" initial={false}>
         <motion.div
@@ -119,7 +167,7 @@ function HowScreen({ steps, onNext, onBack }) {
       </ReducedMotionAnimatePresence>
 
       <HStack spacing={3}>
-        {idx > 0 && (
+        {showBack && (
           <Button variant="ghost" leftIcon={<ChevronLeft size={16} />} onClick={prev} flex={1}>
             Назад
           </Button>
@@ -175,34 +223,10 @@ function TaskScreen({ daily, onComplete, onGiveUp, onReadAgain, quietMode }) {
   );
 }
 
-function CompletedScreen({ report, lessonId, onRepeat, isRepeating, cooldownHours }) {
-  const navigate = useNavigate();
-  return (
-    <VStack spacing={6} py={10} align="center" textAlign="center">
-      <Text fontSize="4xl">🦴</Text>
-      <Text fontWeight="semibold" fontSize="lg">Урок уже выполнен</Text>
-      <Text fontSize="sm" color="mutedFg">Косточки добавлены в копилку.</Text>
-      {cooldownHours ? (
-        <Box px={4} py={3} bg="orange.50" borderRadius="xl" border="1px solid" borderColor="orange.100">
-          <Text fontSize="sm" color="orange.700">
-            Повтор доступен через {cooldownHours} ч. — дай собаке закрепить навык!
-          </Text>
-        </Box>
-      ) : (
-        <Button colorScheme="purple" variant="outline" leftIcon={<RotateCcw size={16} />} onClick={onRepeat} isLoading={isRepeating}>
-          Перепройти
-        </Button>
-      )}
-      <Button as={RouterLink} to="/" variant="ghost" size="sm">
-        На главную
-      </Button>
-    </VStack>
-  );
-}
-
 export default function LessonView() {
   const { lessonId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const reduceMotion = useReducedMotion();
   const { data, isLoading, error } = useLesson(lessonId);
   const submitReport = useSubmitReport();
@@ -216,8 +240,6 @@ export default function LessonView() {
   const [taskStepsData, setTaskStepsData] = useState([]);
   const [taskAborted, setTaskAborted] = useState(false);
   const [bonesResult, setBonesResult] = useState(null);
-  const [cooldownHours, setCooldownHours] = useState(null);
-  const wakeLockRef = useRef(null);
 
   const progress = data?.progress;
   const report = data?.report;
@@ -233,53 +255,6 @@ export default function LessonView() {
       setPhase(0); // начать с «Зачем»
     }
   }, [data, phase, report, progress]);
-
-  useEffect(() => {
-    if (phase !== 2) return undefined;
-
-    const tw = window.Telegram?.WebApp;
-    try {
-      tw?.disableVerticalSwipes?.();
-    } catch {
-      /* ignore */
-    }
-
-    let cancelled = false;
-    async function lockScreen() {
-      if (!('wakeLock' in navigator) || wakeLockRef.current) return;
-      try {
-        const wl = await navigator.wakeLock.request('screen');
-        if (cancelled) {
-          await wl.release();
-          return;
-        }
-        wakeLockRef.current = wl;
-        wl.addEventListener?.('release', () => {
-          wakeLockRef.current = null;
-        });
-      } catch {
-        /* ignore */
-      }
-    }
-    lockScreen();
-
-    const onVis = () => {
-      if (document.visibilityState === 'visible') lockScreen();
-    };
-    document.addEventListener('visibilitychange', onVis);
-
-    return () => {
-      cancelled = true;
-      document.removeEventListener('visibilitychange', onVis);
-      try {
-        tw?.enableVerticalSwipes?.();
-      } catch {
-        /* ignore */
-      }
-      wakeLockRef.current?.release?.().catch(() => {});
-      wakeLockRef.current = null;
-    };
-  }, [phase, lessonId]);
 
   if (isLoading) {
     return <Center h="50vh"><Spinner size="lg" color="purple.500" /></Center>;
@@ -313,18 +288,15 @@ export default function LessonView() {
   }
 
   const { lesson } = data;
-  let lessonMeta = {};
-  if (lesson.meta) {
-    if (typeof lesson.meta === 'object') lessonMeta = lesson.meta;
-    else try {
-      lessonMeta = JSON.parse(lesson.meta);
-    } catch {
-      lessonMeta = {};
-    }
-  }
+  const lessonMeta = parseLessonMetaRaw(lesson.meta);
+  const lessonWhyText = resolveLessonWhyText(lesson, lessonMeta);
+  const skipCostText = lessonMeta.skip_cost ?? lessonMeta.skipCost;
   const daily = lesson.daily_task;
   const titleShort = lesson.title?.replace(/^День\s+\d+:\s*/i, '').trim() ?? lesson.title;
   const theorySteps = lesson.steps ?? [];
+  const nextLessonRaw = data?.next_lesson ?? null;
+  const fromSkillsTab = location.state?.[BOTTOM_TAB_STATE_KEY] === '/skills';
+  const nextCourseLesson = fromSkillsTab ? null : nextLessonRaw;
 
   // Завершённый урок
   if (phase === -1 && !bonesResult) {
@@ -336,24 +308,18 @@ export default function LessonView() {
           </Button>
           <Text fontSize="sm" fontWeight="semibold" noOfLines={1} flex={1}>{titleShort}</Text>
         </HStack>
-        <Box px={4}>
-          <CompletedScreen
-            report={report}
-            lessonId={lessonId}
-            cooldownHours={cooldownHours}
-            onRepeat={async () => {
-              try {
-                await repeatLesson.mutateAsync(parseInt(lessonId, 10));
-                setCooldownHours(null);
-                setPhase(0);
-              } catch (err) {
-                const hours = err?.response?.data?.hours_left ?? null;
-                if (hours) setCooldownHours(hours);
-              }
-            }}
-            isRepeating={repeatLesson.isLoading}
-          />
-        </Box>
+        <LessonAlreadyCompletedScreen
+          nextLesson={nextCourseLesson}
+          onRepeat={async () => {
+            try {
+              await repeatLesson.mutateAsync(parseInt(lessonId, 10));
+              setPhase(0);
+            } catch {
+              /* ошибка — toast в мутации при необходимости */
+            }
+          }}
+          isRepeating={repeatLesson.isLoading}
+        />
       </Box>
     );
   }
@@ -384,58 +350,17 @@ export default function LessonView() {
       );
     }
 
-    const er = bonesResult.emotional_reward;
-
     return (
-      <Box pb={24} px={4}>
-        <VStack
-          spacing={6}
-          py={10}
-          align="center"
-          textAlign="center"
-          as="section"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <BoneCelebrate>
-            <Text fontSize="5xl" display="block">🦴</Text>
-          </BoneCelebrate>
-          <Text fontWeight="bold" fontSize="xl">
-            {bonesResult.bones_earned > 0 ? `+${bonesResult.bones_earned} косточка` : 'Выполнено!'}
-            {er?.skill_bones_target != null ? (
-              <Text as="span" display="block" fontSize="md" fontWeight="medium" color="gray.600" mt={1}>
-                {er.skill_bones_current}/{er.skill_bones_target} по «{er.skill_title}»
-              </Text>
-            ) : null}
-          </Text>
-          {er?.atomic_outcome ? (
-            <Text fontSize="md" color="gray.700" lineHeight="tall" px={1} maxW="md">
-              <Text as="span" fontWeight="semibold" color="purple.600">
-                {er.pet_name}
-                :{' '}
-              </Text>
-              {er.atomic_outcome}
-            </Text>
-          ) : null}
-          {bonesResult.is_special_bone && (
-            <Badge colorScheme="orange" px={3} py={1} borderRadius="full" fontSize="sm">
-              Особая косточка — 7 дней подряд!
-            </Badge>
-          )}
-          <Text fontSize="sm" color="mutedFg">{bonesResult.feedback_message}</Text>
-          <Text fontSize="sm" color="purple.600" fontWeight="medium">
-            Стадия: {bonesResult.bones_stage}
-          </Text>
-          <LessonVictoryVideoUpload lessonId={parseInt(lessonId, 10)} />
-          <Button colorScheme="purple" size="lg" borderRadius="xl" onClick={() => navigate('/')}>
-            На главную
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => { setBonesResult(null); setPhase(0); }}>
-            Перепройти
-          </Button>
-        </VStack>
-      </Box>
+      <LessonJustCompletedScreen
+        bonesResult={bonesResult}
+        nextLesson={nextCourseLesson}
+        lessonTitleShort={titleShort}
+        onHome={() => navigate('/')}
+        onRepeat={() => {
+          setBonesResult(null);
+          setPhase(0);
+        }}
+      />
     );
   }
 
@@ -546,7 +471,11 @@ export default function LessonView() {
             style={{ width: '100%' }}
           >
             {phase === 0 && (
-              <WhyScreen why={lessonMeta.why} skipCost={lessonMeta.skip_cost} onNext={handleTheoryDone} />
+              <WhyScreen
+                why={lessonWhyText}
+                skipCost={skipCostText}
+                onNext={handleTheoryDone}
+              />
             )}
 
             {phase === 1 && theorySteps.length > 0 && (
@@ -557,7 +486,17 @@ export default function LessonView() {
               />
             )}
             {phase === 1 && theorySteps.length === 0 && (
-              <VStack spacing={4} pt={4} pb={8}>
+              <VStack spacing={4} pt={4} pb={8} align="stretch">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color="mutedFg"
+                  alignSelf="flex-start"
+                  leftIcon={<ChevronLeft size={16} />}
+                  onClick={() => setPhase(0)}
+                >
+                  Назад
+                </Button>
                 <Text color="mutedFg" fontSize="sm">Подробные шаги будут добавлены скоро.</Text>
                 <Button colorScheme="purple" onClick={handleHowDone}>К заданию</Button>
               </VStack>

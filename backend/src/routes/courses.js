@@ -6,10 +6,17 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const courses = await prisma.course.findMany({
-      where: { is_active: true },
+    const catalog = await prisma.course.findMany({
+      where: { is_active: true, content: { contains: 'courses.json' } },
       orderBy: { id: 'asc' },
     });
+    const courses =
+      catalog.length > 0
+        ? catalog
+        : await prisma.course.findMany({
+            where: { is_active: true },
+            orderBy: { id: 'asc' },
+          });
     res.json(courses);
   } catch (err) {
     logger.error({ err }, 'Ошибка при получении курсов');

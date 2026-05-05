@@ -19,7 +19,7 @@ import {
   useColorModeValue,
   Container,
 } from '@chakra-ui/react';
-import { User, Home, Brain } from 'lucide-react';
+import { Home, Brain, BookOpen, User } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { motion, useReducedMotion } from 'framer-motion';
 import ReducedMotionAnimatePresence from './motion/ReducedMotionAnimatePresence';
@@ -38,6 +38,7 @@ const Profile = lazy(() => import('./components/Profile'));
 const LessonView = lazy(() => import('./components/lesson/LessonView'));
 const SkillsScreen = lazy(() => import('./components/skills/SkillsScreen'));
 import theme from './theme';
+import { BOTTOM_TAB_STATE_KEY } from './constants/bottomNav';
 
 const MotionBox = motion(Box);
 
@@ -204,15 +205,45 @@ function BottomNavigation() {
   const activeItemHoverBg = useColorModeValue('purple.100', 'purple.800');
   const inactiveItemHoverBg = useColorModeValue('gray.100', 'gray.700');
 
+  const pathname = location.pathname;
+  const lessonSourceTab =
+    pathname.startsWith('/lesson/') ? location.state?.[BOTTOM_TAB_STATE_KEY] : undefined;
+
   const navigationItems = [
     {
       path: '/',
       icon: <Home size={24} />,
       label: 'Сегодня',
-      match: (p) => p === '/' || p.startsWith('/lesson/'),
+      match: () =>
+        pathname === '/' ||
+        (pathname.startsWith('/lesson/') &&
+          (lessonSourceTab == null || lessonSourceTab === '/')),
     },
-    { path: '/skills', icon: <Brain size={24} />, label: 'Навыки', match: (p) => p.startsWith('/skills') },
-    { path: '/profile', icon: <User size={24} />, label: 'Я', match: (p) => p.startsWith('/profile') },
+    {
+      path: '/skills',
+      icon: <Brain size={24} />,
+      label: 'Навыки',
+      match: () =>
+        pathname.startsWith('/skills') ||
+        (pathname.startsWith('/lesson/') && lessonSourceTab === '/skills'),
+    },
+    {
+      path: '/library',
+      icon: <BookOpen size={24} />,
+      label: 'Библиотека',
+      match: () =>
+        pathname.startsWith('/library') ||
+        pathname.startsWith('/course/') ||
+        (pathname.startsWith('/lesson/') && lessonSourceTab === '/library'),
+    },
+    {
+      path: '/profile',
+      icon: <User size={24} />,
+      label: 'Я',
+      match: () =>
+        pathname.startsWith('/profile') ||
+        (pathname.startsWith('/lesson/') && lessonSourceTab === '/profile'),
+    },
   ];
 
   return (
@@ -230,7 +261,7 @@ function BottomNavigation() {
     >
       <Flex justify="space-around" align="center" py={1} px={1} minH="56px">
         {navigationItems.map(({ path, icon, label, match }) => {
-          const isActive = match ? match(location.pathname) : location.pathname === path;
+          const isActive = match ? match() : location.pathname === path;
           const color = isActive ? 'purple.500' : inactiveColor;
           const motionProps = prefersReducedMotion
             ? {}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { lessonNavState } from '../constants/bottomNav';
 import { 
   Box, 
   Heading, 
@@ -72,6 +73,9 @@ function CourseDetail() {
   const textColor = useColorModeValue('gray.600', 'gray.300');
 
   const { data: lessons = [], isLoading: lessonsLoading } = useCourseLessons(id);
+
+  /** Все уроки в списке: верхний блок — промо-видео курса (YouTube), не экран урока */
+  const lessonNumber = (index) => index + 1;
 
   useEffect(() => {
     async function fetchCourse() {
@@ -230,9 +234,9 @@ function CourseDetail() {
               cursor="pointer"
               onClick={handlePlayPause}
             >
-              {course?.videoUrl ? (
+              {(course?.video_url || course?.videoUrl) ? (
                 <iframe
-                  src={course.videoUrl}
+                  src={course.video_url || course.videoUrl}
                   title={course.title}
                   frameBorder="0"
                   allowFullScreen
@@ -339,7 +343,6 @@ function CourseDetail() {
                         </Text>
                       )}
                     </HStack>
-
                     {lessonsLoading ? (
                       <Spinner size="sm" color="purple.500" />
                     ) : lessons.length > 0 ? (
@@ -354,7 +357,7 @@ function CourseDetail() {
                             borderColor={lesson.is_completed ? 'green.300' : borderColor}
                             borderRadius="lg"
                             bg={lesson.is_completed ? useColorModeValue('green.50', 'green.900') : useColorModeValue('gray.50', 'gray.700')}
-                            onClick={() => navigate(`/lesson/${lesson.id}`)}
+                            onClick={() => navigate(`/lesson/${lesson.id}`, { state: lessonNavState('/library') })}
                             _hover={{ borderColor: 'purple.400', transform: 'translateY(-1px)', transition: 'all 0.15s' }}
                             w="100%"
                           >
@@ -373,7 +376,7 @@ function CourseDetail() {
                                   {lesson.is_completed ? (
                                     <Icon as={CheckCircle} w={4} h={4} color="white" />
                                   ) : (
-                                    <Text fontSize="xs" fontWeight="bold" color="purple.600">{index + 1}</Text>
+                                    <Text fontSize="xs" fontWeight="bold" color="purple.600">{lessonNumber(index)}</Text>
                                   )}
                                 </Box>
                                 <VStack align="start" spacing={0}>

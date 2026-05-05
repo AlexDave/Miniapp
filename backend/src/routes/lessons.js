@@ -79,6 +79,51 @@ function lessonDto(lesson) {
   return out;
 }
 
+/**
+ * Следующий урок в рамках курса: все модули курса по order_index, внутри модуля — уроки по order_index.
+ * (Сортировка по module_id недопустима — id не совпадает с порядком в программе.)
+ */
+async function resolveNextLesson(lesson) {
+  if (!lesson?.module_id) return null;
+
+  const currentModule = await prisma.module.findUnique({
+    where: { id: lesson.module_id },
+    select: { course_id: true },
+  });
+  if (!currentModule?.course_id) return null;
+
+  const course = await prisma.course.findUnique({
+    where: { id: currentModule.course_id },
+    include: {
+      modules: {
+        where: { is_active: true },
+        orderBy: { order_index: 'asc' },
+        include: {
+          lessons: {
+            where: { is_active: true },
+            orderBy: { order_index: 'asc' },
+            select: { id: true, title: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!course?.modules?.length) return null;
+
+  const flat = [];
+  for (const m of course.modules) {
+    for (const l of m.lessons) {
+      flat.push(l);
+    }
+  }
+
+  const idx = flat.findIndex((l) => l.id === lesson.id);
+  if (idx === -1 || idx >= flat.length - 1) return null;
+  const n = flat[idx + 1];
+  return { id: n.id, title: n.title };
+}
+
 function parseCourseContent(contentStr) {
   if (!contentStr) return {};
   try {
@@ -380,9 +425,12 @@ router.get('/:lessonId', async (req, res) => {
     const lessonJson = lessonDto(lesson);
     ensureFallbackTreeOnLesson(lessonJson);
 
+    const next_lesson = await resolveNextLesson(lesson);
+
     res.json({
       lesson: lessonJson,
       report: report ?? null,
+      next_lesson,
       progress: progress
         ? {
             state: progress.state,
@@ -466,7 +514,7 @@ router.post('/:lessonId/start-task', async (req, res) => {
   }
 });
 
-// Начать повтор завершённого урока (возврат в theory_done, 24ч cooldown)
+// Начать повтор завершённого урока (возврат в theory_done, без ограничения по времени)
 router.post('/:lessonId/repeat-start', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
@@ -477,23 +525,6 @@ router.post('/:lessonId/repeat-start', async (req, res) => {
       where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
     });
     if (!existing) return res.status(400).json({ error: 'Урок ещё не завершён' });
-
-    // Проверяем 24ч cooldown по last_repeat_at или completed_at
-    const prevProgress = await prisma.lessonProgress.findUnique({
-      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
-    });
-    const lastActivity = prevProgress?.last_repeat_at ?? existing.completed_at;
-    if (lastActivity) {
-      const hoursSince = (Date.now() - new Date(lastActivity).getTime()) / 3_600_000;
-      if (hoursSince < 24) {
-        const hoursLeft = Math.ceil(24 - hoursSince);
-        return res.status(429).json({
-          error: 'Cooldown активен',
-          hours_left: hoursLeft,
-          message: `Повтор доступен через ${hoursLeft} ч.`,
-        });
-      }
-    }
 
     const now = new Date();
     const progress = await prisma.lessonProgress.upsert({
@@ -684,9 +715,11 @@ router.post('/:lessonId/report', async (req, res) => {
     });
     const isModuleComplete = doneInModule + 1 >= allModuleLessonIds.length;
 
-    const hasData = steps_data.some(
+    const hasChecklistOrNote = steps_data.some(
       (s) => s.value !== null && s.value !== '' && s.value !== false && s.value !== 0
-    );
+    ) || !!(note && String(note).trim());
+    const hasData =
+      hasChecklistOrNote || success === 'yes' || success === 'partial';
 
     const streakForBonus = petRow.streak ?? 0;
 

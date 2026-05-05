@@ -5,6 +5,7 @@ import {
   HStack,
   Text,
   Progress,
+  Button,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -22,7 +23,7 @@ function vibrateShort(quietMode) {
 }
 
 /**
- * Пошаговое задание: таймер 60–90 с с авто-переходом, «Готово», зона свайпа вниз «Не получилось».
+ * Пошаговое задание: только кнопка «Готово» между чекбокс-шагами; без таймера и свайпа.
  */
 export default function TaskStepFlow({ task, onComplete, onGiveUp, quietMode = false }) {
   const reduceMotion = useReducedMotion();
@@ -34,11 +35,8 @@ export default function TaskStepFlow({ task, onComplete, onGiveUp, quietMode = f
 
   const [index, setIndex] = useState(0);
   const [burst, setBurst] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(0);
 
-  const touchStartY = useRef(null);
   const burstTimerRef = useRef(null);
-  const tickRef = useRef(null);
   const burstingRef = useRef(false);
 
   const muted = useColorModeValue('gray.600', 'gray.400');
@@ -47,13 +45,6 @@ export default function TaskStepFlow({ task, onComplete, onGiveUp, quietMode = f
   const fillAccent = useColorModeValue('purple.200', 'purple.800');
   const burstLabelColor = useColorModeValue('green.700', 'white');
   const burstLabelShadow = useColorModeValue('none', '0 2px 10px rgba(0,0,0,0.45)');
-  const swipeBg = useColorModeValue('gray.50', 'gray.700');
-
-  const secondsPerStep = useMemo(() => {
-    const totalMin = task?.duration_min ?? 15;
-    const spread = Math.round((totalMin * 60) / Math.max(total, 1));
-    return Math.min(90, Math.max(60, spread));
-  }, [task?.duration_min, total]);
 
   const finish = useCallback(() => {
     const rows = steps.map((s) => ({ step_id: s.id, value: true }));
@@ -69,10 +60,6 @@ export default function TaskStepFlow({ task, onComplete, onGiveUp, quietMode = f
 
   const runBurstThenAdvance = useCallback(() => {
     if (burstingRef.current) return;
-    if (tickRef.current) {
-      window.clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
     burstingRef.current = true;
     setBurst(true);
     if (burstTimerRef.current) window.clearTimeout(burstTimerRef.current);
@@ -89,54 +76,23 @@ export default function TaskStepFlow({ task, onComplete, onGiveUp, quietMode = f
   }, [index, total, finish, quietMode]);
 
   useEffect(() => {
-    if (total === 0) return undefined;
     burstingRef.current = false;
     setBurst(false);
-    setSecondsLeft(secondsPerStep);
+  }, [index]);
 
-    if (tickRef.current) window.clearInterval(tickRef.current);
-    tickRef.current = window.setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s === 0) return 0;
-        const next = s - 1;
-        if (next === 0) {
-          if (tickRef.current) {
-            window.clearInterval(tickRef.current);
-            tickRef.current = null;
-          }
-          window.setTimeout(() => runBurstThenAdvance(), 0);
-        }
-        return next;
-      });
-    }, 1000);
-
+  useEffect(() => {
     return () => {
-      if (tickRef.current) window.clearInterval(tickRef.current);
       if (burstTimerRef.current) window.clearTimeout(burstTimerRef.current);
     };
-  }, [index, secondsPerStep, total, runBurstThenAdvance]);
+  }, []);
 
-  const handleGiveUpSwipe = useCallback(() => {
+  const handleGiveUp = useCallback(() => {
     if (!onGiveUp || burstingRef.current || burst) return;
-    if (tickRef.current) window.clearInterval(tickRef.current);
     if (burstTimerRef.current) window.clearTimeout(burstTimerRef.current);
     burstingRef.current = false;
     setBurst(false);
     onGiveUp(partialRowsUpTo(index - 1));
   }, [onGiveUp, burst, partialRowsUpTo, index]);
-
-  const onTouchStart = (e) => {
-    touchStartY.current = e.touches[0]?.clientY ?? null;
-  };
-
-  const onTouchEnd = (e) => {
-    const start = touchStartY.current;
-    touchStartY.current = null;
-    if (start == null) return;
-    const end = e.changedTouches[0]?.clientY;
-    if (end == null) return;
-    if (end - start > 72) handleGiveUpSwipe();
-  };
 
   if (total === 0) {
     return null;
@@ -144,9 +100,6 @@ export default function TaskStepFlow({ task, onComplete, onGiveUp, quietMode = f
 
   const step = steps[index];
   const progressPct = ((index + 1) / total) * 100;
-  const timerPct = secondsPerStep > 0 ? (secondsLeft / secondsPerStep) * 100 : 0;
-  const mm = Math.floor(secondsLeft / 60);
-  const ss = secondsLeft % 60;
 
   return (
     <VStack spacing={5} align="stretch" minH="50vh" justify="center">
@@ -155,13 +108,6 @@ export default function TaskStepFlow({ task, onComplete, onGiveUp, quietMode = f
           Шаг {index + 1} / {total}
         </Text>
         <Progress value={progressPct} colorScheme="purple" size="xs" borderRadius="full" mt={2} />
-        <HStack justify="space-between" mt={2}>
-          <Text fontSize="xs" color={muted}>Таймер</Text>
-          <Text fontSize="sm" fontWeight="bold" color="purple.600">
-            {mm}:{ss.toString().padStart(2, '0')}
-          </Text>
-        </HStack>
-        <Progress value={timerPct} colorScheme="orange" size="xs" borderRadius="full" mt={1} />
       </Box>
 
       <ReducedMotionAnimatePresence mode="wait">
@@ -296,40 +242,36 @@ export default function TaskStepFlow({ task, onComplete, onGiveUp, quietMode = f
         </motion.div>
       </ReducedMotionAnimatePresence>
 
-      <PressableButton
-        colorScheme="purple"
-        size="lg"
-        fullWidth
-        h="16"
-        fontSize="xl"
-        borderRadius="xl"
-        successTap
-        isDisabled={burst}
-        onClick={runBurstThenAdvance}
-      >
-        Готово
-      </PressableButton>
-
-      {onGiveUp && (
-        <Box
-          py={6}
-          px={3}
-          borderRadius="xl"
-          bg={swipeBg}
-          textAlign="center"
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-          userSelect="none"
-          touchAction="pan-y"
-        >
-          <Text fontSize="xs" color={muted} fontWeight="medium">
-            Свайп вниз — не получилось
-          </Text>
-          <Text fontSize="2xs" color={muted} mt={1}>
-            Остановит шаги и откроет итог
-          </Text>
+      <HStack spacing={3} align="stretch">
+        {onGiveUp && (
+          <Button
+            variant="outline"
+            colorScheme="gray"
+            size="lg"
+            flex={1}
+            borderRadius="xl"
+            isDisabled={burst}
+            onClick={handleGiveUp}
+          >
+            Не получилось
+          </Button>
+        )}
+        <Box flex={onGiveUp ? 2 : 1} minW={0}>
+          <PressableButton
+            colorScheme="purple"
+            size="lg"
+            fullWidth
+            h="16"
+            fontSize="xl"
+            borderRadius="xl"
+            successTap
+            isDisabled={burst}
+            onClick={runBurstThenAdvance}
+          >
+            Готово
+          </PressableButton>
         </Box>
-      )}
+      </HStack>
     </VStack>
   );
 }

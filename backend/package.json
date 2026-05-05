@@ -15,6 +15,7 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "db:seed": "node src/seed.js",
+    "db:reset-user": "node scripts/reset-user-first-visit.js",
     "db:setup": "npm run migrate && npm run db:seed"
   },
   "keywords": [],

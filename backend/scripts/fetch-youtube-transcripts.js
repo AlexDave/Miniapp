@@ -45,7 +45,10 @@ async function main() {
     const courseTitle = course.title || course.slug;
 
     for (const lesson of course.lessons || []) {
-      const { lessonNumber, title: lessonTitle, youtubeId, video_url } = lesson;
+      const { lessonNumber, title: lessonTitle, youtubeId } = lesson;
+      const video_url =
+        lesson.video_url ||
+        (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : '');
       const dir = path.join(repoRoot, 'курс', contentFolder, `${lessonNumber} урок`);
       const filePath = path.join(dir, `${youtubeId}.txt`);
 

@@ -84,10 +84,10 @@ import { featurePayments } from '../config/features';
 import SkillMap from './progress/SkillMap';
 import ActivityHeatmap from './progress/ActivityHeatmap';
 import StreakBadge from './gamification/StreakBadge';
-import BoneCounter from './gamification/BoneCounter';
 import TrophyShelf from './profile/TrophyShelf';
 import TrophyVideoShelf from './profile/TrophyVideoShelf';
 import BehaviorTimeline from './behavior/BehaviorTimeline';
+import DashboardPetActivity from './dashboard/DashboardPetActivity';
 
 const MotionCard = motion(Card);
 
@@ -201,9 +201,7 @@ function Profile() {
   };
 
   const streak = stats?.streak ?? userProfile.streak;
-  const totalBones = userProfile.totalBones ?? 0;
   const bonesStage = userProfile.stage ?? 'Знакомство';
-  const bonesBySkill = userProfile.bones ?? {};
 
   const earnedCount = achievements.filter((a) => a.earned).length;
   const isPetOwner = petFamily?.my_role === 'owner';
@@ -347,11 +345,6 @@ function Profile() {
                 </HStack>
               </VStack>
 
-              {/* Копилка косточек */}
-              <Box width="100%" maxW="400px">
-                <BoneCounter total={totalBones} bySkill={bonesBySkill} stage={bonesStage} />
-              </Box>
-
               <Box width="100%" maxW="440px" alignSelf="stretch">
                 <TrophyShelf achievements={achievements} />
               </Box>
@@ -456,17 +449,9 @@ function Profile() {
           </CardBody>
         </MotionCard>
 
+        <DashboardPetActivity />
+
         <HStack spacing={3} flexWrap="wrap" justify="center">
-          <Button
-            as={RouterLink}
-            to="/library"
-            size="md"
-            variant="outline"
-            colorScheme="purple"
-            leftIcon={<BookOpen size={18} />}
-          >
-            Библиотека
-          </Button>
           <Button
             as={RouterLink}
             to="/profile/marshrut"
@@ -524,7 +509,7 @@ function Profile() {
                 </Card>
                 <Card bg={bg} border="1px solid" borderColor={borderColor}>
                   <CardBody>
-                    <Heading size="sm" mb={3} color="purple.600">
+                    <Heading size="sm" mb={3} color="purple.600" _dark={{ color: 'purple.300' }}>
                       Журнал поведения
                     </Heading>
                     <BehaviorTimeline />

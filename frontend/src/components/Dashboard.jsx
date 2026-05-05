@@ -9,18 +9,23 @@ import {
   AlertIcon,
   Button,
   Skeleton,
+  Flex,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { ClipboardList, ChevronRight } from 'lucide-react';
 import { useProfile } from '../hooks/useProfile';
 import { useDismissCoachTip } from '../hooks/useCoachTips';
 import { formatPrimaryProblem } from '../constants/onboarding';
 import { useRoutes, useSelectRoute } from '../hooks/useRoutes';
 import RouteCard from './routes/RouteCard';
 import DashboardTodayPractice from './dashboard/DashboardTodayPractice';
-import DashboardPetActivity from './dashboard/DashboardPetActivity';
 import BehaviorIncidentDrawer from './behavior/BehaviorIncidentDrawer';
 
 const MotionBox = motion(Box);
+
+/** Блок «Сегодня» + кнопка «Начать практику» (`DashboardTodayPractice`). Включить, когда будет финальный UX. */
+const SHOW_TODAY_PRACTICE_BLOCK = false;
 
 export default function Dashboard() {
   const { data: profile } = useProfile();
@@ -31,6 +36,11 @@ export default function Dashboard() {
   const [behaviorOpen, setBehaviorOpen] = useState(false);
 
   const muted = 'mutedFg';
+  const incidentBg = useColorModeValue('purple.50', 'whiteAlpha.50');
+  const incidentBorder = useColorModeValue('purple.200', 'purple.600');
+  const incidentIconBg = useColorModeValue('white', 'whiteAlpha.150');
+  const incidentHoverBg = useColorModeValue('purple.100', 'whiteAlpha.100');
+  const incidentChevron = useColorModeValue('purple.400', 'purple.300');
   const routes = routesData?.routes ?? [];
   const selected = routes.find((r) => r.is_selected);
 
@@ -78,13 +88,14 @@ export default function Dashboard() {
             </Text>
           )}
 
-          <Box minH={{ base: '48vh', md: '52vh' }} maxH="70vh">
+          <Box>
             {routesLoading ? (
-              <Skeleton height="100%" minH="240px" borderRadius="2xl" />
+              <Skeleton height="200px" borderRadius="2xl" />
             ) : selected ? (
               <RouteCard
                 route={selected}
                 isSelected
+                surface="home"
                 isSelecting={selectingKey === selected.key}
                 onSelect={() => handleSelectRoute(selected.key)}
               />
@@ -103,28 +114,61 @@ export default function Dashboard() {
             )}
           </Box>
 
-          <DashboardTodayPractice />
+          {SHOW_TODAY_PRACTICE_BLOCK ? <DashboardTodayPractice /> : null}
 
-          <DashboardPetActivity />
-
-          <HStack spacing={3} flexWrap="wrap">
-            <Button
-              size="sm"
-              variant="outline"
-              colorScheme="purple"
-              borderRadius="xl"
-              onClick={() => setBehaviorOpen(true)}
-            >
-              Отметить инцидент
-            </Button>
-          </HStack>
-          <BehaviorIncidentDrawer isOpen={behaviorOpen} onClose={() => setBehaviorOpen(false)} />
-
-          <Box px={0.5} fontSize="xs">
-            <Text as={Link} to="/library" color="purple.500" fontWeight="medium">
-              Библиотека →
-            </Text>
+          <Box
+            as="button"
+            type="button"
+            w="100%"
+            textAlign="left"
+            borderRadius="2xl"
+            borderWidth="1px"
+            borderColor={incidentBorder}
+            bg={incidentBg}
+            px={4}
+            py={3.5}
+            transition="background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease"
+            cursor="pointer"
+            boxShadow="sm"
+            _hover={{
+              bg: incidentHoverBg,
+              boxShadow: 'md',
+            }}
+            _active={{ transform: 'scale(0.992)' }}
+            onClick={() => setBehaviorOpen(true)}
+            aria-label="Открыть форму: отметить инцидент поведения"
+          >
+            <HStack spacing={3} align="center">
+              <Flex
+                w={11}
+                h={11}
+                borderRadius="xl"
+                bg={incidentIconBg}
+                align="center"
+                justify="center"
+                flexShrink={0}
+                borderWidth="1px"
+                borderColor={incidentBorder}
+                boxShadow="sm"
+                color="purple.600"
+                _dark={{ color: 'purple.300' }}
+              >
+                <ClipboardList size={22} strokeWidth={2} />
+              </Flex>
+              <VStack align="start" spacing={0.5} minW={0} flex={1}>
+                <Text fontWeight="semibold" fontSize="sm" color="purple.800" _dark={{ color: 'purple.100' }}>
+                  Отметить инцидент
+                </Text>
+                <Text fontSize="xs" color={muted} noOfLines={2} lineHeight="short">
+                  Лай, поведение на прогулке — чтобы подобрать уроки
+                </Text>
+              </VStack>
+              <Box color={incidentChevron} flexShrink={0} aria-hidden>
+                <ChevronRight size={22} />
+              </Box>
+            </HStack>
           </Box>
+          <BehaviorIncidentDrawer isOpen={behaviorOpen} onClose={() => setBehaviorOpen(false)} />
         </VStack>
       </MotionBox>
     </Box>

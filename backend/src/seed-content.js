@@ -167,6 +167,24 @@ function lessonFromNewAtomic(al) {
   const meta = {
     why: al.why,
     skip_cost: al.skip_cost,
+    day: al.day,
+    course_id: al.course_id,
+    /** Полная копия полей урока из atomic-lessons.json для API/клиента */
+    atomic_snapshot: {
+      day: al.day,
+      course_id: al.course_id,
+      title: al.title,
+      why: al.why,
+      skip_cost: al.skip_cost,
+      skill_key: al.skill_key,
+      theory_blocks: al.theory_blocks,
+      how_steps: al.how_steps,
+      common_mistakes: al.common_mistakes,
+      success_criteria: al.success_criteria,
+      pro_tip: al.pro_tip,
+      fallback_tasks: al.fallback_tasks,
+      video_url: al.video_url,
+    },
     reflection: true,
     fallback_tasks: al.fallback_tasks,
     skill_key: al.skill_key,
@@ -255,7 +273,61 @@ function lessonFromLegacyAtomic(al) {
   };
 }
 
+/**
+ * Подставляет ролик из каталога courses.json вместо демо-видео на первом шаге «Как делать».
+ * @param {ReturnType<typeof lessonFromNewAtomic>} lessonData
+ * @param {{ youtubeId?: string, video_url?: string, title?: string }} catalogLesson — video_url опционален, достаточно youtubeId
+ */
+function enrichLessonWithCatalogVideo(lessonData, catalogLesson) {
+  const youtubeId = catalogLesson.youtubeId;
+  const watchUrl =
+    catalogLesson.video_url ||
+    (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : null);
+  const embed = youtubeId ? `https://www.youtube.com/embed/${youtubeId}` : null;
+
+  if (embed && Array.isArray(lessonData.steps)) {
+    let replaced = false;
+    for (const step of lessonData.steps) {
+      if (step.media_type === 'video' && step.media_url === LESSON_DEMO_VIDEO_URL) {
+        step.media_url = embed;
+        step.alt_text = catalogLesson.title || step.alt_text || 'Видео урока';
+        replaced = true;
+        break;
+      }
+    }
+    if (!replaced) {
+      lessonData.steps.unshift({
+        type: 'card',
+        content: catalogLesson.title || 'Видео урока',
+        media_type: 'video',
+        media_url: embed,
+        alt_text: catalogLesson.title || 'Видео урока',
+      });
+    }
+  }
+
+  try {
+    const meta = lessonData.meta ? JSON.parse(lessonData.meta) : {};
+    if (youtubeId) meta.youtube_id = youtubeId;
+    if (watchUrl) meta.video_url = watchUrl;
+    if (catalogLesson.title) meta.catalog_lesson_title = catalogLesson.title;
+    lessonData.meta = JSON.stringify(meta);
+  } catch {
+    /* ignore */
+  }
+
+  if (watchUrl && typeof lessonData.theory === 'string' && !lessonData.theory.includes('Видео')) {
+    lessonData.theory =
+      `## Видео\n\n[Открыть на YouTube](${watchUrl})\n\n---\n\n` + lessonData.theory;
+  }
+
+  return lessonData;
+}
+
 // ─── Группировка по курсам ───────────────────────────────────────────────────
+
+/** Эти program-курсы из atomic целиком попадают в библиотеку через courses.json (без дубля в seed). */
+const MERGED_INTO_LIBRARY_COURSE_IDS = new Set(['puppy_first_month', 'obedience_six_plus']);
 
 // Нормализуем: каждый урок должен иметь course_title для группировки.
 // Новый формат использует course_id, поэтому маппим его в title.
@@ -268,10 +340,12 @@ function getCourseTitle(al) {
   return al.course_title || COURSE_ID_TO_TITLE[al.course_id] || al.course_id || 'Курс';
 }
 
-const lessonsWithTitle = (atomic.lessons || []).map((al) => ({
-  ...al,
-  _courseTitle: getCourseTitle(al),
-}));
+const lessonsWithTitle = (atomic.lessons || [])
+  .filter((al) => !MERGED_INTO_LIBRARY_COURSE_IDS.has(al.course_id))
+  .map((al) => ({
+    ...al,
+    _courseTitle: getCourseTitle(al),
+  }));
 
 const courseOrder = [...new Set(lessonsWithTitle.map((l) => l._courseTitle))];
 const metaByTitle = Object.fromEntries((atomic.courses || []).map((c) => [c.title, c]));
@@ -307,4 +381,11 @@ for (const title of courseOrder) {
   ];
 }
 
-module.exports = { courses, modulesData };
+module.exports = {
+  courses,
+  modulesData,
+  lessonFromAtomic,
+  enrichLessonWithCatalogVideo,
+  defaultSkillTree,
+  MERGED_INTO_LIBRARY_COURSE_IDS,
+};

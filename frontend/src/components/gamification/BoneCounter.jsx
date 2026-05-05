@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Box, HStack, Text, VStack, useColorModeValue } from '@chakra-ui/react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { skillTitleRu } from '../../constants/skillLabels';
 
 const MotionBox = motion(Box);
 
@@ -36,7 +37,7 @@ export default function BoneCounter({ total = 0, bySkill = {}, stage = 'Знак
         <HStack spacing={2} flexWrap="wrap" mt={1}>
           {Object.entries(bySkill).map(([skill, count]) => (
             <HStack key={skill} spacing={0.5} bg="white" borderRadius="full" px={2} py={0.5} border="1px solid" borderColor="purple.100">
-              <Text fontSize="xs" color="purple.700" fontWeight="medium">{skill}</Text>
+              <Text fontSize="xs" color="purple.700" fontWeight="medium">{skillTitleRu(skill)}</Text>
               <Text fontSize="xs" color="purple.500">×{count}</Text>
             </HStack>
           ))}

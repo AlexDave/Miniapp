@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { courses, modulesData } = require('./seed-content');
+const { seedYoutubeLibraryFromJson } = require('./seedCoursesJson');
 const { SKILL_CATEGORIES, SKILLS } = require('./seed-skills');
 const ATOMIC_OUTCOMES = require('../data/skill-atomic-outcomes.json');
 
@@ -105,6 +106,8 @@ async function main() {
     }
   }
   console.log(`✅ Модули и уроки созданы: ${totalLessons} уроков`);
+
+  await seedYoutubeLibraryFromJson(prisma);
 
   // Категории и атомы навыков
   for (const cat of SKILL_CATEGORIES) {

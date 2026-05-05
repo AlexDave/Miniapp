@@ -4,7 +4,7 @@ import { useProfile } from '../../hooks/useProfile';
 import { useUserStats } from '../../hooks/useProgress';
 
 /**
- * Одна строка на главной: имя · серия · косточки (перенесено с Dashboard в header).
+ * Чип в хедере: имя · серия · косточки.
  * variant="inline" — только чип без обёртки (строка хедера рядом с логотипом).
  */
 export default function HomeHeaderSummary({ variant = 'block' }) {

@@ -11,11 +11,13 @@ import {
   IconButton,
   Skeleton,
   Button,
+  Link,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import ReducedMotionAnimatePresence from '../../motion/ReducedMotionAnimatePresence';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { lessonNavState } from '../../constants/bottomNav';
 import { ChevronLeft, ChevronDown, Lock, Info } from 'lucide-react';
 import { useSkillTree, useLessonsForSkill } from '../../hooks/useSkillTree';
 
@@ -148,7 +150,13 @@ function AtomLessons({ skillKey }) {
         );
 
         return (
-          <Box key={lesson.id} as={RouterLink} to={`/lesson/${lesson.id}`} _hover={{ textDecoration: 'none' }}>
+          <Box
+            key={lesson.id}
+            as={RouterLink}
+            to={`/lesson/${lesson.id}`}
+            state={lessonNavState('/skills')}
+            _hover={{ textDecoration: 'none' }}
+          >
             {row}
           </Box>
         );
@@ -254,9 +262,27 @@ function AtomRow({ skill, isExpanded, onToggle }) {
               <VStack align="stretch" spacing={3}>
                 {skill.unlock_hint && (
                   <Box p={2.5} bg={hintBg} borderRadius="md" border="1px solid" borderColor={hintBorder}>
-                    <HStack spacing={2}>
-                      <Info size={13} />
-                      <Text fontSize="xs" color={hintText}>{skill.unlock_hint}</Text>
+                    <HStack spacing={2} align="flex-start">
+                      <Box as="span" display="inline-flex" pt={0.5} flexShrink={0}>
+                        <Info size={13} />
+                      </Box>
+                      {skill.unlock_hint_skill_key ? (
+                        <Text fontSize="xs" color={hintText}>
+                          Рекомендуем сначала:{' '}
+                          <Link
+                            as={RouterLink}
+                            to={`/skills?skill=${encodeURIComponent(skill.unlock_hint_skill_key)}`}
+                            color={hintText}
+                            fontWeight="semibold"
+                            textDecoration="underline"
+                            _hover={{ opacity: 0.88 }}
+                          >
+                            «{skill.unlock_hint_skill_title || skill.unlock_hint_skill_key}»
+                          </Link>
+                        </Text>
+                      ) : (
+                        <Text fontSize="xs" color={hintText}>{skill.unlock_hint}</Text>
+                      )}
                     </HStack>
                   </Box>
                 )}
@@ -281,6 +307,7 @@ function CategoryDetail({ category, onBack, initialExpandedSkillKey }) {
   const [expandedKey, setExpandedKey] = useState(null);
   const muted = useColorModeValue('gray.600', 'gray.400');
   const headerBg = useColorModeValue('white', 'gray.800');
+  const progressDividerColor = useColorModeValue('gray.100', 'gray.700');
 
   useEffect(() => {
     if (!initialExpandedSkillKey) return;
@@ -291,7 +318,11 @@ function CategoryDetail({ category, onBack, initialExpandedSkillKey }) {
 
   const toggle = (key) => setExpandedKey((prev) => (prev === key ? null : key));
 
-  const headerBorder = useColorModeValue('gray.100', 'gray.700');
+  const headerBorder = useColorModeValue('gray.200', 'gray.600');
+  const headerShadow = useColorModeValue(
+    '0 2px 12px rgba(124, 58, 237, 0.06)',
+    '0 2px 16px rgba(0, 0, 0, 0.35)'
+  );
 
   return (
     <Box pb={24}>
@@ -300,41 +331,61 @@ function CategoryDetail({ category, onBack, initialExpandedSkillKey }) {
         top={CATEGORY_STICKY_TOP}
         zIndex={11}
         bg={headerBg}
-        pb={3}
-        pt={1}
-        mx={-2}
-        px={2}
-        borderBottom="1px solid"
+        borderRadius="2xl"
+        borderWidth="1px"
         borderColor={headerBorder}
+        boxShadow={headerShadow}
+        px={{ base: 3, sm: 4 }}
+        py={4}
+        mb={3}
       >
         <HStack spacing={3} align="flex-start">
           <IconButton
             icon={<ChevronLeft size={20} />}
             variant="ghost"
             size="sm"
+            borderRadius="xl"
             aria-label="Назад к категориям"
             onClick={onBack}
             flexShrink={0}
             mt={0.5}
           />
-          <HStack spacing={2} align="flex-start" minW={0} flex={1}>
-            <Text fontSize="xl" aria-hidden lineHeight="short" pt={0.5}>
-              {category.icon ?? '🐾'}
-            </Text>
+          <HStack spacing={3} align="flex-start" minW={0} flex={1}>
+            <Flex
+              align="center"
+              justify="center"
+              w="48px"
+              h="48px"
+              flexShrink={0}
+              borderRadius="xl"
+              bg="purple.50"
+              borderWidth="1px"
+              borderColor="purple.100"
+              _dark={{ bg: 'whiteAlpha.100', borderColor: 'whiteAlpha.200' }}
+            >
+              <Text fontSize="2xl" aria-hidden lineHeight="1">
+                {category.icon ?? '🐾'}
+              </Text>
+            </Flex>
             <Box minW={0} flex={1}>
               <Text fontWeight="bold" fontSize="md" noOfLines={2}>
                 {category.title}
               </Text>
-              <Text fontSize="xs" color={muted} noOfLines={3} mt={0.5}>
+              <Text fontSize="xs" color={muted} noOfLines={3} mt={1} lineHeight="short">
                 {category.description}
               </Text>
             </Box>
           </HStack>
         </HStack>
-        <Box mt={3}>
-          <HStack justify="space-between" mb={1}>
-            <Text fontSize="xs" color={muted}>Общий прогресс</Text>
-            <Text fontSize="xs" color={muted}>{category.progress_pct ?? 0}%</Text>
+        <Box
+          mt={4}
+          pt={4}
+          borderTopWidth="1px"
+          borderTopColor={progressDividerColor}
+        >
+          <HStack justify="space-between" mb={1.5}>
+            <Text fontSize="xs" fontWeight="medium" color={muted}>Общий прогресс</Text>
+            <Text fontSize="xs" fontWeight="semibold" color={muted}>{category.progress_pct ?? 0}%</Text>
           </HStack>
           <Progress
             value={category.progress_pct ?? 0}
@@ -345,7 +396,7 @@ function CategoryDetail({ category, onBack, initialExpandedSkillKey }) {
         </Box>
       </Box>
 
-      <VStack spacing={2.5} align="stretch" mt={4}>
+      <VStack spacing={2.5} align="stretch" mt={2}>
         {(category.skills ?? []).map((skill, i) => (
           <motion.div
             key={skill.key}

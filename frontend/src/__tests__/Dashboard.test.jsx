@@ -79,17 +79,53 @@ beforeEach(() => {
   useSelectRoute.mockReturnValue({ mutate: vi.fn(), mutateAsync: vi.fn().mockResolvedValue({}) });
 });
 
+const selectedRouteMock = {
+  key: 'puppy_home',
+  title: 'Щенок дома',
+  is_selected: true,
+  icon: '🐕',
+  description: 'Базовые навыки для щенка.',
+  progress_pct: 20,
+  requires_pro: false,
+  skills: [
+    {
+      skill_key: 'sit',
+      skill_title: 'Сидеть',
+      bones_earned: 0,
+      is_required: true,
+    },
+  ],
+};
+
 describe('Dashboard', () => {
-  test('ссылка на каталог ведёт в библиотеку', () => {
+  test('на главной с выбранным маршрутом ведёт к навыкам и показывает список навыков', () => {
+    useRoutes.mockReturnValue({
+      data: { routes: [selectedRouteMock], route_paused: false },
+      isLoading: false,
+    });
+
     render(<Dashboard />, { wrapper: Wrapper });
 
-    const link = screen.getByRole('link', { name: /Библиотека/i });
-    expect(link).toHaveAttribute('href', '/library');
+    const skillsCta = screen.getByRole('link', { name: /К навыкам/i });
+    expect(skillsCta).toHaveAttribute('href', '/skills');
+
+    expect(screen.getByText('Навыки маршрута')).toBeInTheDocument();
+    expect(screen.getByText('Сидеть')).toBeInTheDocument();
+
+    const changeRoute = screen.getByRole('link', { name: /Сменить маршрут/i });
+    expect(changeRoute).toHaveAttribute('href', '/profile/marshrut');
   });
 
-  test('показывает сегодняшний шаг или заглушку', () => {
+  test('ссылки на библиотеку на главной нет — вход через нижнее меню', () => {
     render(<Dashboard />, { wrapper: Wrapper });
 
-    expect(screen.getByText(/Сегодня всё сделано/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Библиотека/i })).not.toBeInTheDocument();
+  });
+
+  test('блок практики дня временно скрыт', () => {
+    render(<Dashboard />, { wrapper: Wrapper });
+
+    expect(screen.queryByText(/Начать практику/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Сегодня всё сделано/i)).not.toBeInTheDocument();
   });
 });

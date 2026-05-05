@@ -83,7 +83,6 @@ function parseHtmlFile(htmlPath) {
         lessonNumber: lesson.num,
         title: lesson.title,
         youtubeId: yt,
-        video_url: `https://www.youtube.com/watch?v=${yt}`,
       });
     }
   }

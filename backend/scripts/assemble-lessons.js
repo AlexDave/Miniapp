@@ -3,6 +3,7 @@
  *
  * Читает lessons-puppy.json и lessons-6plus.json, исправляет skill_key,
  * добавляет course_title и собирает итоговый atomic-lessons.json.
+ * Редактируйте тексты уроков в lessons-*.json; atomic-lessons.json перезаписывается.
  *
  * Запуск: node backend/scripts/assemble-lessons.js
  */
@@ -105,14 +106,14 @@ const COURSE_META = {
   puppy_first_month: {
     id: 'puppy_first_month',
     title: 'Щенок: первый месяц',
-    description: 'Первый месяц с щенком: туалет, режим, социализация и базовые команды',
+    description: 'Первый месяц рядом с малышом: мягко про туалет, сон, людей, звуки и первые слова-подсказки, без давления — вы учитесь понимать друг друга',
     duration_days: 19,
     difficulty: 'easy',
   },
   obedience_six_plus: {
     id: 'obedience_six_plus',
     title: 'Послушание: от 6 месяцев',
-    description: 'Команды, ведение, подзыв и работа с типичными проблемами поведения',
+    description: 'Спокойные короткие занятия: команды как язык доверия, рядом на улице, подзыв, «фу» и опора в быту — вместе с подростком-собакой, а не против него',
     duration_days: 16,
     difficulty: 'easy',
   },

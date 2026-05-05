@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import { useMutation, useQueryClient } from 'react-query';
 import { apiClient } from '../../hooks/useApi';
 import { DOG_AGE_OPTIONS } from '../../constants/onboarding';
+import { lessonNavState } from '../../constants/bottomNav';
 
 const MotionBox = motion(Box);
 
@@ -47,7 +48,7 @@ export default function OnboardingWizard() {
         queryClient.invalidateQueries(['routes']);
         const id = data.first_lesson_id;
         if (id != null) {
-          navigate(`/lesson/${id}`, { replace: true });
+          navigate(`/lesson/${id}`, { replace: true, state: lessonNavState('/') });
         } else {
           navigate('/', { replace: true });
         }

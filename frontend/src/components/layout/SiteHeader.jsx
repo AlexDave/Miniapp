@@ -13,7 +13,7 @@ import HomeHeaderSummary from './HomeHeaderSummary';
 const HEADER_PY = 3;
 
 /**
- * Единый хедер приложения: логотип | плашка имя / огоньки / косточки | действия.
+ * Единый хедер приложения: логотип | плашка имя / серия / косточки | действия.
  */
 export default function SiteHeader({ toggleColorMode, colorMode }) {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
