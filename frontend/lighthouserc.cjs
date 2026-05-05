@@ -10,7 +10,6 @@ module.exports = {
       url: ['/'],
       numberOfRuns: 1,
       settings: {
-        preset: 'perf',
         formFactor: 'mobile',
         throttling: {
           rttMs: 150,
