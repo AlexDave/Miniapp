@@ -10,7 +10,7 @@ module.exports = {
       url: ['/'],
       numberOfRuns: 1,
       settings: {
-        preset: 'lighthouse:default',
+        preset: 'perf',
         formFactor: 'mobile',
         throttling: {
           rttMs: 150,

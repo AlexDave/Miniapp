@@ -131,7 +131,7 @@ CREATE TABLE "new_lesson_progress" (
     CONSTRAINT "lesson_progress_lesson_id_fkey" FOREIGN KEY ("lesson_id") REFERENCES "lessons" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 INSERT INTO "new_lesson_progress" ("attempts_at_level", "completed_at", "created_at", "id", "last_repeat_at", "lesson_id", "pet_id", "repeats_count", "state", "task_started_at", "theory_seen_at", "updated_at", "user_id")
-SELECT lp."attempts_at_level", lp."completed_at", lp."created_at", lp."id", lp."last_repeat_at", lp."lesson_id", m."pet_id", lp."repeats_count", lp."state", lp."task_started_at", lp."theory_seen_at", lp."updated_at", lp."user_id"
+SELECT NULL, lp."completed_at", lp."created_at", lp."id", lp."last_repeat_at", lp."lesson_id", m."pet_id", lp."repeats_count", lp."state", lp."task_started_at", lp."theory_seen_at", lp."updated_at", lp."user_id"
 FROM "lesson_progress" lp INNER JOIN "_pet_map" m ON m."user_id" = lp."user_id";
 DROP TABLE "lesson_progress";
 ALTER TABLE "new_lesson_progress" RENAME TO "lesson_progress";
