@@ -61,6 +61,7 @@ router.get('/tree', async (req, res) => {
       const skillsWithProgress = cat.skills.map((skill) => {
         const bonesEarned = bones[skill.key] ?? 0;
         const pct = skillProgress(bonesEarned, skill.target_bones);
+        const isComplete = pct >= 100;
         const { locked, hint, hint_skill_key, hint_skill_title } = isRecommended(
           skill,
           bones,
@@ -75,11 +76,11 @@ router.get('/tree', async (req, res) => {
           atomic_outcome: skill.atomic_outcome ?? null,
           bones_earned: bonesEarned,
           progress_pct: pct,
-          is_complete:  pct >= 100,
+          is_complete:  isComplete,
           locked,
-          unlock_hint:  hint,
-          unlock_hint_skill_key: hint_skill_key,
-          unlock_hint_skill_title: hint_skill_title,
+          unlock_hint:  isComplete ? null : hint,
+          unlock_hint_skill_key: isComplete ? null : hint_skill_key,
+          unlock_hint_skill_title: isComplete ? null : hint_skill_title,
         };
       });
 

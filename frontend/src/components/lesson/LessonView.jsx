@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import ReducedMotionAnimatePresence from '../../motion/ReducedMotionAnimatePresence';
 import {
@@ -16,7 +16,7 @@ import {
   AlertIcon,
   IconButton,
 } from '@chakra-ui/react';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft } from 'lucide-react';
 import {
   useLesson,
   useSubmitReport,
@@ -30,14 +30,47 @@ import TaskChecklist from './TaskChecklist';
 import TaskStepFlow from './TaskStepFlow';
 import ReportForm from './ReportForm';
 import LessonFailureOutcome from './LessonFailureOutcome';
-import TheoryStep from './TheoryStep';
+import LessonMaterialScreen from './LessonMaterialScreen';
 import { LessonJustCompletedScreen, LessonAlreadyCompletedScreen } from './LessonSuccessScreen';
 import { MOTION, sec } from '../../motion/tokens';
 import { mergeDailyTaskStepsData } from '../../utils/lessonSteps';
 import { BOTTOM_TAB_STATE_KEY } from '../../constants/bottomNav';
+import { getTheorySectionsFromLesson, getPitfalls } from '../../utils/theorySections';
 
-// Фазы урока: 0=Зачем 1=Как 2=Делаем 3=Итог
-const PHASE_LABELS = ['Зачем', 'Как', 'Делаем', 'Итог'];
+/** Фазы: Зачем → Материал → Делаем → Итог */
+const PHASE = {
+  WHY: 0,
+  MATERIAL: 1,
+  TASK: 2,
+  REPORT: 3,
+};
+
+const PHASE_LABELS = ['Зачем', 'Материал', 'Делаем', 'Итог'];
+
+function hasPitfallsLocal(meta) {
+  const { mistakes, tip } = getPitfalls(meta);
+  const hasTip = tip != null && String(tip).trim().length > 0;
+  return mistakes.length > 0 || hasTip;
+}
+
+/** Есть ли что показать на объединённом экране материала */
+function hasMaterialContent(meta, lesson) {
+  return (
+    getTheorySectionsFromLesson(meta).length > 0 ||
+    (lesson?.steps?.length ?? 0) > 0 ||
+    hasPitfallsLocal(meta)
+  );
+}
+
+function nextPhaseAfterWhy(meta, lesson) {
+  if (hasMaterialContent(meta, lesson)) return PHASE.MATERIAL;
+  return PHASE.TASK;
+}
+
+function firstReadingPhase(meta, lesson) {
+  if (hasMaterialContent(meta, lesson)) return PHASE.MATERIAL;
+  return PHASE.WHY;
+}
 
 /** Разбор meta с API: объект, JSON-строка или «строка внутри строки». */
 function parseLessonMetaRaw(meta) {
@@ -110,7 +143,7 @@ function WhyScreen({ why, skipCost, onNext }) {
         </Box>
       )}
       <Button colorScheme="purple" size="lg" borderRadius="xl" onClick={onNext}>
-        Понятно, к шагам
+        Понятно, дальше
       </Button>
     </VStack>
   );
@@ -128,63 +161,6 @@ function normalizeFallbackTasksForUI(raw) {
   return [];
 }
 
-function HowScreen({ steps, onNext, onBack }) {
-  const [idx, setIdx] = useState(0);
-  const reduceMotion = useReducedMotion();
-  const total = steps.length;
-
-  function next() {
-    if (idx < total - 1) setIdx((i) => i + 1);
-    else onNext();
-  }
-  function prev() {
-    if (idx > 0) setIdx((i) => i - 1);
-    else onBack?.();
-  }
-
-  const step = steps[idx];
-
-  const showBack = idx > 0 || onBack;
-
-  return (
-    <VStack spacing={4} align="stretch" pt={4} pb={8}>
-      <Text fontSize="xs" color="mutedFg" textAlign="center">
-        Шаг {idx + 1} из {total}
-      </Text>
-
-      <ReducedMotionAnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={idx}
-          initial={{ opacity: 0, x: reduceMotion ? 0 : 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: reduceMotion ? 0 : -20 }}
-          transition={{ duration: reduceMotion ? 0 : 0.2 }}
-        >
-          <Box minH="200px">
-            {step ? <TheoryStep step={step} /> : <Text color="gray.400">Шаг не найден</Text>}
-          </Box>
-        </motion.div>
-      </ReducedMotionAnimatePresence>
-
-      <HStack spacing={3}>
-        {showBack && (
-          <Button variant="ghost" leftIcon={<ChevronLeft size={16} />} onClick={prev} flex={1}>
-            Назад
-          </Button>
-        )}
-        <Button
-          colorScheme="purple"
-          rightIcon={idx < total - 1 ? <ChevronRight size={16} /> : undefined}
-          onClick={next}
-          flex={2}
-        >
-          {idx < total - 1 ? 'Следующий шаг' : 'К заданию'}
-        </Button>
-      </HStack>
-    </VStack>
-  );
-}
-
 function TaskScreen({ daily, onComplete, onGiveUp, onReadAgain, quietMode }) {
   const checkboxSteps = (daily?.steps ?? []).filter((s) => s.type === 'checkbox');
   const useMicroFlow = daily && checkboxSteps.length > 0;
@@ -199,7 +175,7 @@ function TaskScreen({ daily, onComplete, onGiveUp, onReadAgain, quietMode }) {
         leftIcon={<ChevronLeft size={12} />}
         onClick={onReadAgain}
       >
-        Перечитать шаги
+        Перечитать материал
       </Button>
 
       {useMicroFlow && (
@@ -250,9 +226,9 @@ export default function LessonView() {
     if (report) {
       setPhase(-1); // completed
     } else if (progress?.state === 'theory_done') {
-      setPhase(2); // перейти сразу к заданию
+      setPhase(PHASE.TASK); // перейти сразу к заданию
     } else {
-      setPhase(0); // начать с «Зачем»
+      setPhase(PHASE.WHY); // начать с «Зачем»
     }
   }, [data, phase, report, progress]);
 
@@ -293,7 +269,9 @@ export default function LessonView() {
   const skipCostText = lessonMeta.skip_cost ?? lessonMeta.skipCost;
   const daily = lesson.daily_task;
   const titleShort = lesson.title?.replace(/^День\s+\d+:\s*/i, '').trim() ?? lesson.title;
-  const theorySteps = lesson.steps ?? [];
+  const theorySections = getTheorySectionsFromLesson(lessonMeta);
+  const pitfallsData = getPitfalls(lessonMeta);
+  const practiceSteps = lesson.steps ?? [];
   const nextLessonRaw = data?.next_lesson ?? null;
   const fromSkillsTab = location.state?.[BOTTOM_TAB_STATE_KEY] === '/skills';
   const nextCourseLesson = fromSkillsTab ? null : nextLessonRaw;
@@ -313,7 +291,7 @@ export default function LessonView() {
           onRepeat={async () => {
             try {
               await repeatLesson.mutateAsync(parseInt(lessonId, 10));
-              setPhase(0);
+              setPhase(PHASE.WHY);
             } catch {
               /* ошибка — toast в мутации при необходимости */
             }
@@ -341,7 +319,7 @@ export default function LessonView() {
               await retryAfterFail.mutateAsync(parseInt(lessonId, 10));
               setBonesResult(null);
               setTaskAborted(false);
-              setPhase(0);
+              setPhase(PHASE.WHY);
             } catch {
               /* toast optional */
             }
@@ -358,37 +336,46 @@ export default function LessonView() {
         onHome={() => navigate('/')}
         onRepeat={() => {
           setBonesResult(null);
-          setPhase(0);
+          setPhase(PHASE.WHY);
         }}
       />
     );
   }
 
-  async function handleTheoryDone() {
-    try {
-      await markTheorySeen.mutateAsync(parseInt(lessonId, 10));
-    } catch { /* non-blocking */ }
-    setPhase(1);
-  }
-
-  async function handleHowDone() {
+  async function enterTaskPhase() {
     try {
       await startTask.mutateAsync(parseInt(lessonId, 10));
     } catch { /* non-blocking */ }
     setTaskAborted(false);
-    setPhase(2);
+    setPhase(PHASE.TASK);
+  }
+
+  async function handleWhyContinue() {
+    try {
+      await markTheorySeen.mutateAsync(parseInt(lessonId, 10));
+    } catch { /* non-blocking */ }
+    const next = nextPhaseAfterWhy(lessonMeta, lesson);
+    if (next === PHASE.TASK) {
+      await enterTaskPhase();
+    } else {
+      setPhase(next);
+    }
+  }
+
+  async function handleMaterialContinue() {
+    await enterTaskPhase();
   }
 
   async function handleTaskComplete(rows) {
     setTaskAborted(false);
     setTaskStepsData(rows);
-    setPhase(3);
+    setPhase(PHASE.REPORT);
   }
 
   function handleTaskGiveUp(rows) {
     setTaskAborted(true);
     setTaskStepsData(rows);
-    setPhase(3);
+    setPhase(PHASE.REPORT);
   }
 
   async function handleReportSubmit({ success, note }) {
@@ -470,49 +457,36 @@ export default function LessonView() {
             }}
             style={{ width: '100%' }}
           >
-            {phase === 0 && (
+            {phase === PHASE.WHY && (
               <WhyScreen
                 why={lessonWhyText}
                 skipCost={skipCostText}
-                onNext={handleTheoryDone}
+                onNext={handleWhyContinue}
               />
             )}
 
-            {phase === 1 && theorySteps.length > 0 && (
-              <HowScreen
-                steps={theorySteps}
-                onNext={handleHowDone}
-                onBack={() => setPhase(0)}
+            {phase === PHASE.MATERIAL && (
+              <LessonMaterialScreen
+                theorySections={theorySections}
+                practiceSteps={practiceSteps}
+                mistakes={pitfallsData.mistakes}
+                tip={pitfallsData.tip}
+                onNext={handleMaterialContinue}
+                onBack={() => setPhase(PHASE.WHY)}
               />
             )}
-            {phase === 1 && theorySteps.length === 0 && (
-              <VStack spacing={4} pt={4} pb={8} align="stretch">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  color="mutedFg"
-                  alignSelf="flex-start"
-                  leftIcon={<ChevronLeft size={16} />}
-                  onClick={() => setPhase(0)}
-                >
-                  Назад
-                </Button>
-                <Text color="mutedFg" fontSize="sm">Подробные шаги будут добавлены скоро.</Text>
-                <Button colorScheme="purple" onClick={handleHowDone}>К заданию</Button>
-              </VStack>
-            )}
 
-            {phase === 2 && (
+            {phase === PHASE.TASK && (
               <TaskScreen
                 daily={daily}
                 onComplete={handleTaskComplete}
                 onGiveUp={handleTaskGiveUp}
-                onReadAgain={() => setPhase(theorySteps.length > 0 ? 1 : 0)}
+                onReadAgain={() => setPhase(firstReadingPhase(lessonMeta, lesson))}
                 quietMode={profile?.lessonQuietMode === true}
               />
             )}
 
-            {phase === 3 && (
+            {phase === PHASE.REPORT && (
               <Box pt={2} pb={8}>
                 <ReportForm
                   key={taskAborted ? 'task-abort' : 'task-normal'}

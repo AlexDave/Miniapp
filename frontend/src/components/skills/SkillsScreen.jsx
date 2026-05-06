@@ -260,7 +260,7 @@ function AtomRow({ skill, isExpanded, onToggle }) {
           >
             <Box mt={1.5} p={4} bg={detailBg} borderRadius="xl" border="1px dashed" borderColor={border}>
               <VStack align="stretch" spacing={3}>
-                {skill.unlock_hint && (
+                {skill.unlock_hint && !isDone && (
                   <Box p={2.5} bg={hintBg} borderRadius="md" border="1px solid" borderColor={hintBorder}>
                     <HStack spacing={2} align="flex-start">
                       <Box as="span" display="inline-flex" pt={0.5} flexShrink={0}>

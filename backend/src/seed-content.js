@@ -27,15 +27,6 @@ const defaultSkillTree = {
   ],
 };
 
-// ─── Маппинг типов theory_block → LessonStep.type ───────────────────────────
-const BLOCK_TYPE_MAP = {
-  concept: 'card',    // синий блок «Важно»
-  principle: 'text',
-  tip: 'tip',         // жёлтый блок с лампочкой
-  warning: 'tip',     // жёлтый, но с ⚠️ префиксом
-  example: 'text',    // обычный текст с 📖 префиксом
-};
-
 function prefixForBlockType(type) {
   switch (type) {
     case 'warning': return '⚠️ ';
@@ -45,42 +36,55 @@ function prefixForBlockType(type) {
 }
 
 /**
- * Собирает LessonStep[] из theory_blocks + how_steps + common_mistakes + pro_tip.
- * Первый how_step получает вложенное видео.
+ * Группирует theory_blocks в мини-главы (абзацы + коллауты). Дублирует логику
+ * frontend/src/utils/theorySections.js для API и markdown.
  */
-function stepsFromBlocks(blocks = [], how_steps = [], common_mistakes = [], pro_tip = null) {
-  const steps = [];
+function buildTheorySections(blocks = []) {
+  if (!Array.isArray(blocks) || blocks.length === 0) return [];
 
-  // Теоретические блоки
-  for (const block of blocks) {
-    const stepType = BLOCK_TYPE_MAP[block.type] || 'text';
-    const prefix = prefixForBlockType(block.type);
-    steps.push({ type: stepType, content: prefix + block.text });
+  const sections = [];
+  let current = { title: null, paragraphs: [], callouts: [] };
+
+  function flush() {
+    if (current.paragraphs.length === 0 && current.callouts.length === 0) return;
+    sections.push({
+      title: current.title,
+      paragraphs: [...current.paragraphs],
+      callouts: [...current.callouts],
+    });
+    current = { title: null, paragraphs: [], callouts: [] };
   }
 
-  // Практические шаги (с видео на первом)
+  for (const block of blocks) {
+    const t = block.type;
+    if (t === 'tip' || t === 'warning') {
+      current.callouts.push({ kind: t, text: block.text });
+    } else {
+      if (current.callouts.length > 0) flush();
+      current.paragraphs.push({ type: t, text: block.text });
+    }
+  }
+  flush();
+  return sections;
+}
+
+/**
+ * Только практические шаги для lesson_steps (карусель «Шаги»).
+ * Первый how_step получает вложенное видео.
+ */
+function practiceStepsFromHowSteps(how_steps = [], lessonTitle = '') {
+  const steps = [];
   for (let i = 0; i < how_steps.length; i++) {
     const row = { type: 'card', content: `${i + 1}. ${how_steps[i]}` };
     if (i === 0) {
       row.media_type = 'video';
       row.media_url = LESSON_DEMO_VIDEO_URL;
-      row.alt_text = 'Демонстрация первого шага';
+      row.alt_text = lessonTitle
+        ? `Демонстрация: ${lessonTitle} — первый шаг`
+        : 'Демонстрация первого шага';
     }
     steps.push(row);
   }
-
-  // Типичные ошибки
-  if (common_mistakes && common_mistakes.length > 0) {
-    for (const mistake of common_mistakes) {
-      steps.push({ type: 'tip', content: `⚠️ ${mistake}` });
-    }
-  }
-
-  // Совет профессионала
-  if (pro_tip) {
-    steps.push({ type: 'tip', content: `💡 ${pro_tip}` });
-  }
-
   return steps;
 }
 
@@ -96,20 +100,33 @@ function buildTheoryMarkdown(al) {
   }
 
   if (al.theory_blocks && al.theory_blocks.length > 0) {
+    const sections = buildTheorySections(al.theory_blocks);
     parts.push('\n### Теория\n');
-    for (const block of al.theory_blocks) {
-      const prefix = prefixForBlockType(block.type);
-      parts.push(prefix + block.text);
+    for (let si = 0; si < sections.length; si++) {
+      const sec = sections[si];
+      if (sec.title) {
+        parts.push(`\n#### ${sec.title}\n`);
+      } else if (sections.length > 1) {
+        parts.push(`\n#### Часть ${si + 1}\n`);
+      }
+      for (const p of sec.paragraphs) {
+        const prefix = prefixForBlockType(p.type);
+        parts.push(`${prefix}${p.text}\n\n`);
+      }
+      for (const c of sec.callouts) {
+        const prefix = c.kind === 'warning' ? '⚠️ ' : '';
+        parts.push(`${prefix}${c.text}\n\n`);
+      }
     }
   }
 
   if (al.how_steps && al.how_steps.length > 0) {
-    parts.push('\n### Как делать\n');
+    parts.push('\n### Практика — по шагам\n');
     al.how_steps.forEach((s, i) => parts.push(`${i + 1}. ${s}`));
   }
 
   if (al.common_mistakes && al.common_mistakes.length > 0) {
-    parts.push('\n### Типичные ошибки\n');
+    parts.push('\n### Частые ошибки\n');
     al.common_mistakes.forEach((m) => parts.push(`— ${m}`));
   }
 
@@ -163,6 +180,7 @@ function lessonFromAtomic(al) {
 function lessonFromNewAtomic(al) {
   const fallbackArr = normalizeFallbackTasks(al);
   const fakeFallbackAl = { fallback_tasks: fallbackArr, skill_key: al.skill_key };
+  const theory_sections = buildTheorySections(al.theory_blocks || []);
 
   const meta = {
     why: al.why,
@@ -178,6 +196,7 @@ function lessonFromNewAtomic(al) {
       skip_cost: al.skip_cost,
       skill_key: al.skill_key,
       theory_blocks: al.theory_blocks,
+      theory_sections,
       how_steps: al.how_steps,
       common_mistakes: al.common_mistakes,
       success_criteria: al.success_criteria,
@@ -207,7 +226,7 @@ function lessonFromNewAtomic(al) {
     order_index: al.day,
     meta: JSON.stringify(meta),
     fallback_tree: JSON.stringify(buildFallbackTreePayload(fakeFallbackAl)),
-    steps: stepsFromBlocks(al.theory_blocks || [], al.how_steps || [], al.common_mistakes || [], al.pro_tip || null),
+    steps: practiceStepsFromHowSteps(al.how_steps || [], al.title || ''),
     daily_task: {
       title: al.title,
       description: al.why || al.title,
