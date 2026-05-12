@@ -24,7 +24,15 @@ export default function TheoryArticle({ sections }) {
       {sections.map((sec, si) => (
         <Box key={si}>
           {sec.title ? (
-            <Text fontSize="sm" fontWeight="bold" color="gray.700" _dark={{ color: 'gray.200' }} mb={3}>
+            <Text
+              fontSize="xs"
+              fontWeight="bold"
+              color="purple.600"
+              _dark={{ color: 'purple.300' }}
+              textTransform="uppercase"
+              letterSpacing="wide"
+              mb={2}
+            >
               {sec.title}
             </Text>
           ) : null}
