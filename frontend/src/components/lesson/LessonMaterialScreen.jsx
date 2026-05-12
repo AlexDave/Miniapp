@@ -35,11 +35,7 @@ export default function LessonMaterialScreen({
 
   return (
     <VStack spacing={4} align="stretch" pt={2} pb={8}>
-      <Text fontSize="xs" color="mutedFg" textAlign="center">
-        Один экран: теория, пошагово и на что обратить внимание
-      </Text>
-
-      <Box maxH="calc(100vh - 260px)" overflowY="auto" pr={1}>
+      <Box maxH="calc(100vh - 220px)" overflowY="auto" pr={1}>
         <VStack spacing={8} align="stretch">
           {!hasAny && (
             <Text fontSize="sm" color="mutedFg" textAlign="center">
