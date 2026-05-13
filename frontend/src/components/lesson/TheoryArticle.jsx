@@ -44,7 +44,15 @@ export default function TheoryArticle({ sections }) {
       {sections.map((sec, si) => (
         <VStack key={si} spacing={3} align="stretch">
           {sec.title ? (
-            <Text fontSize="sm" fontWeight="bold" color="gray.700" _dark={{ color: 'gray.200' }}>
+            <Text
+              fontSize="xs"
+              fontWeight="bold"
+              color="purple.600"
+              _dark={{ color: 'purple.300' }}
+              textTransform="uppercase"
+              letterSpacing="wide"
+              mb={2}
+            >
               {sec.title}
             </Text>
           ) : null}

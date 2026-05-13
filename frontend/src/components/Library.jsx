@@ -38,7 +38,7 @@ const MotionCard = motion(Card);
 function Library() {
   const [courses, setCourses] = useState([]);
   const { loading, error, get } = useApi();
-  const { courseProgress, addNotification } = useStore();
+  const { courseProgress } = useStore();
   const { data: profile } = useProfile();
   const toast = useToast();
 
@@ -50,28 +50,6 @@ function Library() {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textColor = useColorModeValue('gray.600', 'gray.300');
-
-  // Тестовые данные
-  const testData = [
-    {
-      id: 1,
-      title: 'Основы программирования',
-      description: 'Изучите базовые концепции программирования на Python.',
-      duration: '8 мин'
-    },
-    {
-      id: 2,
-      title: 'Веб-разработка',
-      description: 'Погрузитесь в разработку сайтов с использованием HTML, CSS и JavaScript.',
-      duration: '12 мин'
-    },
-    {
-      id: 3,
-      title: 'Машинное обучениеоооо ооо о о о ооооооо',
-      description: 'Научитесь строить модели машинного обучения и анализировать данные.',
-      duration: '16 мин'
-    },
-  ];
 
   useEffect(() => {
     async function fetchCourses() {
@@ -93,21 +71,17 @@ function Library() {
   }, [get, toast]);
 
   const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case 'beginner': return 'green';
-      case 'intermediate': return 'yellow';
-      case 'advanced': return 'red';
-      default: return 'gray';
-    }
+    if (difficulty === 'easy') return 'green';
+    if (difficulty === 'medium') return 'yellow';
+    if (difficulty === 'hard') return 'red';
+    return 'gray';
   };
 
   const getDifficultyText = (difficulty) => {
-    switch (difficulty) {
-      case 'beginner': return 'Начинающий';
-      case 'intermediate': return 'Средний';
-      case 'advanced': return 'Продвинутый';
-      default: return 'Не указано';
-    }
+    if (difficulty === 'easy') return 'Начинающий';
+    if (difficulty === 'medium') return 'Средний';
+    if (difficulty === 'hard') return 'Сложный';
+    return null;
   };
 
   const getCategoryIcon = (category) => {
@@ -132,25 +106,20 @@ function Library() {
 
   if (loading) {
     return (
-      <VStack spacing={4} align="center" justify="center" height="100vh">
-        <Spinner size="xl" color="purple.500" thickness="4px" />
-        <Text fontSize="lg" color={textColor}>Загрузка библиотеки...</Text>
+      <VStack spacing={3} align="center" justify="center" h="50vh">
+        <Spinner size="lg" color="purple.500" />
+        <Text fontSize="sm" color={textColor}>Загрузка...</Text>
       </VStack>
     );
   }
 
   if (error) {
     return (
-      <VStack spacing={6} align="center" justify="center" height="100vh" p={4}>
-        <Box textAlign="center">
-          <Icon as={BookOpen} w={12} h={12} color="red.500" mb={4} />
-          <Text fontSize="xl" fontWeight="bold" color="red.500" mb={2}>
-            Ошибка загрузки
-          </Text>
-          <Text color={textColor} mb={4}>{error}</Text>
-        </Box>
-        <Button 
-          colorScheme="purple" 
+      <VStack spacing={4} align="center" justify="center" py={16} px={4}>
+        <Text fontWeight="semibold" color="red.500">{error}</Text>
+        <Button
+          size="sm"
+          colorScheme="purple"
           variant="outline"
           onClick={() => window.location.reload()}
         >
@@ -273,21 +242,25 @@ function Library() {
                     <HStack justify="space-between" width="100%" align="start">
                       <VStack align="start" spacing={2} flex="1">
                         <HStack spacing={2}>
-                          <Box
-                            p={2}
-                            bg="purple.100"
-                            borderRadius="full"
-                            color="purple.600"
-                          >
-                            {getCategoryIcon(course.category)}
-                          </Box>
-                          <Badge
-                            colorScheme={getDifficultyColor(course.difficulty)}
-                            variant="subtle"
-                            fontSize="xs"
-                          >
-                            {getDifficultyText(course.difficulty)}
-                          </Badge>
+                          {course.category && (
+                            <Box
+                              p={2}
+                              bg="purple.100"
+                              borderRadius="full"
+                              color="purple.600"
+                            >
+                              {getCategoryIcon(course.category)}
+                            </Box>
+                          )}
+                          {getDifficultyText(course.difficulty) && (
+                            <Badge
+                              colorScheme={getDifficultyColor(course.difficulty)}
+                              variant="subtle"
+                              fontSize="xs"
+                            >
+                              {getDifficultyText(course.difficulty)}
+                            </Badge>
+                          )}
                         </HStack>
                         
                         <Text fontSize="lg" fontWeight="semibold" color="purple.700" noOfLines={2}>
@@ -311,13 +284,12 @@ function Library() {
                     <VStack align="start" spacing={2} width="100%">
                       <HStack justify="space-between" width="100%">
                         <HStack spacing={4}>
-                          <HStack spacing={1} color={textColor}>
-                            <Icon as={Clock} size={14} />
-                            <Text fontSize="xs">
-                              {course.duration || 'Не указано'}
-                            </Text>
-                          </HStack>
-                          
+                          {course.duration && (
+                            <HStack spacing={1} color={textColor}>
+                              <Icon as={Clock} size={14} />
+                              <Text fontSize="xs">{course.duration}</Text>
+                            </HStack>
+                          )}
                           {course.rating && (
                             <HStack spacing={1} color="yellow.500">
                               <Icon as={Star} size={14} />
@@ -325,10 +297,11 @@ function Library() {
                             </HStack>
                           )}
                         </HStack>
-                        
-                        <Text fontSize="xs" color="purple.600" fontWeight="semibold">
-                          {getCategoryText(course.category)}
-                        </Text>
+                        {course.category && (
+                          <Text fontSize="xs" color="purple.600" fontWeight="semibold">
+                            {getCategoryText(course.category)}
+                          </Text>
+                        )}
                       </HStack>
                       
                       {/* Progress */}
