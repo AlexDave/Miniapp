@@ -1,8 +1,15 @@
 const { prisma } = require('../database/connection');
-const { lessonMatchesSkill } = require('./lessonSkillMeta');
 
 /** Маршрут по умолчанию, если bucket неизвестен */
 const DEFAULT_ROUTE = 'foundations';
+
+/** slug курса в courses.json для каждого маршрута */
+const ROUTE_TO_COURSE_SLUG = {
+  'puppy-basics': 'puppy',
+  'foundations': 'adult-standard',
+  'city-dog': 'adult-standard',
+  'calm-home': 'adult-standard',
+};
 
 /**
  * Назначение персонального маршрута по возрастной корзине (согласовано с seed ROUTES).
@@ -22,28 +29,34 @@ function routeKeyForAgeBucket(bucket) {
 }
 
 /**
- * Первый урок первого атома маршрута (как в GET /api/skills/:key/lessons).
+ * Первый урок курса, привязанного к маршруту через slug из courses.json.
+ * Надёжнее skill_key-матчинга: не зависит от того, какой skill_key стоит у урока.
  */
 async function getFirstLessonIdForRoute(routeKey) {
-  const route = await prisma.route.findUnique({
-    where: { key: routeKey },
-    include: {
-      skills: { orderBy: { order_index: 'asc' }, take: 1 },
-    },
-  });
-  if (!route?.skills?.length) return null;
+  const slug = ROUTE_TO_COURSE_SLUG[routeKey] ?? 'adult-standard';
 
-  const skillKey = route.skills[0].skill_key;
-  const lessons = await prisma.lesson.findMany({
+  const allCourses = await prisma.course.findMany({
     where: { is_active: true },
+    select: { id: true, content: true },
+  });
+
+  const course = allCourses.find((c) => {
+    try {
+      return JSON.parse(c.content)?.slug === slug;
+    } catch {
+      return false;
+    }
+  });
+  if (!course) return null;
+
+  const lesson = await prisma.lesson.findFirst({
+    where: { module: { course_id: course.id }, is_active: true },
     orderBy: [
-      { module: { course: { id: 'asc' } } },
       { module: { order_index: 'asc' } },
       { order_index: 'asc' },
     ],
   });
-  const first = lessons.find((l) => lessonMatchesSkill(l.meta, skillKey));
-  return first ? first.id : null;
+  return lesson?.id ?? null;
 }
 
 module.exports = {

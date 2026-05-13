@@ -514,7 +514,7 @@ router.post('/:lessonId/start-task', async (req, res) => {
   }
 });
 
-// Начать повтор завершённого урока (возврат в theory_done, без ограничения по времени)
+// Начать повтор завершённого урока: снять отчёт дня, чтобы снова можно было отправить /report (иначе 409)
 router.post('/:lessonId/repeat-start', async (req, res) => {
   try {
     const lessonId = parseInt(req.params.lessonId, 10);
@@ -527,17 +527,31 @@ router.post('/:lessonId/repeat-start', async (req, res) => {
     if (!existing) return res.status(400).json({ error: 'Урок ещё не завершён' });
 
     const now = new Date();
-    const progress = await prisma.lessonProgress.upsert({
-      where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
-      update: { state: 'theory_done', task_started_at: null, last_repeat_at: now, updated_at: now },
-      create: {
-        user_id: userId,
-        pet_id: petId,
-        lesson_id: lessonId,
-        state: 'theory_done',
-        theory_seen_at: now,
-        last_repeat_at: now,
-      },
+    const progress = await prisma.$transaction(async (tx) => {
+      await tx.dailyReport.delete({
+        where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
+      });
+
+      return tx.lessonProgress.upsert({
+        where: { pet_id_lesson_id: { pet_id: petId, lesson_id: lessonId } },
+        update: {
+          state: 'not_started',
+          theory_seen_at: null,
+          task_started_at: null,
+          completed_at: null,
+          last_repeat_at: now,
+          repeats_count: { increment: 1 },
+          updated_at: now,
+        },
+        create: {
+          user_id: userId,
+          pet_id: petId,
+          lesson_id: lessonId,
+          state: 'not_started',
+          theory_seen_at: null,
+          last_repeat_at: now,
+        },
+      });
     });
 
     trackEvent('lesson.repeated', { user_id: userId, lesson_id: lessonId });

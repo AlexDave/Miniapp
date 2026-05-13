@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import ReducedMotionAnimatePresence from '../../motion/ReducedMotionAnimatePresence';
@@ -15,6 +15,7 @@ import {
   Alert,
   AlertIcon,
   IconButton,
+  useToast,
 } from '@chakra-ui/react';
 import { ArrowLeft, ChevronLeft } from 'lucide-react';
 import {
@@ -211,6 +212,7 @@ export default function LessonView() {
   const repeatLesson = useRepeatLesson();
   const retryAfterFail = useRetryAfterFail();
   const { data: profile } = useProfile();
+  const toast = useToast();
 
   const [phase, setPhase] = useState(null);
   const [taskStepsData, setTaskStepsData] = useState([]);
@@ -219,6 +221,17 @@ export default function LessonView() {
 
   const progress = data?.progress;
   const report = data?.report;
+
+  /** Смена урока в том же экране (напр. «Перейти к следующему») — иначе остаются phase/bonesResult от прошлого id. */
+  const prevLessonIdRef = useRef();
+  useEffect(() => {
+    if (prevLessonIdRef.current === lessonId) return;
+    prevLessonIdRef.current = lessonId;
+    setPhase(null);
+    setBonesResult(null);
+    setTaskStepsData([]);
+    setTaskAborted(false);
+  }, [lessonId]);
 
   // Инициализируем фазу из серверного state
   useEffect(() => {
@@ -292,8 +305,14 @@ export default function LessonView() {
             try {
               await repeatLesson.mutateAsync(parseInt(lessonId, 10));
               setPhase(PHASE.WHY);
-            } catch {
-              /* ошибка — toast в мутации при необходимости */
+            } catch (err) {
+              toast({
+                title: 'Не удалось начать повтор',
+                description: err?.response?.data?.error || err.message,
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+              });
             }
           }}
           isRepeating={repeatLesson.isLoading}
@@ -334,9 +353,21 @@ export default function LessonView() {
         nextLesson={nextCourseLesson}
         lessonTitleShort={titleShort}
         onHome={() => navigate('/')}
-        onRepeat={() => {
-          setBonesResult(null);
-          setPhase(PHASE.WHY);
+        isRepeating={repeatLesson.isLoading}
+        onRepeat={async () => {
+          try {
+            await repeatLesson.mutateAsync(parseInt(lessonId, 10));
+            setBonesResult(null);
+            setPhase(PHASE.WHY);
+          } catch (err) {
+            toast({
+              title: 'Не удалось начать повтор',
+              description: err?.response?.data?.error || err.message,
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          }
         }}
       />
     );

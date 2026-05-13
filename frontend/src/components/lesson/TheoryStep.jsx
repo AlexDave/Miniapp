@@ -4,20 +4,21 @@ import LazyStepMedia from './LazyStepMedia';
 
 const STEP_STYLES = {
   text: {
-    bg: 'white',
+    bg: 'gray.50',
     border: '1px solid',
     borderColor: 'gray.200',
-    darkBg: 'gray.700',
+    darkBg: 'gray.750',
     darkBorderColor: 'gray.600',
     icon: null,
   },
   tip: {
     bg: 'yellow.50',
-    border: '1px solid',
-    borderColor: 'yellow.200',
+    border: '0',
+    borderLeft: '3px solid',
+    borderColor: 'yellow.400',
     darkBg: 'yellow.900',
-    darkBorderColor: 'yellow.700',
-    icon: <Lightbulb size={16} color="#B7791F" />,
+    darkBorderColor: 'yellow.600',
+    icon: <Lightbulb size={15} color="#B7791F" />,
     label: 'Совет',
     labelColor: 'yellow.700',
     darkLabelColor: 'yellow.300',
@@ -25,21 +26,21 @@ const STEP_STYLES = {
   card: {
     bg: 'blue.50',
     border: '1px solid',
-    borderColor: 'blue.200',
+    borderColor: 'blue.100',
     darkBg: 'blue.900',
     darkBorderColor: 'blue.700',
-    icon: <Info size={16} color="#2B6CB0" />,
+    icon: <Info size={15} color="#3182CE" />,
     label: 'Важно',
-    labelColor: 'blue.700',
+    labelColor: 'blue.600',
     darkLabelColor: 'blue.300',
   },
   diagram: {
     bg: 'gray.50',
     border: '1px solid',
-    borderColor: 'gray.300',
+    borderColor: 'gray.200',
     darkBg: 'gray.700',
     darkBorderColor: 'gray.600',
-    icon: <AlertCircle size={16} color="#4A5568" />,
+    icon: <AlertCircle size={15} color="#718096" />,
     label: 'Схема',
     labelColor: 'gray.600',
     darkLabelColor: 'gray.300',
@@ -142,6 +143,28 @@ export default function TheoryStep({ step }) {
     );
   }
 
+  // Tip: border-left callout без заголовка
+  if (step.type === 'tip') {
+    return (
+      <Box
+        px={4}
+        py={3}
+        bg={style.bg}
+        _dark={{ bg: style.darkBg, borderColor: style.darkBorderColor }}
+        borderLeft="3px solid"
+        borderColor={style.borderColor}
+        borderRadius="0 8px 8px 0"
+      >
+        <HStack align="flex-start" spacing={2}>
+          <Box flexShrink={0} mt="2px">{style.icon}</Box>
+          <Text fontSize="sm" lineHeight="1.65" color="gray.700" _dark={{ color: 'gray.200' }}>
+            {step.content}
+          </Text>
+        </HStack>
+      </Box>
+    );
+  }
+
   return (
     <Box
       p={3}
@@ -152,7 +175,7 @@ export default function TheoryStep({ step }) {
       borderRadius="lg"
     >
       {style.icon && (
-        <HStack mb={1}>
+        <HStack mb={1} spacing={1.5}>
           {style.icon}
           <Text fontSize="xs" fontWeight="semibold" color={style.labelColor} _dark={{ color: style.darkLabelColor }}>
             {style.label}

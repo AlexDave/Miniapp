@@ -7,6 +7,7 @@ const { parseBones } = require('../utils/bones');
 const { buildProfileResponse } = require('../utils/profileResponse');
 const { USER_AUX_FOR_PROFILE } = require('../constants/profileUserSelect');
 const { ensureDefaultPetForUser } = require('../utils/petContext');
+const { resetUserFirstVisit } = require('../services/resetUserFirstVisit');
 
 const router = express.Router();
 
@@ -60,6 +61,23 @@ router.get('/reminder-bind-link', async (req, res) => {
   } catch (err) {
     logger.error({ err }, 'reminder-bind-link');
     res.status(500).json({ error: 'Не удалось создать ссылку' });
+  }
+});
+
+router.post('/reset', async (req, res) => {
+  try {
+    await resetUserFirstVisit(req.user.id);
+    const { profile, user, pet } = await loadProfileBundle(req.user.id);
+    if (!profile) {
+      return res.status(404).json({ error: 'Профиль не найден' });
+    }
+    res.json(buildProfileResponse(profile, user, pet));
+  } catch (err) {
+    if (err.code === 'PROFILE_NOT_FOUND') {
+      return res.status(404).json({ error: 'Профиль не найден' });
+    }
+    logger.error({ err }, 'Сброс профиля');
+    res.status(500).json({ error: 'Не удалось сбросить профиль' });
   }
 });
 

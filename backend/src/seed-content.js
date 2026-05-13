@@ -154,11 +154,13 @@ function normalizeFallbackTasks(al) {
   return [];
 }
 
-/** Строит чекбоксы для DailyTask из success_criteria (или how_steps как fallback). */
+/** Строит чекбоксы для DailyTask из действий задания, не смешивая их с критериями успеха. */
 function buildTaskCheckboxes(al) {
-  const source = (al.success_criteria && al.success_criteria.length > 0)
-    ? al.success_criteria
-    : (al.how_steps || []).slice(0, 4);
+  const source = (al.task_actions && al.task_actions.length > 0)
+    ? al.task_actions
+    : (al.success_criteria && al.success_criteria.length > 0)
+      ? al.success_criteria
+      : (al.how_steps || []).slice(0, 4);
 
   return source.map((label) => ({ type: 'checkbox', label }));
 }
@@ -198,6 +200,7 @@ function lessonFromNewAtomic(al) {
       theory_blocks: al.theory_blocks,
       theory_sections,
       how_steps: al.how_steps,
+      task_actions: al.task_actions,
       common_mistakes: al.common_mistakes,
       success_criteria: al.success_criteria,
       pro_tip: al.pro_tip,
@@ -206,6 +209,7 @@ function lessonFromNewAtomic(al) {
     },
     reflection: true,
     fallback_tasks: al.fallback_tasks,
+    task_actions: al.task_actions,
     skill_key: al.skill_key,
     difficulty: 1,
     progress_gain: 10,
@@ -228,8 +232,8 @@ function lessonFromNewAtomic(al) {
     fallback_tree: JSON.stringify(buildFallbackTreePayload(fakeFallbackAl)),
     steps: practiceStepsFromHowSteps(al.how_steps || [], al.title || ''),
     daily_task: {
-      title: al.title,
-      description: al.why || al.title,
+      title: `Задание: ${al.title}`,
+      description: 'Выполните действия по порядку и отметьте, что получилось сегодня.',
       duration_min: 10,
       steps: baseTaskSteps(buildTaskCheckboxes(al)),
     },

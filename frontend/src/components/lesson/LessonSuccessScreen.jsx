@@ -56,6 +56,7 @@ export function LessonJustCompletedScreen({
   nextLesson,
   onHome,
   onRepeat,
+  isRepeating,
   lessonTitleShort,
 }) {
   const location = useLocation();
@@ -208,6 +209,7 @@ export function LessonJustCompletedScreen({
               color="mutedFg"
               leftIcon={<RotateCcw size={16} />}
               onClick={onRepeat}
+              isLoading={isRepeating}
             >
               Перепройти этот урок
             </Button>

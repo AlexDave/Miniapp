@@ -1,20 +1,63 @@
-import { Box, VStack, Text, Button, HStack } from '@chakra-ui/react';
-import { ChevronLeft } from 'lucide-react';
+import { Box, VStack, Text, Button, HStack, Divider } from '@chakra-ui/react';
+import { ChevronLeft, AlertTriangle, Lightbulb } from 'lucide-react';
 import TheoryArticle from './TheoryArticle';
-import TheoryStep from './TheoryStep';
 
-function SectionHeading({ children }) {
+function PracticeStep({ step, index }) {
   return (
-    <Text
-      fontSize="xs"
-      fontWeight="bold"
-      color="gray.500"
-      textTransform="uppercase"
-      letterSpacing="wide"
-      mb={2}
+    <HStack align="flex-start" spacing={3}>
+      <Box
+        flexShrink={0}
+        w="22px"
+        h="22px"
+        bg="purple.500"
+        color="white"
+        borderRadius="full"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        fontSize="xs"
+        fontWeight="bold"
+        mt="1px"
+      >
+        {index + 1}
+      </Box>
+      <Text fontSize="sm" lineHeight="1.65" color="gray.700" _dark={{ color: 'gray.200' }} flex={1}>
+        {/* Убираем префикс "1. " если он уже есть в контенте из сида */}
+        {typeof step.content === 'string' ? step.content.replace(/^\d+\.\s*/, '') : step.content}
+      </Text>
+    </HStack>
+  );
+}
+
+function MistakeItem({ text }) {
+  return (
+    <HStack align="flex-start" spacing={2}>
+      <AlertTriangle size={14} color="#E53E3E" style={{ marginTop: 3, flexShrink: 0 }} />
+      <Text fontSize="sm" lineHeight="1.6" color="gray.700" _dark={{ color: 'gray.300' }}>
+        {text}
+      </Text>
+    </HStack>
+  );
+}
+
+function ProTip({ text }) {
+  return (
+    <Box
+      px={4}
+      py={3}
+      borderLeft="3px solid"
+      borderColor="purple.400"
+      bg="purple.50"
+      _dark={{ bg: 'purple.900', borderColor: 'purple.400' }}
+      borderRadius="0 8px 8px 0"
     >
-      {children}
-    </Text>
+      <HStack align="flex-start" spacing={2}>
+        <Lightbulb size={15} color="#805AD5" style={{ marginTop: 2, flexShrink: 0 }} />
+        <Text fontSize="sm" lineHeight="1.65" color="gray.700" _dark={{ color: 'gray.200' }}>
+          {text}
+        </Text>
+      </HStack>
+    </Box>
   );
 }
 
@@ -27,74 +70,90 @@ export default function LessonMaterialScreen({
   onBack,
 }) {
   const hasTheory = theorySections?.length > 0;
-  const hasPractice = practiceSteps?.length > 0;
-  const hasMistakes = (mistakes?.length ?? 0) > 0;
-  const hasTip = Boolean(tip != null && String(tip).trim());
-  const hasPitfalls = hasMistakes || hasTip;
-  const hasAny = hasTheory || hasPractice || hasPitfalls;
+  // Фильтруем шаги: пропускаем если content пустой или это только видео без текста
+  const visibleSteps = (practiceSteps ?? []).filter(
+    (s) => s.content && String(s.content).trim()
+  );
+  const hasPractice = visibleSteps.length > 0;
+  const cleanMistakes = (mistakes ?? []).filter((m) => m && String(m).trim());
+  const hasMistakes = cleanMistakes.length > 0;
+  const tipStr = tip != null && String(tip).trim() ? String(tip).trim() : null;
+  const hasAny = hasTheory || hasPractice || hasMistakes || tipStr;
 
   return (
     <VStack spacing={4} align="stretch" pt={2} pb={8}>
-      <Text fontSize="xs" color="mutedFg" textAlign="center">
-        Один экран: теория, пошагово и на что обратить внимание
-      </Text>
-
-      <Box maxH="calc(100vh - 260px)" overflowY="auto" pr={1}>
-        <VStack spacing={8} align="stretch">
+      <Box maxH="calc(100vh - 220px)" overflowY="auto" pr={1}>
+        <VStack spacing={6} align="stretch">
           {!hasAny && (
-            <Text fontSize="sm" color="mutedFg" textAlign="center">
+            <Text fontSize="sm" color="gray.500" textAlign="center">
               Материал урока пока не загружен. Нажмите «К заданию», чтобы продолжить.
             </Text>
           )}
 
           {hasTheory && (
-            <Box>
-              <SectionHeading>Теория</SectionHeading>
-              <TheoryArticle sections={theorySections} />
-            </Box>
+            <TheoryArticle sections={theorySections} />
           )}
 
           {hasPractice && (
-            <Box>
-              <SectionHeading>Пошагово</SectionHeading>
-              <VStack spacing={3} align="stretch">
-                {practiceSteps.map((step, i) => (
-                  <TheoryStep key={i} step={step} />
-                ))}
-              </VStack>
-            </Box>
+            <>
+              {hasTheory && <Divider />}
+              <Box>
+                <Text
+                  fontSize="xs"
+                  fontWeight="bold"
+                  color="purple.500"
+                  textTransform="uppercase"
+                  letterSpacing="wide"
+                  mb={3}
+                >
+                  Как делать — по шагам
+                </Text>
+                <VStack spacing={3} align="stretch">
+                  {visibleSteps.map((step, i) => (
+                    <PracticeStep key={i} step={step} index={i} />
+                  ))}
+                </VStack>
+              </Box>
+            </>
           )}
 
-          {hasPitfalls && (
-            <Box>
-              <SectionHeading>Внимание</SectionHeading>
-              <VStack spacing={4} align="stretch">
-                {hasMistakes && (
-                  <VStack spacing={2} align="stretch">
-                    <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="wide">
-                      Частые ошибки
-                    </Text>
-                    {mistakes.map((m, i) => (
-                      <TheoryStep key={i} step={{ type: 'tip', content: `⚠️ ${m}` }} />
-                    ))}
-                  </VStack>
-                )}
-                {hasTip && (
-                  <VStack spacing={2} align="stretch">
-                    <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="wide">
-                      Совет
-                    </Text>
-                    <TheoryStep step={{ type: 'tip', content: `💡 ${tip != null ? String(tip) : ''}` }} />
-                  </VStack>
-                )}
-              </VStack>
-            </Box>
+          {(hasMistakes || tipStr) && (
+            <>
+              <Divider />
+              <Box>
+                <Text
+                  fontSize="xs"
+                  fontWeight="bold"
+                  color="gray.500"
+                  textTransform="uppercase"
+                  letterSpacing="wide"
+                  mb={3}
+                >
+                  На что обратить внимание
+                </Text>
+                <VStack spacing={3} align="stretch">
+                  {hasMistakes && (
+                    <VStack spacing={2} align="stretch">
+                      {cleanMistakes.map((m, i) => (
+                        <MistakeItem key={i} text={m} />
+                      ))}
+                    </VStack>
+                  )}
+                  {tipStr && <ProTip text={tipStr} />}
+                </VStack>
+              </Box>
+            </>
           )}
         </VStack>
       </Box>
 
       <HStack spacing={3}>
-        <Button variant="ghost" leftIcon={<ChevronLeft size={16} />} onClick={onBack} flex={1}>
+        <Button
+          variant="ghost"
+          leftIcon={<ChevronLeft size={16} />}
+          onClick={onBack}
+          flex={1}
+        >
           Назад
         </Button>
         <Button colorScheme="purple" size="lg" borderRadius="xl" onClick={onNext} flex={2}>

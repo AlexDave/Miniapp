@@ -1,51 +1,69 @@
-import { Box, Text, VStack } from '@chakra-ui/react';
-import TheoryStep from './TheoryStep';
+import { Box, Text, VStack, HStack } from '@chakra-ui/react';
+import { Lightbulb, AlertTriangle } from 'lucide-react';
 import { paragraphPrefix } from '../../utils/theorySections';
 
-function calloutToStep(callout) {
-  const prefix = callout.kind === 'warning' ? '⚠️ ' : '';
-  return {
-    type: 'tip',
-    content: prefix + callout.text,
-  };
+function Callout({ kind, text }) {
+  const isWarning = kind === 'warning';
+  return (
+    <Box
+      px={4}
+      py={3}
+      borderLeft="3px solid"
+      borderColor={isWarning ? 'orange.400' : 'yellow.400'}
+      bg={isWarning ? 'orange.50' : 'yellow.50'}
+      _dark={{
+        bg: isWarning ? 'orange.900' : 'yellow.900',
+        borderColor: isWarning ? 'orange.400' : 'yellow.400',
+      }}
+      borderRadius="0 8px 8px 0"
+    >
+      <HStack align="flex-start" spacing={2}>
+        {isWarning
+          ? <AlertTriangle size={14} color="#C05621" style={{ marginTop: 3, flexShrink: 0 }} />
+          : <Lightbulb size={14} color="#B7791F" style={{ marginTop: 3, flexShrink: 0 }} />
+        }
+        <Text fontSize="sm" lineHeight="1.65" color="gray.700" _dark={{ color: 'gray.200' }}>
+          {text}
+        </Text>
+      </HStack>
+    </Box>
+  );
 }
 
 export default function TheoryArticle({ sections }) {
   if (!sections?.length) {
     return (
-      <Text fontSize="sm" color="mutedFg">
+      <Text fontSize="sm" color="gray.500">
         Текст материала пока не добавлен.
       </Text>
     );
   }
 
   return (
-    <VStack spacing={6} align="stretch">
+    <VStack spacing={5} align="stretch">
       {sections.map((sec, si) => (
-        <Box key={si}>
+        <VStack key={si} spacing={3} align="stretch">
           {sec.title ? (
-            <Text fontSize="sm" fontWeight="bold" color="gray.700" _dark={{ color: 'gray.200' }} mb={3}>
+            <Text fontSize="sm" fontWeight="bold" color="gray.700" _dark={{ color: 'gray.200' }}>
               {sec.title}
             </Text>
           ) : null}
-          <VStack spacing={3} align="stretch">
-            {(sec.paragraphs ?? []).map((p, pi) => (
-              <Text
-                key={pi}
-                fontSize="md"
-                lineHeight="1.75"
-                color="gray.700"
-                _dark={{ color: 'gray.200' }}
-              >
-                {paragraphPrefix(p.type)}
-                {p.text}
-              </Text>
-            ))}
-            {(sec.callouts ?? []).map((c, ci) => (
-              <TheoryStep key={`c-${ci}`} step={calloutToStep(c)} />
-            ))}
-          </VStack>
-        </Box>
+          {(sec.paragraphs ?? []).map((p, pi) => (
+            <Text
+              key={pi}
+              fontSize="md"
+              lineHeight="1.75"
+              color="gray.700"
+              _dark={{ color: 'gray.200' }}
+            >
+              {paragraphPrefix(p.type)}
+              {p.text}
+            </Text>
+          ))}
+          {(sec.callouts ?? []).map((c, ci) => (
+            <Callout key={`c-${ci}`} kind={c.kind} text={c.text} />
+          ))}
+        </VStack>
       ))}
     </VStack>
   );

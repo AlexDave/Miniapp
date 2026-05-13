@@ -45,7 +45,7 @@ import {
   Flex,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Edit,
   Camera,
@@ -70,6 +70,7 @@ import {
   Users,
   UserPlus,
   Link2,
+  RotateCcw,
 } from 'lucide-react';
 import useStore from '../store';
 import { useProfile, useUpdateProfile } from '../hooks/useProfile';
@@ -117,6 +118,7 @@ const ICON_COMPONENTS = {
 
 function Profile() {
   const { userProfile } = useStore();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isLoading: profileLoading } = useProfile();
   const { data: trophyVideos = [] } = useTrophyVideos();
@@ -154,6 +156,11 @@ function Profile() {
   const [isEditingName, setIsEditingName] = useState(false);
   const fileInputRef = useRef();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isResetModalOpen,
+    onOpen: onResetModalOpen,
+    onClose: onResetModalClose,
+  } = useDisclosure();
   const toast = useToast();
 
   const bindReminderBot = useMutation(async () => {
@@ -165,6 +172,47 @@ function Profile() {
     const { data } = await apiClient.post('/api/payments/stars-invoice', { plan: 'pro_month' });
     return data;
   });
+
+  const resetProfileMutation = useMutation(
+    () => apiClient.post('/api/user/profile/reset').then((r) => r.data),
+    {
+      onSuccess: async () => {
+        onResetModalClose();
+        toast({
+          title: 'Профиль сброшен',
+          description: 'Данные очищены, как при первом входе.',
+          status: 'success',
+          duration: 4000,
+          isClosable: true,
+        });
+        await Promise.all([
+          queryClient.invalidateQueries(['profile']),
+          queryClient.invalidateQueries(['routes']),
+          queryClient.invalidateQueries(['stats']),
+          queryClient.invalidateQueries(['activity']),
+          queryClient.invalidateQueries(['skill-map']),
+          queryClient.invalidateQueries(['achievements']),
+          queryClient.invalidateQueries(['skill-tree']),
+          queryClient.invalidateQueries(['bones']),
+          queryClient.invalidateQueries(['petMine']),
+          queryClient.invalidateQueries(['petActivity']),
+          queryClient.invalidateQueries(['behavior']),
+          queryClient.invalidateQueries(['lesson']),
+          queryClient.invalidateQueries(['trophy-videos']),
+        ]);
+        navigate('/onboarding');
+      },
+      onError: (err) => {
+        toast({
+          title: 'Не удалось сбросить',
+          description: err?.response?.data?.error || err.message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      },
+    }
+  );
 
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -708,6 +756,25 @@ function Profile() {
 
                 <Divider />
 
+                <Heading size="sm" color="gray.700">
+                  Сброс профиля
+                </Heading>
+                <Text fontSize="xs" color={textColor}>
+                  Удаляется прогресс по урокам и маршрутам, достижения, напоминания, история чата и оплаты.
+                  Учётная запись в Telegram сохраняется. Действие нельзя отменить.
+                </Text>
+                <Button
+                  size="sm"
+                  colorScheme="red"
+                  variant="outline"
+                  leftIcon={<RotateCcw size={16} />}
+                  onClick={onResetModalOpen}
+                >
+                  Сбросить профиль
+                </Button>
+
+                <Divider />
+
                 <Text fontSize="xs" color={textColor}>
                   Экспорт данных и расширенная приватность — позже.
                 </Text>
@@ -757,6 +824,33 @@ function Profile() {
             </TabPanel>
           </TabPanels>
         </Tabs>
+
+        <Modal isOpen={isResetModalOpen} onClose={onResetModalClose} isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Сбросить профиль?</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Text fontSize="sm" color={textColor}>
+                Все данные приложения для этого аккаунта будут удалены: уроки, маршрут, косточки,
+                достижения, семья питомца (если вы единственный участник — питомец пересоздаётся),
+                напоминания и привязка бота. Вы перейдёте к онбордингу заново.
+              </Text>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={onResetModalClose}>
+                Отмена
+              </Button>
+              <Button
+                colorScheme="red"
+                isLoading={resetProfileMutation.isLoading}
+                onClick={() => resetProfileMutation.mutate()}
+              >
+                Сбросить
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
 
         {featurePayments && (
           <>
