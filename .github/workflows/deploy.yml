@@ -1,0 +1,134 @@
+name: Deploy
+
+# Публикация после мерджа в main/master:
+# 1) frontend -> GitHub Pages (статический сайт, можно тестить в браузере)
+# 2) backend  -> Render Blueprint (нужны секреты RENDER_API_KEY и RENDER_OWNER_EMAIL)
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch: {}
+
+# Разрешения для публикации на GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  # ---------- Проверки перед публикацией ----------
+  tests:
+    name: Tests (gate before deploy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install root deps
+        run: npm ci --no-audit --no-fund
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+        env:
+          DATABASE_URL: file:./dev.db
+
+      - name: Backend tests
+        working-directory: backend
+        run: npm test
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Frontend tests
+        working-directory: frontend
+        run: npm test
+
+  # ---------- Публикация фронтенда на GitHub Pages ----------
+  build-frontend:
+    name: Build frontend
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Prepare base path for GitHub Pages
+        working-directory: frontend
+        run: |
+          # Vite должен знать, что сайт будет лежать в подпапке /<имя-репо>/
+          echo "VITE_BASE=/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_ENV"
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          # Укажите здесь URL вашего backend'а (Render), чтобы приложение
+          # работало с реальным API. По умолчанию '' — тот же хост.
+          VITE_API_URL: ${{ vars.API_URL }}
+
+      - name: Upload artifact (for GitHub Pages)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy-frontend:
+    name: Publish frontend (GitHub Pages)
+    needs: build-frontend
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ---------- Публикация бэкенда на Render ----------
+  deploy-backend:
+    name: Deploy backend (Render)
+    needs: tests
+    if: ${{ vars.RENDER_DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.render.com/v1/blueprints/$RENDER_BLUEPRINT_ID/deploys" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"ownerEmail\": \"$RENDER_OWNER_EMAIL\"}")
+          code=$(echo "$response" | tail -n1)
+          if [ "$code" != "200" ] && [ "$code" != "201" ]; then
+            echo "Render deploy failed with HTTP $code:"
+            echo "$response"
+            exit 1
+          fi
+          echo "Render deploy triggered successfully."
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_OWNER_EMAIL: ${{ secrets.RENDER_OWNER_EMAIL }}
+          RENDER_BLUEPRINT_ID: ${{ vars.RENDER_BLUEPRINT_ID }}
