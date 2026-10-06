@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  // base нужен для корректной работы на GitHub Pages (подпапка /<repo>/)
+  base: process.env.VITE_BASE || '/',
   plugins: [react()],
   build: {
     rollupOptions: {

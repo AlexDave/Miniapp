@@ -1,0 +1,1 @@
+import{u as e}from"./rq-oIwIdfuE.js";import{a}from"./index-Egojobp2.js";function i(){return e(["skill-tree"],async()=>{const{data:s}=await a.get("/api/skills/tree");return s},{staleTime:1e3*60*2})}function l(s){return e(["skill-lessons",s],async()=>{const{data:t}=await a.get(`/api/skills/${s}/lessons`);return t},{enabled:!!s,staleTime:1e3*30})}export{l as a,i as u};
